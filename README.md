@@ -1,8 +1,10 @@
 # Auramusic
 
-A modern Android music player with YouTube Music integration, powerful audio features, and a beautiful Material 3 interface.
-
 <div align="center">
+
+<img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png" width="200" alt="Auramusic Logo"/>
+
+A modern Android music player with YouTube Music integration, powerful audio features, and a beautiful Material 3 interface.
 
 ![Android](https://img.shields.io/badge/Android-26%2B-2?style=for-the-badge&logo=android)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?style=for-the-badge&logo=kotlin)
