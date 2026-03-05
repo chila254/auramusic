@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="110dp"
+    android:layout_height="110dp"
+    android:background="@color/widget_primary_container"
+    android:padding="8dp">
+
+    <ImageView
+        android:id="@+id/widget_compact_album_art"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_widget_music_placeholder" />
+
+    <ImageView
+        android:id="@+id/widget_compact_play_container"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_centerInParent="true"
+        android:background="@drawable/widget_play_button_bg"
+        android:padding="8dp"
+        android:src="@drawable/ic_widget_play_low" />
+
+</RelativeLayout>
