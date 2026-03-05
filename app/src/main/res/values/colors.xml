@@ -34,7 +34,7 @@
     
     <!-- Legacy colors for compatibility -->
     <color name="colorPrimary">#FFED5564</color>
-    <color name="colorPrimaryVariant">#FFCRASH</color>
+    <color name="colorPrimaryVariant">#FF3700B3</color>
     <color name="colorOnPrimary">#FFFFFFFF</color>
     <color name="colorAccent">#FFED5564</color>
     
