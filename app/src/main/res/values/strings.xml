@@ -6,6 +6,12 @@
 <resources>
     <!-- App name -->
     <string name="app_name">AuraMusic</string>
+    <string name="update_channel_name">Updates</string>
+    <string name="update_channel_desc">App update notifications</string>
+    <string name="update_available_title">Update available</string>
+    <string name="update_channel_name">Updates</string>
+    <string name="update_channel_desc">App update notifications</string>
+    <string name="update_available_title">Update available</string>
     <string name="app_description">Music streaming application</string>
 
     <!-- Bottom navigation -->
@@ -24,6 +30,7 @@
 
     <!-- Home -->
     <string name="history">History</string>
+    <string name="progress_percent">%s%%</string>
     <string name="stats">Stats</string>
     <string name="mood_and_genres">Mood and Genres</string>
     <string name="account">Account</string>
@@ -33,7 +40,14 @@
     <string name="keep_listening">Keep listening</string>
     <string name="your_youtube_playlists">Your YouTube playlists</string>
     <string name="similar_to">Similar to</string>
+    <string name="similar_content">Similar content</string>
     <string name="new_release_albums">New release albums</string>
+    <string name="wrapped_top_album_title">Top album</string>
+    <string name="wrapped_top_5_albums_title">Top 5 albums</string>
+    <string name="wrapped_artist_listening_time">%d min</string>
+    <string name="wrapped_top_album_title">Top album</string>
+    <string name="wrapped_top_5_albums_title">Top 5 albums</string>
+    <string name="wrapped_artist_listening_time">%d min</string>
     <string name="charts">Charts</string>
     <string name="trending">Trending</string>
     <string name="top_music_videos">Top music videos</string>
@@ -110,14 +124,21 @@
     <string name="cancel">Cancel</string>
     <string name="close">Close</string>
     <string name="show">Show</string>
+    <string name="show_less">Show less</string>
+    <string name="show_more">Show more</string>
     <string name="create">Create</string>
     <string name="join">Join</string>
     <string name="continue_action">Continue</string>
     <string name="approve">Approve</string>
     <string name="reject">Reject</string>
     <string name="delete">Delete</string>
+    <string name="delete_playlist_desc">Delete this playlist</string>
+    <string name="add_to_library_desc">Add to library</string>
     <string name="edit">Edit</string>
     <string name="share">Share</string>
+    <string name="share_selected">Share selected</string>
+    <string name="choose_from_library">Choose from library</string>
+    <string name="remove_custom_image">Remove custom image</string>
     <string name="save">Save</string>
     <string name="clear">Clear</string>
     <string name="select">Select</string>
@@ -159,6 +180,9 @@
     <string name="tempo_and_pitch">Tempo and Pitch</string>
     <string name="suggest_to_host">Suggest to host</string>
     <string name="equalizer">Equalizer</string>
+    <string name="equalizer_desc">Customize audio frequencies</string>
+    <string name="advanced">Advanced</string>
+    <string name="advanced_desc">Advanced audio settings</string>
     <string name="resync">Resync</string>
     <string name="manage_user">Manage user</string>
 
@@ -372,6 +396,9 @@
     <string name="lyrics_text_size">Lyrics text size</string>
     <string name="lyrics_line_spacing">Lyrics line spacing</string>
     <string name="lyrics_animation_style">Lyrics animation style</string>
+    <string name="seconds">seconds</string>
+    <string name="minute">minute</string>
+    <string name="n_time">%d times</string>
     <string name="none">None</string>
     <string name="fade">Fade</string>
     <string name="glow">Glow</string>
@@ -408,6 +435,8 @@
     <string name="enable_high_refresh_rate">High refresh rate</string>
     <string name="enable_high_refresh_rate_desc">Enable 90Hz/120Hz display support</string>
     <string name="font">Font</string>
+    <string name="about">About</string>
+    <string name="general">General</string>
 
     <!-- Content settings -->
     <string name="content">Content</string>
@@ -423,6 +452,9 @@
     <string name="more_content">Show more content</string>
     <string name="yt_sync">YouTube sync</string>
     <string name="integrations">Integrations</string>
+    <string name="default_links">Default links</string>
+    <string name="open_app_settings_error">Unable to open app settings</string>
+    <string name="new_version_available">New version available</string>
     <string name="hide_explicit">Hide explicit content</string>
     <string name="hide_video_songs">Hide video songs</string>
     <string name="artist_page_settings">Artist page settings</string>
@@ -438,6 +470,8 @@
     <string name="proxy_url">Proxy URL</string>
     <string name="proxy_username">Username</string>
     <string name="proxy_password">Password</string>
+    <string name="proxy">Proxy</string>
+    <string name="failed_to_parse_proxy">Failed to parse proxy settings</string>
     <string name="enable_authentication">Enable authentication</string>
     <string name="config_proxy">Configure proxy</string>
     <string name="restart_to_take_effect">Restart to take effect</string>
@@ -467,8 +501,12 @@
 
     <!-- Player and audio -->
     <string name="player_and_audio">Player and audio</string>
+    <string name="audio_offload_description">Use hardware audio decoding when possible</string>
+    <string name="google_cast_description">Enable Google Cast support</string>
     <string name="audio_quality">Audio quality</string>
     <string name="audio_quality_auto">Auto</string>
+    <string name="profiles_count">%d profiles</string>
+    <string name="band_count">%d bands</string>
     <string name="audio_quality_high">High</string>
     <string name="audio_quality_low">Low</string>
     <string name="crossfade">Crossfade</string>
@@ -642,8 +680,16 @@
     <string name="listen_together_background_disconnect_note">You will be disconnected if you leave the app</string>
     <string name="listen_together_cannot_edit_username_in_room">Cannot edit username while in a room</string>
     <string name="not_set">Not set</string>
+    <string name="room_code">Room code</string>
     <string name="enter_username">Enter username</string>
     <string name="enter_room_code">Enter room code</string>
+    <string name="creating_room">Creating room…</string>
+    <string name="joining_room">Joining room…</string>
+    <string name="create_room">Create room</string>
+    <string name="join_room">Join room</string>
+    <string name="join_existing_room">Join existing room</string>
+    <string name="listen_together_create_room_desc">Create a new Listen Together room</string>
+    <string name="listen_together_leave_room">Leave room</string>
     <string name="error_username_empty">Username cannot be empty</string>
     <string name="invalid_room_code">Invalid room code</string>
     <string name="waiting_for_approval">Waiting for approval</string>
