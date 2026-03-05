@@ -33,7 +33,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class MetrolistWidgetManager @Inject constructor(
+class AuraMusicWidgetManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val database: MusicDatabase
 ) {
@@ -62,7 +62,7 @@ class MetrolistWidgetManager @Inject constructor(
         // Use cached album art if URI hasn't changed, otherwise load new one
         val albumArt: Bitmap?
         val circularAlbumArt: Bitmap?
-        
+
         if (artworkUri != null && artworkUri == cachedArtworkUri && cachedAlbumArt != null) {
             albumArt = cachedAlbumArt
             circularAlbumArt = cachedCircularAlbumArt
@@ -223,22 +223,22 @@ class MetrolistWidgetManager @Inject constructor(
         }
         val rect = RectF(0f, 0f, size.toFloat(), size.toFloat())
         canvas.drawRoundRect(rect, cornerRadius, cornerRadius, paint)
-        
+
         if (squareBitmap != bitmap) {
             squareBitmap.recycle()
         }
-        
+
         return output
     }
 
     private fun getCircularBitmap(bitmap: Bitmap): Bitmap {
         val size = minOf(bitmap.width, bitmap.height)
-        
+
         // First crop to square
         val xOffset = (bitmap.width - size) / 2
         val yOffset = (bitmap.height - size) / 2
         val squareBitmap = Bitmap.createBitmap(bitmap, xOffset, yOffset, size, size)
-        
+
         // Create circular output
         val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(output)
@@ -249,7 +249,7 @@ class MetrolistWidgetManager @Inject constructor(
         }
         val radius = size / 2f
         canvas.drawCircle(radius, radius, radius, paint)
-        
+
         if (squareBitmap != bitmap) {
             squareBitmap.recycle()
         }
@@ -346,7 +346,7 @@ class MetrolistWidgetManager @Inject constructor(
 
         return views
     }
-    
+
     private fun getCircularDefaultIcon(): Bitmap {
         // Get the launcher icon and make it circular
         val drawable = context.packageManager.getApplicationIcon(context.packageName)
@@ -357,7 +357,7 @@ class MetrolistWidgetManager @Inject constructor(
         drawable.draw(canvas)
         return getCircularBitmap(bitmap)
     }
-    
+
     private fun getRoundedDefaultIcon(cornerRadius: Float): Bitmap {
         // Get the launcher icon and make it rounded
         val drawable = context.packageManager.getApplicationIcon(context.packageName)
