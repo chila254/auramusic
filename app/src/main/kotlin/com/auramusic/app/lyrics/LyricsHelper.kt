@@ -7,10 +7,8 @@ package com.auramusic.app.lyrics
 
 import android.content.Context
 import android.util.LruCache
-import com.auramusic.app.constants.PreferredLyricsProvider
-import com.auramusic.app.constants.PreferredLyricsProviderKey
+import com.auramusic.app.constants.LyricsProviderOrderKey
 import com.auramusic.app.db.entities.LyricsEntity.Companion.LYRICS_NOT_FOUND
-import com.auramusic.app.extensions.toEnum
 import com.auramusic.app.models.MediaMetadata
 import com.auramusic.app.utils.NetworkConnectivityObserver
 import com.auramusic.app.utils.dataStore
@@ -23,6 +21,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -46,56 +45,25 @@ constructor(
     val preferred =
         context.dataStore.data
             .map {
-                it[PreferredLyricsProviderKey].toEnum(PreferredLyricsProvider.LRCLIB)
-            }.distinctUntilChanged()
-            .map {
-                lyricsProviders = when (it) {
-                    PreferredLyricsProvider.LRCLIB -> listOf(
-                        BetterLyricsProvider,
-                        LrcLibLyricsProvider,
-                        SimpMusicLyricsProvider,
-                        KuGouLyricsProvider,
-                        LyricsPlusProvider,
-                        YouTubeSubtitleLyricsProvider,
-                        YouTubeLyricsProvider
-                    )
-                    PreferredLyricsProvider.KUGOU -> listOf(
-                        BetterLyricsProvider,
-                        KuGouLyricsProvider,
-                        SimpMusicLyricsProvider,
-                        LrcLibLyricsProvider,
-                        LyricsPlusProvider,
-                        YouTubeSubtitleLyricsProvider,
-                        YouTubeLyricsProvider
-                    )
-                    PreferredLyricsProvider.BETTER_LYRICS -> listOf(
-                        BetterLyricsProvider,
-                        SimpMusicLyricsProvider,
-                        LrcLibLyricsProvider,
-                        KuGouLyricsProvider,
-                        LyricsPlusProvider,
-                        YouTubeSubtitleLyricsProvider,
-                        YouTubeLyricsProvider
-                    )
-                    PreferredLyricsProvider.SIMPMUSIC -> listOf(
-                        BetterLyricsProvider,
-                        SimpMusicLyricsProvider,
-                        LrcLibLyricsProvider,
-                        KuGouLyricsProvider,
-                        LyricsPlusProvider,
-                        YouTubeSubtitleLyricsProvider,
-                        YouTubeLyricsProvider
-                    )
-                    PreferredLyricsProvider.LYRICS_PLUS -> listOf(
-                        LyricsPlusProvider,
-                        BetterLyricsProvider,
-                        LrcLibLyricsProvider,
-                        SimpMusicLyricsProvider,
-                        KuGouLyricsProvider,
-                        YouTubeSubtitleLyricsProvider,
-                        YouTubeLyricsProvider
-                    )
+                val providerOrder = LyricsProviderRegistry.deserializeProviderOrder(it[LyricsProviderOrderKey])
+                val orderedProviders = providerOrder.mapNotNull { name ->
+                    LyricsProviderRegistry.getProviderByName(name)
                 }
+                // Filter out any providers not in the custom order and add YouTube as fallback
+                val allProviders = listOf(
+                    BetterLyricsProvider,
+                    SimpMusicLyricsProvider,
+                    LrcLibLyricsProvider,
+                    KuGouLyricsProvider,
+                    LyricsPlusProvider,
+                    YouTubeSubtitleLyricsProvider,
+                    YouTubeLyricsProvider
+                )
+                // Use custom order but ensure all providers are included
+                orderedProviders + allProviders.filter { it !in orderedProviders }
+            }.distinctUntilChanged()
+            .onEach { newProviders ->
+                lyricsProviders = newProviders
             }
 
     private val cache = LruCache<String, List<LyricsResult>>(MAX_CACHE_SIZE)
