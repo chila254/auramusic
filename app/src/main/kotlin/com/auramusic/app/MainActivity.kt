@@ -383,7 +383,7 @@ class MainActivity : ComponentActivity() {
                                 lastSeenVersion = dataStore.data.map { it[LastSeenVersionKey] }.first()
                             }
                             val currentVersion = BuildConfig.VERSION_NAME
-                            val isAppUpdated = lastSeenVersion != null && lastSeenVersion != currentVersion
+                            val isAppUpdated = lastSeenVersion != currentVersion
                             
                             // If app was updated, show changelog
                             if (isAppUpdated) {
