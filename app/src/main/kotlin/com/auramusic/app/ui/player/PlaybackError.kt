@@ -53,10 +53,15 @@ fun PlaybackError(
             rawErrorMessage.contains("Response code: 403", ignoreCase = true) ||
             error.errorCode == PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS
     
-    val errorMessage = if (isAgeRestricted) {
-        "This app does not support playing age-restricted songs. We are working on fixing this issue."
-    } else {
-        rawErrorMessage
+    // Check if this is a stream/audio decoding error with corrupted data
+    val isStreamError = rawErrorMessage.contains("srcPos=") ||
+            rawErrorMessage.contains("src.length") ||
+            rawErrorMessage.contains("AudioTrack")
+    
+    val errorMessage = when {
+        isAgeRestricted -> "This app does not support playing age-restricted songs. We are working on fixing this issue."
+        isStreamError -> "Unable to play this track. The audio stream may be corrupted or unavailable. Please try again later or skip to the next track."
+        else -> rawErrorMessage
     }
     
     Column(

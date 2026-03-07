@@ -1999,9 +1999,22 @@ class MusicService :
      * Checks if the error is caused by AudioTrack write or initialization failures.
      * These errors indicate the audio renderer is in a corrupted/invalid state.
      */
+    // Check if this is a stream/audio decoding error (usually indicates corrupted stream)
+    private fun isStreamDecodingError(error: PlaybackException): Boolean {
+        val message = error.message ?: ""
+        val causeMessage = error.cause?.message ?: ""
+        return message.contains("srcPos=") ||
+                message.contains("src.length") ||
+                message.contains("AudioTrack") ||
+                causeMessage.contains("srcPos=") ||
+                causeMessage.contains("src.length") ||
+                causeMessage.contains("AudioTrack")
+    }
+
     private fun isAudioRendererError(error: PlaybackException): Boolean {
         return error.errorCode == PlaybackException.ERROR_CODE_AUDIO_TRACK_WRITE_FAILED ||
                 error.errorCode == PlaybackException.ERROR_CODE_AUDIO_TRACK_INIT_FAILED ||
+                error.errorCode == PlaybackException.ERROR_CODE_DECODING_FAILED ||
                 (error.cause as? PlaybackException)?.errorCode == PlaybackException.ERROR_CODE_AUDIO_TRACK_WRITE_FAILED ||
                 (error.cause as? PlaybackException)?.errorCode == PlaybackException.ERROR_CODE_AUDIO_TRACK_INIT_FAILED
     }
@@ -2034,6 +2047,11 @@ class MusicService :
 
         // Handle specific error types with strict strategies
         when {
+            isStreamDecodingError(error) -> {
+                Timber.tag(TAG).d("Stream decoding error detected, skipping to next track")
+                skipOnError()
+                return
+            }
             isAudioRendererError(error) -> {
                 Timber.tag(TAG).d("AudioTrack error detected (${error.errorCode}), performing safe recovery")
                 handleAudioRendererError(mediaId)
