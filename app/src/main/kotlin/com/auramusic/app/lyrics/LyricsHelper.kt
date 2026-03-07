@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -63,7 +64,7 @@ constructor(
                             BetterLyricsProvider,
                             SimpMusicLyricsProvider,
                             KuGouLyricsProvider,
-                                            YouTubeSubtitleLyricsProvider,
+                            YouTubeSubtitleLyricsProvider,
                             YouTubeLyricsProvider
                         )
                         PreferredLyricsProvider.KUGOU -> listOf(
@@ -71,7 +72,7 @@ constructor(
                             BetterLyricsProvider,
                             SimpMusicLyricsProvider,
                             LrcLibLyricsProvider,
-                                            YouTubeSubtitleLyricsProvider,
+                            YouTubeSubtitleLyricsProvider,
                             YouTubeLyricsProvider
                         )
                         PreferredLyricsProvider.BETTER_LYRICS -> listOf(
@@ -79,7 +80,7 @@ constructor(
                             SimpMusicLyricsProvider,
                             LrcLibLyricsProvider,
                             KuGouLyricsProvider,
-                                            YouTubeSubtitleLyricsProvider,
+                            YouTubeSubtitleLyricsProvider,
                             YouTubeLyricsProvider
                         )
                         PreferredLyricsProvider.SIMPMUSIC -> listOf(
@@ -93,7 +94,8 @@ constructor(
                     }
                 }
             }.distinctUntilChanged()
-            .map { providers ->
+            .onEach { providers ->
+                // Update the providers when preferences change
                 lyricsProviders = providers
             }
 
