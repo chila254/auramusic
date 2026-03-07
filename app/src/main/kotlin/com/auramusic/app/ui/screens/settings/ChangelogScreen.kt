@@ -48,9 +48,8 @@ fun ChangelogScreen(
 
     LaunchedEffect(Unit) {
         Updater.getAllReleases().onSuccess { allReleases ->
-            releases = allReleases.filter { release ->
-                Updater.compareVersions(BuildConfig.VERSION_NAME, release.tagName) >= 0
-            }
+            // Show all releases - sort by version (newest first)
+            releases = allReleases.sortedByDescending { it.tagName }
             isLoading = false
         }.onFailure {
             isLoading = false

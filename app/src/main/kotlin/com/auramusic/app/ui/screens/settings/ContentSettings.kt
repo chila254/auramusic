@@ -127,7 +127,7 @@ fun ContentSettings(
     val (enableLyricsPlus, onEnableLyricsPlusChange) = rememberPreference(key = EnableLyricsPlusKey, defaultValue = false)
     val (lyricsProviderOrder, onLyricsProviderOrderChange) = rememberPreference(
         key = LyricsProviderOrderKey,
-        defaultValue = LyricsProviderRegistry.serializeProviderOrder(LyricsProviderRegistry.getProviderOrder())
+        defaultValue = LyricsProviderRegistry.serializeProviderOrder(LyricsProviderRegistry.getDefaultProviderOrderList())
     )
     val (preferredProvider, onPreferredProviderChange) =
         rememberEnumPreference(
@@ -139,21 +139,23 @@ fun ContentSettings(
     val (showWrappedCard, onShowWrappedCardChange) = rememberPreference(key = ShowWrappedCardKey, defaultValue = false)
 
     // Auto-switch preferred provider if current one is disabled
-    LaunchedEffect(enableLrclib, enableKugou, enableBetterLyrics, enableSimpMusic, preferredProvider) {
+    LaunchedEffect(enableLrclib, enableKugou, enableBetterLyrics, enableSimpMusic, enableLyricsPlus, preferredProvider) {
         val isPreferredProviderEnabled = when (preferredProvider) {
             PreferredLyricsProvider.LRCLIB -> enableLrclib
             PreferredLyricsProvider.KUGOU -> enableKugou
             PreferredLyricsProvider.BETTER_LYRICS -> enableBetterLyrics
             PreferredLyricsProvider.SIMPMUSIC -> enableSimpMusic
+            PreferredLyricsProvider.LYRICS_PLUS -> enableLyricsPlus
         }
         
         if (!isPreferredProviderEnabled) {
-            val firstEnabledProvider = PreferredLyricsProvider.values().firstOrNull { provider ->
+            val firstEnabledProvider = PreferredLyricsProvider.entries.firstOrNull { provider ->
                 when (provider) {
                     PreferredLyricsProvider.LRCLIB -> enableLrclib
                     PreferredLyricsProvider.KUGOU -> enableKugou
                     PreferredLyricsProvider.BETTER_LYRICS -> enableBetterLyrics
                     PreferredLyricsProvider.SIMPMUSIC -> enableSimpMusic
+                    PreferredLyricsProvider.LYRICS_PLUS -> enableLyricsPlus
                 }
             }
             firstEnabledProvider?.let { onPreferredProviderChange(it) }
@@ -363,12 +365,13 @@ fun ContentSettings(
             },
             title = stringResource(R.string.set_first_lyrics_provider),
             current = preferredProvider,
-            values = PreferredLyricsProvider.values().toList().filter { provider ->
+            values = PreferredLyricsProvider.entries.toList().filter { provider ->
                 when (provider) {
                     PreferredLyricsProvider.LRCLIB -> enableLrclib
                     PreferredLyricsProvider.KUGOU -> enableKugou
                     PreferredLyricsProvider.BETTER_LYRICS -> enableBetterLyrics
                     PreferredLyricsProvider.SIMPMUSIC -> enableSimpMusic
+                    PreferredLyricsProvider.LYRICS_PLUS -> enableLyricsPlus
                 }
             },
             valueText = {
@@ -377,6 +380,7 @@ fun ContentSettings(
                     PreferredLyricsProvider.KUGOU -> "KuGou"
                     PreferredLyricsProvider.BETTER_LYRICS -> "Better Lyrics"
                     PreferredLyricsProvider.SIMPMUSIC -> "SimpMusic"
+                    PreferredLyricsProvider.LYRICS_PLUS -> "LyricsPlus"
                 }
             }
         )
@@ -832,6 +836,7 @@ fun ContentSettings(
                                 PreferredLyricsProvider.KUGOU -> "KuGou"
                                 PreferredLyricsProvider.BETTER_LYRICS -> "Better Lyrics"
                                 PreferredLyricsProvider.SIMPMUSIC -> "SimpMusic"
+                                PreferredLyricsProvider.LYRICS_PLUS -> "LyricsPlus"
                             }
                         )
                     },

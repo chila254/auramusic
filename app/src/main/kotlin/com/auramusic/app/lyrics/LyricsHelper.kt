@@ -86,6 +86,15 @@ constructor(
                         YouTubeSubtitleLyricsProvider,
                         YouTubeLyricsProvider
                     )
+                    PreferredLyricsProvider.LYRICS_PLUS -> listOf(
+                        LyricsPlusProvider,
+                        BetterLyricsProvider,
+                        LrcLibLyricsProvider,
+                        SimpMusicLyricsProvider,
+                        KuGouLyricsProvider,
+                        YouTubeSubtitleLyricsProvider,
+                        YouTubeLyricsProvider
+                    )
                 }
             }
 

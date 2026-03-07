@@ -33,6 +33,9 @@ object LyricsProviderRegistry {
 
     fun getProviderOrder(): List<String> = defaultProviderOrder
 
+    // Get default provider order (same as getProviderOrder)
+    fun getDefaultProviderOrderList(): List<String> = defaultProviderOrder
+
     fun serializeProviderOrder(order: List<String>): String = order.joinToString(",")
 
     fun deserializeProviderOrder(serialized: String?): List<String> {
