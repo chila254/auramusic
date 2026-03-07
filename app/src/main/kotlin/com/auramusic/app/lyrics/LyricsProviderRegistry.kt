@@ -8,6 +8,7 @@ package com.auramusic.app.lyrics
 import android.content.Context
 import com.auramusic.app.constants.LyricsProviderOrderKey
 import com.auramusic.app.utils.dataStore
+import kotlinx.coroutines.flow.first
 
 object LyricsProviderRegistry {
     private val providers = mapOf(
@@ -42,10 +43,8 @@ object LyricsProviderRegistry {
     }
 
     suspend fun getProviderOrder(context: Context): List<String> {
-        val stored = context.dataStore.data
-        return stored.map { data ->
-            val serialized = data[LyricsProviderOrderKey]
-            deserializeProviderOrder(serialized)
-        }.first()
+        val data = context.dataStore.data.first()
+        val serialized = data[LyricsProviderOrderKey]
+        return deserializeProviderOrder(serialized)
     }
 }
