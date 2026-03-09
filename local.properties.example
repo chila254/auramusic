@@ -11,20 +11,26 @@ lastfm.api.key=YOUR_LASTFM_API_KEY_HERE
 lastfm.secret=YOUR_LASTFM_SECRET_HERE
 
 # ============================================================================
-# Release Keystore Configuration (for Google Play release builds)
+# Signing Configuration - All keystore credentials
 # ============================================================================
 
-# Path to release keystore (relative or absolute)
-release.keystore.path=app/keystore/release-key.jks
+# Persistent Debug Keystore
+debug.persistent.storeFile=app/keystore/persistent-debug.keystore
+debug.persistent.storePassword=android
+debug.persistent.keyAlias=androiddebugkey
+debug.persistent.keyPassword=android
 
-# Keystore password (created during keystore generation)
-release.keystore.password=YOUR_KEYSTORE_PASSWORD_HERE
+# Release Keystore (for Google Play release builds)
+release.storeFile=app/keystore/release.keystore
+release.storePassword=YOUR_KEYSTORE_PASSWORD_HERE
+release.keyAlias=auramusic
+release.keyPassword=YOUR_KEY_PASSWORD_HERE
 
-# Key alias (default: auramusic-release)
-release.key.alias=auramusic-release
-
-# Key password (usually same as keystore password)
-release.key.password=YOUR_KEY_PASSWORD_HERE
+# Default Debug Keystore
+debug.storeFile=app/keystore/debug.keystore
+debug.storePassword=android
+debug.keyAlias=auramusicdebug
+debug.keyPassword=android
 
 # ============================================================================
 # Firebase Configuration
@@ -35,13 +41,3 @@ firebase.web.client.id=YOUR_WEB_CLIENT_ID.apps.googleusercontent.com
 
 # Firebase Android Client ID (from google-services.json)
 firebase.android.client.id=YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com
-
-# ============================================================================
-# Optional: Debug Keystore (overrides default Android debug keystore)
-# ============================================================================
-
-# Debug Keystore Configuration (optional - uses Android default if not set)
-debug.storeFile=keystore/debug.keystore
-debug.storePassword=android
-debug.keyAlias=auramusicdebug
-debug.keyPassword=android

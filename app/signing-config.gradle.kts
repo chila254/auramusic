@@ -14,25 +14,25 @@ if (localPropertiesFile.exists()) {
 
 android {
     signingConfigs {
-        // Debug signing config - loads from local.properties
+        // Persistent Debug signing config - loads from local.properties
         create("persistentDebug") {
-            storeFile = file(localProperties.getProperty("debug.storeFile", "keystore/persistent-debug.keystore"))
-            storePassword = localProperties.getProperty("debug.storePassword", "android")
-            keyAlias = localProperties.getProperty("debug.keyAlias", "androiddebugkey")
-            keyPassword = localProperties.getProperty("debug.keyPassword", "android")
+            storeFile = file(localProperties.getProperty("debug.persistent.storeFile", ""))
+            storePassword = localProperties.getProperty("debug.persistent.storePassword", "android")
+            keyAlias = localProperties.getProperty("debug.persistent.keyAlias", "androiddebugkey")
+            keyPassword = localProperties.getProperty("debug.persistent.keyPassword", "android")
         }
 
         // Release signing config - loads from local.properties
         create("release") {
-            storeFile = file(localProperties.getProperty("release.keystore.path", ""))
-            storePassword = localProperties.getProperty("release.keystore.password", "")
-            keyAlias = localProperties.getProperty("release.key.alias", "")
-            keyPassword = localProperties.getProperty("release.key.password", "")
+            storeFile = file(localProperties.getProperty("release.storeFile", ""))
+            storePassword = localProperties.getProperty("release.storePassword", "")
+            keyAlias = localProperties.getProperty("release.keyAlias", "")
+            keyPassword = localProperties.getProperty("release.keyPassword", "")
         }
 
-        // Default debug signing config
+        // Default debug signing config - loads from local.properties
         getByName("debug") {
-            storeFile = file(localProperties.getProperty("debug.storeFile", "keystore/debug.keystore"))
+            storeFile = file(localProperties.getProperty("debug.storeFile", ""))
             storePassword = localProperties.getProperty("debug.storePassword", "android")
             keyAlias = localProperties.getProperty("debug.keyAlias", "auramusicdebug")
             keyPassword = localProperties.getProperty("debug.keyPassword", "android")
@@ -59,7 +59,7 @@ if (firebaseWebClientId.isNotEmpty() || firebaseAndroidClientId.isNotEmpty()) {
 // These will be displayed when you build with the release keystore
 // Add these to Firebase Console -> Project Settings -> Your Apps -> Android
 
-val releaseKeystorePath = localProperties.getProperty("release.keystore.path")
+val releaseKeystorePath = localProperties.getProperty("release.storeFile")
 if (releaseKeystorePath != null && releaseKeystorePath.isNotEmpty()) {
     println("""
         ╔════════════════════════════════════════════════════════════════════════╗
@@ -69,7 +69,7 @@ if (releaseKeystorePath != null && releaseKeystorePath.isNotEmpty()) {
         ║  keytool -list -v -keystore "$releaseKeystorePath" -alias auramusic
         ║                                                                        ║
         ║  Add these fingerprints to:                                          ║
-        ║  - Firebase Console -> Project Settings -> Android App                 ║
+        ║  - Firebase Console -> Project Settings -> Android App               ║
         ║  - Google Play Console -> App integrity -> SHA-1 & SHA-256           ║
         ╚════════════════════════════════════════════════════════════════════════╝
     """.trimIndent())
