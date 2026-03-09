@@ -1,19 +1,8 @@
+<div align="center">
+
 # Auramusic
 
-<div align="center">
-
 <img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png" width="200" alt="Auramusic Logo"/>
-
-## Screenshots
-
-<div align="center">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.jpg" width="180" alt="Screenshot 1"/>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.jpg" width="180" alt="Screenshot 2"/>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.jpg" width="180" alt="Screenshot 3"/>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.jpg" width="180" alt="Screenshot 4"/>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.jpg" width="180" alt="Screenshot 5"/>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.jpg" width="180" alt="Screenshot 6"/>
-</div>
 
 A modern Android music player with YouTube Music integration, powerful audio features, and a beautiful Material 3 interface.
 
@@ -22,9 +11,21 @@ A modern Android music player with YouTube Music integration, powerful audio fea
 ![Compose](https://img.shields.io/badge/Compose-Latest-4285F4?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-GPL--3.0-4CAF50?style=for-the-badge)
 
+## Screenshots
+
+<div align="center">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.jpg" width="180" alt="Screenshot 1"/>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.jpg" width="180" alt="Screenshot 2"/>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.jpg" width="180" alt="Screenshot 3"/>
 </div>
 
 <div align="center">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.jpg" width="180" alt="Screenshot 4"/>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.jpg" width="180" alt="Screenshot 5"/>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.jpg" width="180" alt="Screenshot 6"/>
+</div>
+
+---
 
 ## Features
 
@@ -91,29 +92,22 @@ If you like my work, you can support me via PayPal:
 
 ---
 
-## Special thanks
+## Special Thanks
 
-**InnerTune**
+### InnerTune
 [Zion Huang](https://github.com/z-huang) • [Malopieds](https://github.com/Malopieds)
 
-**OuterTune**
+### OuterTune
 [Davide Garberi](https://github.com/DD3Boh) • [Michael Zh](https://github.com/mikooomich)
 
-**Credits:**
+### Credits
 
-[**Kizzy**](https://github.com/dead8309/Kizzy) – for the Discord Rich Presence implementation and inspiration.
-
-[**RushLyrics**](https://github.com/RushKirana/RushLyrics) – for providing additional lyrics data.
-
-[**Better Lyrics**](https://better-lyrics.boidu.dev) – for beautiful time-synced lyrics with word-by-word highlighting, and seamless YouTube Music integration.
-
-[**SimpMusic Lyrics**](https://github.com/maxrave-dev/SimpMusic) – for providing lyrics data through the SimpMusic Lyrics API.
-
-[**metroserver**](https://github.com/MetrolistGroup/metroserver) – for providing us with the listen together implementation.
-
-[**MusicRecognizer**](https://github.com/aleksey-saenko/MusicRecognizer) – for the music recognition feature implementation and Shazam API integration.
-
-The open-source community for tools, libraries, and APIs that make this project possible.
+- [**Kizzy**](https://github.com/dead8309/Kizzy) – Discord Rich Presence implementation
+- [**RushLyrics**](https://github.com/RushKirana/RushLyrics) – Additional lyrics data
+- [**Better Lyrics**](https://better-lyrics.boidu.dev) – Time-synced lyrics with word-by-word highlighting
+- [**SimpMusic Lyrics**](https://github.com/maxrave-dev/SimpMusic) – Lyrics data via SimpMusic API
+- [**metroserver**](https://github.com/MetrolistGroup/metroserver) – Listen together implementation
+- [**MusicRecognizer**](https://github.com/aleksey-saenko/MusicRecognizer) – Music recognition and Shazam API
 
 ---
 
