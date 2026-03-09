@@ -151,7 +151,7 @@ Join our community on social media - more platforms coming soon!
 **Credits:**
 
 - [**Kizzy**](https://github.com/dead8309/Kizzy) – Discord Rich Presence implementation
-- [**RushLyrics**](https://github.com/RushKirana/RushLyrics) – Additional lyrics data
+- [**RushLyrics**](https://github.com/shub39/Rush) – Additional lyrics data
 - [**Better Lyrics**](https://better-lyrics.boidu.dev) – Time-synced lyrics with word-by-word highlighting
 - [**SimpMusic Lyrics**](https://github.com/maxrave-dev/SimpMusic) – Lyrics data via SimpMusic API
 - [**metroserver**](https://github.com/MetrolistGroup/metroserver) – Listen together implementation
