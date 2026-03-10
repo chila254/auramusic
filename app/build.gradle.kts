@@ -14,8 +14,6 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-// Load signing configuration from local.properties
-apply(from = "signing-config.gradle.kts")
 
 android {
     namespace = "com.auramusic.app"
@@ -26,8 +24,8 @@ android {
         applicationId = "com.auramusic.app"
         minSdk = 23
         targetSdk = 36
-        versionCode = 5
-        versionName = "1.0.4"
+        versionCode = 6
+        versionName = "1.0.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -97,8 +95,36 @@ android {
     }
 
     signingConfigs {
-        // Signing config is now loaded from signing-config.gradle.kts
-        // Credentials are read from local.properties
+        // Load from local.properties for persistent debug and release builds
+        create("persistentDebug") {
+            val storeFilePath = localProperties.getProperty("debug.persistent.storeFile", "")
+            if (storeFilePath.isNotEmpty()) {
+                storeFile = file(storeFilePath)
+            }
+            storePassword = localProperties.getProperty("debug.persistent.storePassword", "android")
+            keyAlias = localProperties.getProperty("debug.persistent.keyAlias", "androiddebugkey")
+            keyPassword = localProperties.getProperty("debug.persistent.keyPassword", "android")
+        }
+        
+        create("release") {
+            val storeFilePath = localProperties.getProperty("release.storeFile", "")
+            if (storeFilePath.isNotEmpty()) {
+                storeFile = file(storeFilePath)
+            }
+            storePassword = localProperties.getProperty("release.storePassword", "")
+            keyAlias = localProperties.getProperty("release.keyAlias", "")
+            keyPassword = localProperties.getProperty("release.keyPassword", "")
+        }
+        
+        getByName("debug") {
+            val storeFilePath = localProperties.getProperty("debug.storeFile", "")
+            if (storeFilePath.isNotEmpty()) {
+                storeFile = file(storeFilePath)
+            }
+            storePassword = localProperties.getProperty("debug.storePassword", "android")
+            keyAlias = localProperties.getProperty("debug.keyAlias", "auramusicdebug")
+            keyPassword = localProperties.getProperty("debug.keyPassword", "android")
+        }
     }
 
     buildTypes {
