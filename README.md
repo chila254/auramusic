@@ -154,7 +154,7 @@ Join our community on social media - more platforms coming soon!
 - [**RushLyrics**](https://github.com/shub39/Rush) – Additional lyrics data
 - [**Better Lyrics**](https://better-lyrics.boidu.dev) – Time-synced lyrics with word-by-word highlighting
 - [**SimpMusic Lyrics**](https://github.com/maxrave-dev/SimpMusic) – Lyrics data via SimpMusic API
-- [**metroserver**](https://github.com/MetrolistGroup/metroserver) – Listen together implementation
+- [**AuraMusicServer**](https://github.com/chila254/AuraMusicServer) – Listen together implementation
 - [**MusicRecognizer**](https://github.com/aleksey-saenko/MusicRecognizer) – Music recognition and Shazam API
 
 The open-source community for tools, libraries, and APIs that make this project possible.
