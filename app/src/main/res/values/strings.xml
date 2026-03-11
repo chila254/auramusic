@@ -39,6 +39,8 @@
     <string name="similar_to">Similar to</string>
     <string name="similar_content">Similar content</string>
     <string name="new_release_albums">New release albums</string>
+    <string name="new_releases">New Releases</string>
+    <string name="no_results">No results</string>
     <string name="wrapped_top_album_title">Top album</string>
     <string name="wrapped_top_5_albums_title">Top 5 albums</string>
     <string name="wrapped_artist_listening_time">%d min</string>
@@ -318,7 +320,7 @@
     <string name="queue_searched_songs">Searched songs</string>
 
     <!-- Notification name -->
-    <string name="music_player">Music Player</string>
+    <string name="music_player">AuraMusic</string>
     <string name="widget_music_player">Music Player</string>
     <string name="widget_turntable">Turntable</string>
     <string name="widget_song_title">Song title</string>

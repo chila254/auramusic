@@ -102,6 +102,10 @@ fun NavGraphBuilder.navigationBuilder(
         HistoryScreen(navController)
     }
 
+    composable("new_releases") {
+        NewReleasesScreen(navController, snackbarHostState)
+    }
+
     composable("stats") {
         StatsScreen(navController)
     }

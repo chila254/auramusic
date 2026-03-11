@@ -414,11 +414,12 @@ class MainActivity : ComponentActivity() {
                                     val pending = PendingIntent.getActivity(this@MainActivity, 1001, intent, flags)
 
                                     val notif = NotificationCompat.Builder(this@MainActivity, "updates")
-                                        .setSmallIcon(R.drawable.update)
+                                        .setSmallIcon(R.drawable.ic_notification_icon)
                                         .setContentTitle(getString(R.string.update_available_title))
-                                        .setContentText(releaseInfo.versionName)
+                                        .setContentText("New version ${releaseInfo.versionName} available")
                                         .setContentIntent(pending)
                                         .setAutoCancel(true)
+                                        .setPriority(NotificationCompat.PRIORITY_HIGH)
                                         .build()
 
                                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
@@ -826,6 +827,12 @@ class MainActivity : ComponentActivity() {
                                                 Icon(
                                                     painter = painterResource(R.drawable.history),
                                                     contentDescription = stringResource(R.string.history)
+                                                )
+                                            }
+                                            IconButton(onClick = { navController.navigate("new_releases") }) {
+                                                Icon(
+                                                    painter = painterResource(R.drawable.new_releases),
+                                                    contentDescription = stringResource(R.string.new_releases)
                                                 )
                                             }
                                             IconButton(onClick = { navController.navigate("stats") }) {

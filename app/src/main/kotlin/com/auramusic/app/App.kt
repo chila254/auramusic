@@ -129,9 +129,11 @@ class App : Application(), SingletonImageLoader.Factory {
         val channel = NotificationChannel(
             "updates",
             getString(R.string.update_channel_name),
-            NotificationManager.IMPORTANCE_DEFAULT
+            NotificationManager.IMPORTANCE_HIGH
         ).apply {
             description = getString(R.string.update_channel_desc)
+            enableVibration(true)
+            enableLights(true)
         }
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(channel)
