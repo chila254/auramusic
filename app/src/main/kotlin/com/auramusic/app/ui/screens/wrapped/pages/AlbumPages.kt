@@ -134,7 +134,7 @@ fun WrappedTotalAlbumsScreen(uniqueAlbumCount: Int, isVisible: Boolean) {
                 enter = fadeIn(animationSpec = tween(1000, delayMillis = 600)) + slideInVertically(animationSpec = tween(1000, delayMillis = 600))
             ) {
                 Text(
-                    text = stringResource(R.string.wrapped_total_albums_subtitle),
+                    text = stringResource(R.string.wrapped_total_albums_subtitle, uniqueAlbumCount),
                     modifier = Modifier.padding(horizontal = 24.dp),
                     style = MaterialTheme.typography.bodyLarge.copy(
                         color = Color.White.copy(alpha = 0.8f),

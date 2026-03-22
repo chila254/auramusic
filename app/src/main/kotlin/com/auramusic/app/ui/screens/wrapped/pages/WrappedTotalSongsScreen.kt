@@ -91,7 +91,7 @@ fun WrappedTotalSongsScreen(
             }
             Spacer(Modifier.height(16.dp))
             Text(
-                text = stringResource(id = R.string.wrapped_total_songs_subtitle),
+                text = stringResource(id = R.string.wrapped_total_songs_subtitle, uniqueSongCount),
                 modifier = Modifier.padding(horizontal = 24.dp),
                 style = MaterialTheme.typography.bodyLarge.copy(color = Color.White.copy(alpha = 0.8f), textAlign = TextAlign.Center)
             )

@@ -55,11 +55,16 @@ class WrappedManager(
         scope.launch {
             try {
                 withContext(Dispatchers.IO) {
+                    // Use the same date range as prepare() - previous month
+                    val previousMonth = java.time.LocalDate.now().minusMonths(1)
+                    val year = previousMonth.year
+                    val month = previousMonth.monthValue - 1 // Calendar months are 0-based
+
                     val fromTimestamp = Calendar.getInstance().apply {
-                        set(WrappedConstants.YEAR, Calendar.JANUARY, 1, 0, 0, 0)
+                        set(year, month, 1, 0, 0, 0)
                     }.timeInMillis
                     val toTimestamp = Calendar.getInstance().apply {
-                        set(WrappedConstants.YEAR, Calendar.DECEMBER, 31, 23, 59, 59)
+                        set(year, month, getActualMaximum(Calendar.DAY_OF_MONTH), 23, 59, 59)
                     }.timeInMillis
                     val allSongs = databaseDao.mostPlayedSongsStats(fromTimestamp, toTimeStamp = toTimestamp, limit = -1).first()
 
@@ -135,11 +140,16 @@ class WrappedManager(
 
             // Artist Part: Top artist's song with specific rule
             val topArtist = topArtists.firstOrNull()
+            // Use the same date range as prepare() - previous month
+            val previousMonth = java.time.LocalDate.now().minusMonths(1)
+            val year = previousMonth.year
+            val month = previousMonth.monthValue - 1 // Calendar months are 0-based
+
             val fromTimestamp = Calendar.getInstance().apply {
-                set(WrappedConstants.YEAR, Calendar.JANUARY, 1, 0, 0, 0)
+                set(year, month, 1, 0, 0, 0)
             }.timeInMillis
             val toTimestamp = Calendar.getInstance().apply {
-                set(WrappedConstants.YEAR, Calendar.DECEMBER, 31, 23, 59, 59)
+                set(year, month, getActualMaximum(Calendar.DAY_OF_MONTH), 23, 59, 59)
             }.timeInMillis
 
             val artistSong = topArtist?.let { artist ->
