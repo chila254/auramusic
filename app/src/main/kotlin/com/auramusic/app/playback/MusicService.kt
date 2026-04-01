@@ -62,6 +62,7 @@ import androidx.media3.exoplayer.source.ShuffleOrder.DefaultShuffleOrder
 import androidx.media3.extractor.ExtractorsFactory
 import androidx.media3.extractor.mkv.MatroskaExtractor
 import androidx.media3.extractor.mp4.FragmentedMp4Extractor
+import androidx.media3.extractor.mp4.Mp4Extractor
 import androidx.media3.session.CommandButton
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaController
@@ -165,6 +166,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
@@ -1653,6 +1655,9 @@ class MusicService :
         mediaItem: MediaItem?,
         reason: Int,
     ) {
+        // Reset video mode when track changes
+        resetVideoMode()
+
         lastPlaybackSpeed = -1.0f // force update song
 
         setupLoudnessEnhancer()
@@ -2456,6 +2461,12 @@ class MusicService :
         return ResolvingDataSource.Factory(createCacheDataSource()) { dataSpec ->
             val mediaId = dataSpec.key ?: error("No media id")
 
+            // If the URI is already a resolved HTTP URL (video mode), pass through
+            val uri = dataSpec.uri.toString()
+            if (uri.startsWith("https://") && (uri.contains("googlevideo.com") || uri.contains("youtube.com/videoplayback"))) {
+                return@Factory dataSpec
+            }
+
             if (downloadCache.isCached(
                     mediaId,
                     dataSpec.position,
@@ -2550,7 +2561,7 @@ class MusicService :
         DefaultMediaSourceFactory(
             createDataSourceFactory(),
             ExtractorsFactory {
-                arrayOf(MatroskaExtractor(), FragmentedMp4Extractor())
+                arrayOf(MatroskaExtractor(), FragmentedMp4Extractor(), Mp4Extractor())
             },
         )
 
@@ -2841,58 +2852,89 @@ class MusicService :
 
     private var isVideoMode = false
     private var currentVideoUrl: String? = null
+    private var originalAudioMediaItem: MediaItem? = null
+    private var videoSwitchJob: Job? = null
+    private val _videoModeEnabled = MutableStateFlow(false)
+    val videoModeEnabled: StateFlow<Boolean> = _videoModeEnabled.asStateFlow()
+    private val _isVideoSwitching = MutableStateFlow(false)
+    val isVideoSwitching: StateFlow<Boolean> = _isVideoSwitching.asStateFlow()
+
+    private fun resetVideoMode() {
+        videoSwitchJob?.cancel()
+        _videoModeEnabled.value = false
+        _isVideoSwitching.value = false
+        isVideoMode = false
+        currentVideoUrl = null
+        originalAudioMediaItem = null
+    }
 
     /**
      * Enable or disable video mode for current playback
      */
     fun setVideoMode(enabled: Boolean) {
         if (enabled == isVideoMode) return
-        
-        val mediaId = currentMediaMetadata.value?.id
-        if (mediaId == null) {
-            timber.log.Timber.d("setVideoMode: No current media, skipping")
+
+        val mediaId = currentMediaMetadata.value?.id ?: run {
+            Timber.d("setVideoMode: No current media, skipping")
             return
         }
 
-        isVideoMode = enabled
-        timber.log.Timber.d("setVideoMode: enabled=$enabled, mediaId=$mediaId")
+        videoSwitchJob?.cancel()
+        _isVideoSwitching.value = true
 
-        if (enabled) {
-            // Switch to video stream
-            scope.launch {
-                try {
-                    val videoUrl = YTPlayerUtils.getVideoStreamUrl(mediaId).getOrNull()
+        videoSwitchJob = scope.launch {
+            try {
+                val index = player.currentMediaItemIndex
+                val position = player.currentPosition
+                val wasPlaying = player.playWhenReady
+
+                if (enabled) {
+                    // Save original item before switching
+                    originalAudioMediaItem = player.getMediaItemAt(index)
+
+                    val videoUrl = withContext(Dispatchers.IO) {
+                        YTPlayerUtils.getVideoStreamUrl(mediaId).getOrNull()
+                    }
+
                     if (videoUrl != null) {
                         currentVideoUrl = videoUrl
-                        player.setMediaItem(
-                            androidx.media3.common.MediaItem.fromUri(videoUrl)
-                        )
-                        player.prepare()
-                        timber.log.Timber.d("setVideoMode: Video stream prepared successfully")
+                        val currentItem = player.getMediaItemAt(index)
+                        val videoMediaItem = currentItem.buildUpon()
+                            .setUri(videoUrl)
+                            .setCustomCacheKey(mediaId + "_video")
+                            .build()
+
+                        player.replaceMediaItem(index, videoMediaItem)
+                        player.seekTo(index, position)
+                        player.playWhenReady = wasPlaying
+                        isVideoMode = true
+                        _videoModeEnabled.value = true
+                        Timber.d("setVideoMode: Video stream ready")
                     } else {
-                        timber.log.Timber.w("setVideoMode: No video stream available")
-                        isVideoMode = false
+                        Timber.w("setVideoMode: No video stream available")
+                        originalAudioMediaItem = null
                     }
-                } catch (e: Exception) {
-                    timber.log.Timber.e(e, "setVideoMode: Failed to get video stream")
+                } else {
+                    // Switch back to audio
+                    val original = originalAudioMediaItem
+                    if (original != null) {
+                        player.replaceMediaItem(index, original)
+                        player.seekTo(index, position)
+                        player.playWhenReady = wasPlaying
+                    }
                     isVideoMode = false
+                    _videoModeEnabled.value = false
+                    currentVideoUrl = null
+                    originalAudioMediaItem = null
+                    Timber.d("setVideoMode: Switched back to audio")
                 }
-            }
-        } else {
-            // Switch back to audio stream
-            scope.launch {
-                try {
-                    val audioUrl = getStreamUrl(mediaId)
-                    if (audioUrl != null) {
-                        player.setMediaItem(
-                            androidx.media3.common.MediaItem.fromUri(audioUrl)
-                        )
-                        player.prepare()
-                        timber.log.Timber.d("setVideoMode: Audio stream prepared successfully")
-                    }
-                } catch (e: Exception) {
-                    timber.log.Timber.e(e, "setVideoMode: Failed to get audio stream")
-                }
+            } catch (e: Exception) {
+                Timber.e(e, "setVideoMode: Failed")
+                isVideoMode = false
+                _videoModeEnabled.value = false
+                originalAudioMediaItem = null
+            } finally {
+                _isVideoSwitching.value = false
             }
         }
     }
@@ -2902,7 +2944,7 @@ class MusicService :
      */
     suspend fun checkVideoAvailability(mediaId: String): Boolean {
         return withContext(Dispatchers.IO) {
-            YTPlayerUtils.hasVideoStream(mediaId)
+            YTPlayerUtils.hasVideoPlayback(mediaId)
         }
     }
 

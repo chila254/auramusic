@@ -281,31 +281,30 @@ return format
         val signatureTimestamp = getSignatureTimestampOrNull(videoId)
         val mainPlayerResponse = YouTube.player(videoId, playlistId, MAIN_CLIENT, signatureTimestamp).getOrThrow()
 
-        // Try to get video format with both video and audio
-        val adaptiveFormats = mainPlayerResponse.streamingData?.adaptiveFormats ?: emptyList()
-
-        // Find a format that has both video and audio (typically "video/mp4" or "video/webm")
-        val videoFormat = adaptiveFormats
-            .filter { it.isVideo && it.isAudio }
+        // Try muxed formats first (contain both video and audio in one stream)
+        val muxedFormats = mainPlayerResponse.streamingData?.formats ?: emptyList()
+        val muxedFormat = muxedFormats
+            .filter { it.isVideo }
             .maxByOrNull { it.bitrate }
 
-        if (videoFormat != null) {
-            val url = findUrlOrNull(videoFormat, videoId, mainPlayerResponse)
+        if (muxedFormat != null) {
+            val url = findUrlOrNull(muxedFormat, videoId, mainPlayerResponse)
             if (url != null) {
-                Timber.tag(logTag).d("Found video format: ${videoFormat.mimeType}, resolution: ${videoFormat.height}p")
+                Timber.tag(logTag).d("Found muxed video format: ${muxedFormat.mimeType}, resolution: ${muxedFormat.height}p")
                 return@runCatching url
             }
         }
 
-        // Fallback: try to find any video format (may need separate audio)
+        // Fallback: video-only adaptive format (will have NO audio)
+        val adaptiveFormats = mainPlayerResponse.streamingData?.adaptiveFormats ?: emptyList()
         val videoOnlyFormat = adaptiveFormats
-            .filter { it.isVideo && !it.isAudio }
+            .filter { it.isVideo }
             .maxByOrNull { it.bitrate }
 
         if (videoOnlyFormat != null) {
             val url = findUrlOrNull(videoOnlyFormat, videoId, mainPlayerResponse)
             if (url != null) {
-                Timber.tag(logTag).d("Found video-only format: ${videoOnlyFormat.mimeType}, resolution: ${videoOnlyFormat.height}p")
+                Timber.tag(logTag).d("Found video-only format (no audio): ${videoOnlyFormat.mimeType}, resolution: ${videoOnlyFormat.height}p")
                 return@runCatching url
             }
         }
@@ -314,21 +313,37 @@ return format
     }
 
     /**
-     * Check if a video has a video stream available
+     * Cheap check if a video has video playback available without resolving stream URLs.
      */
-    suspend fun hasVideoStream(videoId: String): Boolean {
+    suspend fun hasVideoPlayback(videoId: String): Boolean {
         return try {
-            val result = getVideoStreamUrl(videoId)
-            result.isSuccess
+            val playerResponse = YouTube.player(videoId, null, MAIN_CLIENT).getOrNull()
+            val streamingData = playerResponse?.streamingData ?: return false
+            val hasMuxed = streamingData.formats?.any { it.isVideo } == true
+            val hasAdaptiveVideo = streamingData.adaptiveFormats.any { it.isVideo }
+            hasMuxed || hasAdaptiveVideo
         } catch (e: Exception) {
             false
         }
     }
 
-    private val logTag = "YTPlayerUtils"
-}
+    private fun validateStatus(url: String): Boolean {
+        Timber.tag(logTag).d("Validating stream URL status")
+        try {
+            val requestBuilder = okhttp3.Request.Builder()
+                .head()
+                .url(url)
+            val response = httpClient.newCall(requestBuilder.build()).execute()
+            val isSuccessful = response.isSuccessful
+            Timber.tag(logTag).d("Stream URL validation result: ${if (isSuccessful) "Success" else "Failed"} (${response.code})")
+            return isSuccessful
+        } catch (e: Exception) {
+            Timber.tag(logTag).e(e, "Stream URL validation failed with exception")
+            reportException(e)
+        }
         return false
     }
+
     private fun getSignatureTimestampOrNull(videoId: String): Int? {
         Timber.tag(logTag).d("Getting signature timestamp for videoId: $videoId")
         return NewPipeExtractor.getSignatureTimestamp(videoId)

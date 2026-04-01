@@ -409,7 +409,8 @@ fun Thumbnail(
                                 isLandscape = isLandscape,
                                 isListenTogetherGuest = isListenTogetherGuest,
                                 currentMediaId = mediaMetadata?.id,
-                                currentMediaThumbnail = mediaMetadata?.thumbnailUrl
+                                currentMediaThumbnail = mediaMetadata?.thumbnailUrl,
+                                videoModeEnabled = videoModeEnabled
                             )
                         }
                     }
@@ -507,6 +508,7 @@ private fun ThumbnailItem(
     isListenTogetherGuest: Boolean = false,
     currentMediaId: String? = null,
     currentMediaThumbnail: String? = null,
+    videoModeEnabled: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val incrementalSeekSkipEnabled by rememberPreference(SeekExtraSeconds, defaultValue = false)
@@ -579,7 +581,7 @@ private fun ThumbnailItem(
                 ThumbnailImage(
                     artworkUri = artworkUriToUse,
                     cropArtwork = cropAlbumArt,
-                    videoModeEnabled = videoModeEnabled
+                    videoModeEnabled = videoModeEnabled && item.mediaId == currentMediaId
                 )
             }
             

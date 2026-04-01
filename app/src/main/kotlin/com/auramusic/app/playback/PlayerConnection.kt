@@ -156,17 +156,15 @@ class PlayerConnection(
     val error = MutableStateFlow<PlaybackException?>(null)
     val isMuted = service.isMuted
 
-    val videoModeEnabled = MutableStateFlow(false)
+    val videoModeEnabled = service.videoModeEnabled
+    val isVideoSwitching = service.isVideoSwitching
     val isVideoAvailable = MutableStateFlow(false)
 
     fun toggleVideoMode() {
-        val currentValue = videoModeEnabled.value
-        videoModeEnabled.value = !currentValue
-        service.setVideoMode(!currentValue)
+        service.setVideoMode(!videoModeEnabled.value)
     }
 
     fun enableVideoMode(enabled: Boolean) {
-        videoModeEnabled.value = enabled
         service.setVideoMode(enabled)
     }
 
