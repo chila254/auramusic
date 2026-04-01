@@ -1,3 +1,10 @@
+/**
+ * AuraMusic Project (C) 2026
+ * 
+ * This project is based on Metrolist (https://github.com/MetrolistGroup/Metrolist)
+ * Licensed under GPL-3.0. See LICENSE file for details.
+ */
+
 package com.auramusic.lastfm
 
 import com.auramusic.lastfm.models.Authentication

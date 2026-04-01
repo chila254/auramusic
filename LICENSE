@@ -5,9 +5,17 @@
  Everyone is permitted to copy and distribute verbatim copies
  of this license document, but changing it is not allowed.
 
-                            Preamble
+                             Preamble
 
-  The GNU General Public License is a free, copyleft license for
+   This program is derived from Metrolist (https://github.com/MetrolistGroup/Metrolist),
+   which is licensed under GPL-3.0. The original Metrolist project and its contributors
+   retain all rights under the same license. This program includes substantial portions
+   of code from Metrolist with appropriate attribution.
+
+   AuraMusic is a modified version of Metrolist, and we acknowledge and thank the
+   MetrolistGroup for their foundational work.
+
+   The GNU General Public License is a free, copyleft license for
 software and other kinds of works.
 
   The licenses for most software and other practical works are designed
