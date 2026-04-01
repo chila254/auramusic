@@ -1252,7 +1252,7 @@ fun ListenTogetherDialog(
                             if (isHost) {
                                 Spacer(modifier = Modifier.height(12.dp))
                                 val inviteLink = remember(room.roomCode) {
-                                    "https://github.com/chila254/AuraMusic/releases?code=${room.roomCode}"
+                                    "https://api.auramusic.site/listen?code=${room.roomCode}"
                                 }
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,

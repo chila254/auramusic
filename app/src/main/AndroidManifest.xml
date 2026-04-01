@@ -74,7 +74,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data android:scheme="https" />
-                <data android:host="auramusic.meowery.eu" />
+                <data android:host="api.auramusic.site" />
                 <data android:pathPrefix="/listen" />
             </intent-filter>
 
