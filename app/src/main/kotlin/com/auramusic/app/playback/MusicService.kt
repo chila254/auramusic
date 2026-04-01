@@ -2848,7 +2848,7 @@ class MusicService :
     fun setVideoMode(enabled: Boolean) {
         if (enabled == isVideoMode) return
         
-        val mediaId = currentMediaId
+        val mediaId = currentMediaMetadata.value?.id
         if (mediaId == null) {
             timber.log.Timber.d("setVideoMode: No current media, skipping")
             return
