@@ -105,15 +105,17 @@ constructor(
         }
     }
 
-    private val cache = LruCache<String, List<LyricsResult>>(MAX_CACHE_SIZE)
+    private val cache = LruCache<String, LyricsWithProvider>(MAX_CACHE_SIZE)
+    private val allLyricsCache = LruCache<String, List<LyricsResult>>(MAX_CACHE_SIZE)
     private var currentLyricsJob: Job? = null
 
     suspend fun getLyrics(mediaMetadata: MediaMetadata): LyricsWithProvider {
         currentLyricsJob?.cancel()
 
-        val cached = cache.get(mediaMetadata.id)?.firstOrNull()
-        if (cached != null) {
-            return LyricsWithProvider(cached.lyrics, cached.providerName)
+        val cached = cache.get(mediaMetadata.id)
+        if (cached != null && cached.lyrics != LYRICS_NOT_FOUND) {
+            Timber.tag("LyricsHelper").d("Returning cached lyrics from ${cached.provider}")
+            return cached
         }
 
         // Check network connectivity before making network requests
@@ -173,6 +175,13 @@ constructor(
 
         val result = deferred.await()
         scope.cancel()
+        
+        // Cache the result if lyrics were found
+        if (result.lyrics != LYRICS_NOT_FOUND) {
+            cache.put(mediaMetadata.id, result)
+            Timber.tag("LyricsHelper").d("Cached lyrics from ${result.provider} for ${mediaMetadata.id}")
+        }
+        
         return result
     }
 
@@ -187,7 +196,7 @@ constructor(
         currentLyricsJob?.cancel()
 
         val cacheKey = "$songArtists-$songTitle".replace(" ", "")
-        cache.get(cacheKey)?.let { results ->
+        allLyricsCache.get(cacheKey)?.let { results ->
             results.forEach {
                 callback(it)
             }
@@ -225,7 +234,7 @@ constructor(
                     }
                 }
             }
-            cache.put(cacheKey, allResult)
+            allLyricsCache.put(cacheKey, allResult)
         }
 
         currentLyricsJob?.join()
