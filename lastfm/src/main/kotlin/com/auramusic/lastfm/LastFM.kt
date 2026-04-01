@@ -1,7 +1,5 @@
 /**
  * AuraMusic Project (C) 2026
- * 
- * This project is based on Metrolist (https://github.com/MetrolistGroup/Metrolist)
  * Licensed under GPL-3.0. See LICENSE file for details.
  */
 
@@ -57,7 +55,7 @@ object LastFM {
         format: String = "json"
     ) {
         contentType(ContentType.Application.FormUrlEncoded)
-        userAgent("Metrolist (https://github.com/MetrolistGroup/Metrolist)")
+        userAgent("AuraMusic (https://github.com/chila254/AuraMusic)")
         val paramsForSig = mutableMapOf(
             "method" to method,
             "api_key" to apiKey

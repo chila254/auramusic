@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<!-- AuraMusic strings based on Metrolist -->
-<!-- "Metrolist" is replaced with "AuraMusic" -->
-
 <resources>
     <!-- App name -->
     <string name="app_name">AuraMusic</string>

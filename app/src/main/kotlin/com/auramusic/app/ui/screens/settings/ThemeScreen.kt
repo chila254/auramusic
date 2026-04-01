@@ -1,7 +1,5 @@
 /**
  * AuraMusic Project (C) 2026
- * 
- * This project is based on Metrolist (https://github.com/MetrolistGroup/Metrolist)
  * Licensed under GPL-3.0. See LICENSE file for details.
  */
 
@@ -86,7 +84,7 @@ import com.auramusic.app.constants.PureBlackKey
 import com.auramusic.app.constants.PureBlackMiniPlayerKey
 import com.auramusic.app.constants.SelectedThemeColorKey
 import com.auramusic.app.ui.theme.DefaultThemeColor
-import com.auramusic.app.ui.theme.MetrolistTheme
+import com.auramusic.app.ui.theme.AuraMusicTheme
 import com.auramusic.app.utils.rememberEnumPreference
 import com.auramusic.app.utils.rememberPreference
 
@@ -681,7 +679,7 @@ fun ThemeMockup(
         DarkMode.OFF -> false
     }
 
-    MetrolistTheme(
+    AuraMusicTheme(
         darkTheme = useDark,
         pureBlack = pureBlack,
         themeColor = themeColor
@@ -789,7 +787,7 @@ fun ThemeMockupPortrait(
         DarkMode.OFF -> false
     }
 
-    MetrolistTheme(
+    AuraMusicTheme(
         darkTheme = useDark,
         pureBlack = pureBlack,
         themeColor = themeColor

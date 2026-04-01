@@ -1,7 +1,5 @@
 /**
  * AuraMusic Project (C) 2026
- * 
- * This project is based on Metrolist (https://github.com/MetrolistGroup/Metrolist)
  * Licensed under GPL-3.0. See LICENSE file for details.
  */
 
@@ -550,7 +548,7 @@ fun Lyrics(
 
     val lazyListState = rememberLazyListState()
     
-    // Professional animation states for smooth Metrolist-style transitions
+    // Professional animation states for smooth transitions
     var isAnimating by remember { mutableStateOf(false) }
     var isAutoScrollEnabled by rememberSaveable { mutableStateOf(true) }
 
@@ -1930,11 +1928,11 @@ fun Lyrics(
     }
 }
 
-// Professional page animation constants inspired by Metrolist design - slower for smoothness
-private const val METROLIST_AUTO_SCROLL_DURATION = 1500L // Much slower auto-scroll for smooth transitions
-private const val METROLIST_INITIAL_SCROLL_DURATION = 1000L // Slower initial positioning
-private const val METROLIST_SEEK_DURATION = 800L // Slower user interaction
-private const val METROLIST_FAST_SEEK_DURATION = 600L // Less aggressive seeking
+// Professional page animation constants - slower for smoothness
+private const val AUTO_SCROLL_DURATION = 1500L // Much slower auto-scroll for smooth transitions
+private const val INITIAL_SCROLL_DURATION = 1000L // Slower initial positioning
+private const val SEEK_DURATION = 800L // Slower user interaction
+private const val FAST_SEEK_DURATION = 600L // Less aggressive seeking
 
 // Lyrics constants
 val LyricsPreviewTime = 2.seconds

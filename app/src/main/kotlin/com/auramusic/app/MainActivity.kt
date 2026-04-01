@@ -1,10 +1,6 @@
 /**
  * AuraMusic Project (C) 2026
- * 
- * This project is based on Metrolist (https://github.com/MetrolistGroup/Metrolist)
  * Licensed under GPL-3.0. See LICENSE file for details.
- * 
- * Licensed under GPL-3.0 | See git history for contributors
  */
 
 package com.auramusic.app
@@ -177,7 +173,7 @@ import com.auramusic.app.ui.screens.settings.DarkMode
 import com.auramusic.app.ui.screens.settings.NavigationTab
 import com.auramusic.app.ui.theme.ColorSaver
 import com.auramusic.app.ui.theme.DefaultThemeColor
-import com.auramusic.app.ui.theme.MetrolistTheme
+import com.auramusic.app.ui.theme.AuraMusicTheme
 import com.auramusic.app.ui.theme.extractThemeColor
 import com.auramusic.app.ui.utils.appBarScrollBehavior
 import com.auramusic.app.ui.utils.resetHeightOffset
@@ -346,7 +342,7 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            MetrolistApp(
+            AuraMusicApp(
                 latestVersionName = latestVersionName,
                 onLatestVersionNameChange = { latestVersionName = it },
                 playerConnection = playerConnection,
@@ -360,7 +356,7 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    private fun MetrolistApp(
+    private fun AuraMusicApp(
         latestVersionName: String,
         onLatestVersionNameChange: (String) -> Unit,
         playerConnection: PlayerConnection?,
@@ -542,7 +538,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        MetrolistTheme(
+        AuraMusicTheme(
             darkTheme = useDarkTheme,
             pureBlack = pureBlack,
             themeColor = themeColor,

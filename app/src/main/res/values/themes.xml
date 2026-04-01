@@ -14,7 +14,4 @@
         <!-- Window attributes -->
         <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
     </style>
-
-    <!-- MetroList Theme (same as AuraMusic) -->
-    <style name="Theme.Metrolist" parent="Theme.AuraMusic" />
 </resources>

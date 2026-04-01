@@ -1,7 +1,5 @@
 /**
  * AuraMusic Project (C) 2026
- * 
- * This project is based on Metrolist (https://github.com/MetrolistGroup/Metrolist)
  * Licensed under GPL-3.0. See LICENSE file for details.
  */
 
@@ -31,7 +29,7 @@ import com.materialkolor.score.Score
 val DefaultThemeColor = Color(0xFFED5564)
 
 @Composable
-fun MetrolistTheme(
+fun AuraMusicTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     pureBlack: Boolean = false,
     themeColor: Color = DefaultThemeColor,
