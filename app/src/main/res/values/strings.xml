@@ -944,4 +944,8 @@
     <string name="casting_to">Casting to %s</string>
     <string name="starting_radio">Starting radio…</string>
     <string name="play_all">Play all</string>
+
+    <!-- Video mode -->
+    <string name="switch_to_video">Switch to video</string>
+    <string name="switch_to_audio">Switch to audio</string>
 </resources>

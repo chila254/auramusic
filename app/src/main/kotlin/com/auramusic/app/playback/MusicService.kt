@@ -2839,6 +2839,73 @@ class MusicService :
         }
     }
 
+    private var isVideoMode = false
+    private var currentVideoUrl: String? = null
+
+    /**
+     * Enable or disable video mode for current playback
+     */
+    fun setVideoMode(enabled: Boolean) {
+        if (enabled == isVideoMode) return
+        
+        val mediaId = currentMediaId
+        if (mediaId == null) {
+            timber.log.Timber.d("setVideoMode: No current media, skipping")
+            return
+        }
+
+        isVideoMode = enabled
+        timber.log.Timber.d("setVideoMode: enabled=$enabled, mediaId=$mediaId")
+
+        if (enabled) {
+            // Switch to video stream
+            scope.launch {
+                try {
+                    val videoUrl = YTPlayerUtils.getVideoStreamUrl(mediaId).getOrNull()
+                    if (videoUrl != null) {
+                        currentVideoUrl = videoUrl
+                        player.setMediaItem(
+                            androidx.media3.common.MediaItem.fromUri(videoUrl)
+                        )
+                        player.prepare()
+                        timber.log.Timber.d("setVideoMode: Video stream prepared successfully")
+                    } else {
+                        timber.log.Timber.w("setVideoMode: No video stream available")
+                        isVideoMode = false
+                    }
+                } catch (e: Exception) {
+                    timber.log.Timber.e(e, "setVideoMode: Failed to get video stream")
+                    isVideoMode = false
+                }
+            }
+        } else {
+            // Switch back to audio stream
+            scope.launch {
+                try {
+                    val audioUrl = getStreamUrl(mediaId)
+                    if (audioUrl != null) {
+                        player.setMediaItem(
+                            androidx.media3.common.MediaItem.fromUri(audioUrl)
+                        )
+                        player.prepare()
+                        timber.log.Timber.d("setVideoMode: Audio stream prepared successfully")
+                    }
+                } catch (e: Exception) {
+                    timber.log.Timber.e(e, "setVideoMode: Failed to get audio stream")
+                }
+            }
+        }
+    }
+
+    /**
+     * Check if video stream is available for current media
+     */
+    suspend fun checkVideoAvailability(mediaId: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            YTPlayerUtils.hasVideoStream(mediaId)
+        }
+    }
+
     /**
      * Initialize Google Cast support
      */

@@ -66,6 +66,8 @@ data class PlayerResponse(
         ) {
             val isAudio: Boolean
                 get() = width == null
+            val isVideo: Boolean
+                get() = width != null
             val isOriginal: Boolean
                 get() = audioTrack?.isAutoDubbed == null
 

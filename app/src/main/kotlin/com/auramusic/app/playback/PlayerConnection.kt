@@ -156,6 +156,24 @@ class PlayerConnection(
     val error = MutableStateFlow<PlaybackException?>(null)
     val isMuted = service.isMuted
 
+    val videoModeEnabled = MutableStateFlow(false)
+    val isVideoAvailable = MutableStateFlow(false)
+
+    fun toggleVideoMode() {
+        val currentValue = videoModeEnabled.value
+        videoModeEnabled.value = !currentValue
+        service.setVideoMode(!currentValue)
+    }
+
+    fun enableVideoMode(enabled: Boolean) {
+        videoModeEnabled.value = enabled
+        service.setVideoMode(enabled)
+    }
+
+    fun updateVideoAvailability(available: Boolean) {
+        isVideoAvailable.value = available
+    }
+
     val waitingForNetworkConnection = service.waitingForNetworkConnection
     
     // Callback to check if playback changes should be blocked (e.g., Listen Together guest)

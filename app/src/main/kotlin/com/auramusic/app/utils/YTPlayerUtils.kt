@@ -266,27 +266,67 @@ object YTPlayerUtils {
             Timber.tag(logTag).d("No suitable audio format found")
         }
 
-        return format
+return format
     }
+
     /**
-     * Checks if the stream url returns a successful status.
-     * If this returns true the url is likely to work.
-     * If this returns false the url might cause an error during playback.
+     * Find the best video format (with video and audio) for a given videoId
      */
-    private fun validateStatus(url: String): Boolean {
-        Timber.tag(logTag).d("Validating stream URL status")
-        try {
-            val requestBuilder = okhttp3.Request.Builder()
-                .head()
-                .url(url)
-            val response = httpClient.newCall(requestBuilder.build()).execute()
-            val isSuccessful = response.isSuccessful
-            Timber.tag(logTag).d("Stream URL validation result: ${if (isSuccessful) "Success" else "Failed"} (${response.code})")
-            return isSuccessful
-        } catch (e: Exception) {
-            Timber.tag(logTag).e(e, "Stream URL validation failed with exception")
-            reportException(e)
+    suspend fun getVideoStreamUrl(
+        videoId: String,
+        playlistId: String? = null,
+    ): Result<String> = runCatching {
+        Timber.tag(logTag).d("Fetching video stream URL for videoId: $videoId")
+
+        val signatureTimestamp = getSignatureTimestampOrNull(videoId)
+        val mainPlayerResponse = YouTube.player(videoId, playlistId, MAIN_CLIENT, signatureTimestamp).getOrThrow()
+
+        // Try to get video format with both video and audio
+        val adaptiveFormats = mainPlayerResponse.streamingData?.adaptiveFormats ?: emptyList()
+
+        // Find a format that has both video and audio (typically "video/mp4" or "video/webm")
+        val videoFormat = adaptiveFormats
+            .filter { it.isVideo && it.isAudio }
+            .maxByOrNull { it.bitrate }
+
+        if (videoFormat != null) {
+            val url = findUrlOrNull(videoFormat, videoId, mainPlayerResponse)
+            if (url != null) {
+                Timber.tag(logTag).d("Found video format: ${videoFormat.mimeType}, resolution: ${videoFormat.height}p")
+                return@runCatching url
+            }
         }
+
+        // Fallback: try to find any video format (may need separate audio)
+        val videoOnlyFormat = adaptiveFormats
+            .filter { it.isVideo && !it.isAudio }
+            .maxByOrNull { it.bitrate }
+
+        if (videoOnlyFormat != null) {
+            val url = findUrlOrNull(videoOnlyFormat, videoId, mainPlayerResponse)
+            if (url != null) {
+                Timber.tag(logTag).d("Found video-only format: ${videoOnlyFormat.mimeType}, resolution: ${videoOnlyFormat.height}p")
+                return@runCatching url
+            }
+        }
+
+        throw Exception("No video stream available for videoId: $videoId")
+    }
+
+    /**
+     * Check if a video has a video stream available
+     */
+    suspend fun hasVideoStream(videoId: String): Boolean {
+        return try {
+            val result = getVideoStreamUrl(videoId)
+            result.isSuccess
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private val logTag = "YTPlayerUtils"
+}
         return false
     }
     private fun getSignatureTimestampOrNull(videoId: String): Int? {
