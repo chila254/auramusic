@@ -16,11 +16,25 @@
 - Improved black screen issue - video mode now properly falls back to audio on error
 - Fixed video playback detection for better stream selection
 
+### Video Quality Selection
+- Added video quality selection option in Player Settings (360p/480p/720p/1080p)
+- Quality preference is saved and applied automatically when video mode is enabled
+- Smart fallback: if selected quality is not available, automatically uses the next available quality
+
+### Listen Together Updates
+- Now uses api.auramusic.site for Listen Together functionality
+
+### Settings Improvements
+- Added website link in About settings: auramusic.site
+
 ## Bug Fixes
 
 - Fixed compile errors related to duplicate video result handling
 - Fixed black screen flicker issue by preventing auto-reset on playback errors
 - Improved video URL extraction and MIME type handling
+- Fixed "Respect Lyrics Provider" setting to properly apply the user's preference
+- Video now properly fills the entire player area in fullscreen mode
+- Improved video quality selection to prioritize actual resolution (height) over bitrate
 
 ## Build Updates
 
