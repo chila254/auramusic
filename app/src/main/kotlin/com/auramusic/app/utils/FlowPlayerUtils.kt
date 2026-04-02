@@ -3,6 +3,7 @@ package com.auramusic.app.utils
 import com.auramusic.flow.FlowVideo
 import com.auramusic.flow.VideoItem
 import com.auramusic.flow.FlowVideo.VideoStreamResult
+import com.auramusic.flow.FlowVideo.VideoSearchResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -22,6 +23,25 @@ object FlowPlayerUtils {
             }.onFailure { e ->
                 Timber.tag(logTag).e(e, "FlowPlayerUtils: Failed to get video URL")
             }
+        }
+    }
+
+    /**
+     * Get video stream URL with automatic search fallback for regular songs
+     * This searches for official music video if direct lookup fails
+     */
+    suspend fun getVideoStreamUrlWithFallback(songTitle: String, artistName: String, videoId: String): Result<VideoSearchResult> = withContext(Dispatchers.IO) {
+        Timber.tag(logTag).d("FlowPlayerUtils: Trying to get video with fallback for: $songTitle by $artistName")
+        
+        try {
+            val result = FlowVideo.getVideoStreamUrlWithFallback(songTitle, artistName, videoId)
+            result.onSuccess { searchResult ->
+                Timber.tag(logTag).d("FlowPlayerUtils: Found video via fallback: ${searchResult.videoId}")
+            }
+            result
+        } catch (e: Exception) {
+            Timber.tag(logTag).e(e, "FlowPlayerUtils: Fallback search also failed")
+            Result.failure(e)
         }
     }
 

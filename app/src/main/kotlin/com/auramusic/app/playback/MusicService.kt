@@ -432,23 +432,10 @@ class MusicService :
         // Add video error listener for automatic fallback
         player.addListener(object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
-                // If we're in video mode and get a playback error, try to fallback to audio
-                if (isVideoMode && (error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ||
-                    error.errorCode == PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE ||
-                    error.errorCode == PlaybackException.ERROR_CODE_IO_UNSPECIFIED ||
-                    error.errorCode == PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED ||
-                    error.errorCode == PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS)) {
-                    Timber.w("Video playback failed, attempting fallback to audio: ${error.message}")
-                    scope.launch {
-                        try {
-                            switchToAudioMode()
-                            player.prepare()
-                        } catch (e: Exception) {
-                            Timber.e(e, "Failed to fallback to audio mode")
-                            resetVideoMode()
-                        }
-                    }
-                }
+                // Don't auto-fallback - let user see error and manually toggle
+                // Log all errors for debugging
+                Timber.w("Video error listener: errorCode=${error.errorCode}, message=${error.message}")
+                android.util.Log.w("MusicService", ">>> Video error listener: ${error.errorCode}")
             }
         })
         sleepTimer = SleepTimer(scope, player)
@@ -2997,73 +2984,89 @@ class MusicService :
                     // Save original item before switching
                     originalAudioMediaItem = player.getMediaItemAt(index)
 
-                    val videoResult = withContext(Dispatchers.IO) {
-                        FlowPlayerUtils.getVideoStreamUrl(mediaId)
+                    // Get song info for video search fallback
+                    val songTitle = currentMediaMetadata.value?.title ?: ""
+                    val artistName = currentMediaMetadata.value?.artists?.firstOrNull()?.name ?: ""
+                    
+                    Timber.d("setVideoMode: Trying video for '$songTitle' by '$artistName'")
+                    android.util.Log.d("MusicService", ">>> Searching video for: $songTitle - $artistName")
+                    
+                    // First try direct video lookup, then fallback to search
+                    val searchResult = withContext(Dispatchers.IO) {
+                        FlowPlayerUtils.getVideoStreamUrlWithFallback(songTitle, artistName, mediaId)
                     }
 
-                    if (videoResult.isSuccess) {
-                        val videoData = videoResult.getOrNull()
-                        Timber.d("setVideoMode: videoResult.isSuccess, data = ${videoData?.take(100)}")
+                    if (searchResult.isSuccess) {
+                        val videoData = searchResult.getOrNull()
+                        Timber.d("setVideoMode: Fallback search result: ${videoData?.videoId}")
+                        android.util.Log.d("MusicService", ">>> Found video via search: ${videoData?.videoId}")
                         
-                        if (videoData != null && videoData.isNotBlank()) {
-                            // Parse URL|mimeType format
-                            val parts = videoData.split("|", limit = 2)
-                            val videoUrl = parts[0].trim()
-                            val mimeType = if (parts.size > 1) parts[1].trim() else "video/mp4"
-                            currentVideoUrl = videoUrl
+                        if (videoData != null) {
+                            // Now get the stream URL for the found video
+                            val streamResult = withContext(Dispatchers.IO) {
+                                FlowPlayerUtils.getVideoStreamUrl(videoData.videoId)
+                            }
+                            
+                            if (streamResult.isSuccess) {
+                                val streamData = streamResult.getOrNull()
+                                val parts = streamData?.split("|", limit = 2) ?: listOf("")
+                                val videoUrl = parts[0].trim()
+                                val mimeType = if (parts.size > 1) parts[1].trim() else "video/mp4"
+                                currentVideoUrl = videoUrl
 
-                            Timber.d("setVideoMode: Video URL: $videoUrl, MIME type: $mimeType")
-                            Timber.d("setVideoMode: Full video data length: ${videoData.length}")
+                                Timber.d("setVideoMode: Search fallback - Video URL: $videoUrl, MIME type: $mimeType")
+                                android.util.Log.d("MusicService", ">>> Got stream URL: $videoUrl")
 
-                            if (videoUrl.isBlank()) {
-                                Timber.e("setVideoMode: Video URL is blank after parsing")
-                                android.util.Log.e("MusicService", ">>> Video URL is blank - setting error message")
-                                _videoFetchError.value = "Video URL is empty - This song may not have a video available"
-                                _videoModeMessage.value = "No video available for this song"
+                                if (videoUrl.isBlank()) {
+                                    Timber.e("setVideoMode: Video URL is blank after parsing")
+                                    android.util.Log.e("MusicService", ">>> Video URL is blank - setting error message")
+                                    _videoFetchError.value = "Video URL is empty - This song may not have a video available"
+                                    _videoModeMessage.value = "No video available for this song"
+                                    resetVideoMode()
+                                    return@launch
+                                }
+
+                                val currentItem = player.getMediaItemAt(index)
+                                Timber.d("setVideoMode: Current media item URI: ${currentItem.localConfiguration?.uri}")
+                                
+                                val videoMediaItem = currentItem.buildUpon()
+                                    .setUri(videoUrl)
+                                    .setMimeType(mimeType)
+                                    .setCustomCacheKey(mediaId + "_video")
+                                    .build()
+
+                                Timber.d("setVideoMode: Replacing media item at index $index")
+                                player.replaceMediaItem(index, videoMediaItem)
+                                player.prepare()
+                                Timber.d("setVideoMode: Called prepare(), player state: ${player.playbackState}")
+                                
+                                if (position > 0) {
+                                    player.seekTo(index, position)
+                                    Timber.d("setVideoMode: Seeked to position $position")
+                                }
+                                player.playWhenReady = true
+                                isVideoMode = true
+                                _videoModeEnabled.value = true
+                                _videoModeMessage.value = "Video mode enabled: ${videoData.title}"
+                                Timber.d("setVideoMode: SUCCESS - Video stream prepared with mimeType: $mimeType, player state: ${player.playbackState}, playWhenReady: true")
+                                android.util.Log.d("MusicService", ">>> SUCCESS - Video mode enabled for: ${videoData.title}")
+                            } else {
+                                Timber.e("setVideoMode: Failed to get stream URL from search result")
+                                _videoFetchError.value = "Failed to load video stream"
+                                _videoModeMessage.value = "Could not load video"
                                 resetVideoMode()
-                                return@launch
                             }
-
-                            val currentItem = player.getMediaItemAt(index)
-                            Timber.d("setVideoMode: Current media item URI: ${currentItem.localConfiguration?.uri}")
-                            
-                            val videoMediaItem = currentItem.buildUpon()
-                                .setUri(videoUrl)
-                                .setMimeType(mimeType)
-                                .setCustomCacheKey(mediaId + "_video")
-                                .build()
-
-                            Timber.d("setVideoMode: Replacing media item at index $index")
-                            // Replace current item with video item without clearing the queue
-                            player.replaceMediaItem(index, videoMediaItem)
-                            // IMPORTANT: Must call prepare() to load the new video stream
-                            player.prepare()
-                            Timber.d("setVideoMode: Called prepare(), player state: ${player.playbackState}")
-                            
-                            // Seek to position after prepare
-                            if (position > 0) {
-                                player.seekTo(index, position)
-                                Timber.d("setVideoMode: Seeked to position $position")
-                            }
-                            // Ensure playback starts - video mode should auto-play
-                            player.playWhenReady = true
-                            isVideoMode = true
-                            _videoModeEnabled.value = true
-                            _videoModeMessage.value = "Video mode enabled"
-                            Timber.d("setVideoMode: SUCCESS - Video stream prepared with mimeType: $mimeType, player state: ${player.playbackState}, playWhenReady: true")
-                            android.util.Log.d("MusicService", ">>> SUCCESS - Video mode enabled, setting message")
                         } else {
-                        Timber.w("setVideoMode: Video URL was null or blank")
-                            android.util.Log.w("MusicService", ">>> Video URL null/blank - setting error message")
-                            _videoFetchError.value = "Video URL not found - This song may not have a video"
+                            _videoFetchError.value = "No video found for this song"
                             _videoModeMessage.value = "No video available for this song"
-                            // Auto-fallback to audio mode if video URL is null
                             resetVideoMode()
                         }
                     } else {
-                        Timber.e(videoResult.exceptionOrNull(), "setVideoMode: Failed to get video URL")
-                        _videoFetchError.value = videoResult.exceptionOrNull()?.message ?: "Failed to fetch video"
-                        // Auto-fallback to audio mode if video fetch fails
+                        // Both direct and fallback failed
+                        val errorMsg = searchResult.exceptionOrNull()?.message ?: "Unknown error"
+                        Timber.e("setVideoMode: Fallback search failed: $errorMsg")
+                        _videoFetchError.value = "No video available: $errorMsg"
+                        _videoModeMessage.value = "No video found for this song"
                         resetVideoMode()
                     }
                 } else {

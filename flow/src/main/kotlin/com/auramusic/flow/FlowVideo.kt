@@ -3,6 +3,8 @@ package com.auramusic.flow
 import com.auramusic.innertube.NewPipeExtractor
 import com.auramusic.innertube.YouTube
 import com.auramusic.innertube.models.YouTubeClient.Companion.WEB_REMIX
+import com.auramusic.innertube.YouTube.SearchFilter
+import com.auramusic.innertube.models.YTItem
 
 object FlowVideo {
     data class VideoStreamResult(
@@ -10,8 +12,81 @@ object FlowVideo {
         val mimeType: String
     )
 
+    data class VideoSearchResult(
+        val videoId: String,
+        val title: String,
+        val channelName: String,
+        val thumbnailUrl: String
+    )
+
+    /**
+     * Search for an official music video for a song
+     */
+    suspend fun searchOfficialMusicVideo(songTitle: String, artistName: String): Result<VideoSearchResult> = runCatching {
+        val searchQuery = "$songTitle $artistName official music video"
+        
+        val searchResult = YouTube.search(searchQuery, SearchFilter.FILTER_VIDEO).getOrThrow()
+        
+        // Find the best matching video - prefer official music videos
+        var bestVideo: YTItem? = null
+        
+        for (item in searchResult.items) {
+            if (item is YTItem) {
+                val title = item.title.lowercase()
+                // Prefer videos that contain "official", "music video", "mv", "vevo", or the song title
+                val isPreferred = title.contains("official") || 
+                                  title.contains("music video") ||
+                                  title.contains(" mv ") ||
+                                  title.contains("vevo") ||
+                                  title.contains(songTitle.lowercase())
+                
+                if (isPreferred && bestVideo == null) {
+                    bestVideo = item
+                }
+            }
+        }
+        
+        // Fall back to first result if no preferred video found
+        bestVideo = bestVideo ?: searchResult.items.firstOrNull()
+        
+        if (bestVideo == null) {
+            throw Exception("No music video found")
+        }
+        
+        // Build the VideoSearchResult from the YTItem
+        VideoSearchResult(
+            videoId = bestVideo.id,
+            title = bestVideo.title,
+            channelName = bestVideo.title, // YTItem doesn't have channelName, use title as fallback
+            thumbnailUrl = bestVideo.thumbnail ?: ""
+        )
+    }
+
+    /**
+     * Get video stream URL, with automatic search fallback
+     */
+    suspend fun getVideoStreamUrlWithFallback(songTitle: String, artistName: String, videoId: String): Result<VideoSearchResult> = runCatching {
+        // First try: direct video lookup
+        val directResult = runCatching { getVideoStreamUrl(videoId).getOrNull() }
+        
+        if (directResult.isSuccess && directResult.getOrNull() != null) {
+            val details = getVideoDetails(videoId).getOrNull()
+            return@runCatching VideoSearchResult(
+                videoId = videoId,
+                title = details?.title ?: songTitle,
+                channelName = details?.channelName ?: artistName,
+                thumbnailUrl = details?.thumbnailUrl ?: ""
+            )
+        }
+        
+        // Direct lookup failed - try searching for official music video
+        val searchResult = searchOfficialMusicVideo(songTitle, artistName).getOrNull()
+            ?: throw Exception("No video available for this song")
+        
+        searchResult
+    }
+
     suspend fun getVideoStreamUrl(videoId: String): Result<VideoStreamResult> = runCatching {
-        // First try: Use NewPipeExtractor directly to get streams (most reliable)
         val streamInfo = NewPipeExtractor.getStreamInfo(videoId)
         
         if (streamInfo != null) {
@@ -30,7 +105,6 @@ object FlowVideo {
             }
         }
 
-        // Second try: Use innerTube with WEB client and try to get stream URL
         val playerResponse = YouTube.player(videoId, client = WEB_REMIX).getOrThrow()
         
         if (playerResponse.playabilityStatus.status != "OK") {
@@ -39,7 +113,6 @@ object FlowVideo {
 
         val streamingData = playerResponse.streamingData ?: throw Exception("No streaming data")
 
-        // Try muxed formats
         val muxedFormats = streamingData.formats ?: emptyList()
         val videoMuxed = muxedFormats.filter { it.isVideo }.maxByOrNull { it.bitrate }
         val muxedUrl = videoMuxed?.url
@@ -48,7 +121,6 @@ object FlowVideo {
             return@runCatching VideoStreamResult(muxedUrl, muxedMimeType ?: "video/mp4")
         }
 
-        // Try adaptive video formats
         val adaptiveFormats = streamingData.adaptiveFormats
         val adaptiveVideo = adaptiveFormats.filter { it.isVideo }.maxByOrNull { it.bitrate }
         val adaptiveUrl = adaptiveVideo?.url
@@ -68,7 +140,6 @@ object FlowVideo {
                 if (hasVideo) return true
             }
 
-            // Fallback to innerTube check
             val playerResponse = YouTube.player(videoId, client = WEB_REMIX).getOrNull()
             val streamingData = playerResponse?.streamingData
             

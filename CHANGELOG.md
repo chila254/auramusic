@@ -1,3 +1,37 @@
+# AuraMusic v1.0.8 (Build 9) Changelog
+
+## New Features
+
+### Video Mode - Official Music Video Search
+- **Smart Video Fallback**: When video mode is enabled for regular songs (non-video songs), the app now automatically searches YouTube for the official music video
+- Uses "{song title} {artist} official music video" search query to find the best match
+- Prioritizes official music videos, Vevo, "MV" tagged videos, and videos containing the song title
+- Falls back to the first search result if no preferred match is found
+- Enabled by default for new installations
+- Marked as "Experimental" in Settings
+
+### Video Mode UI Improvements
+- Added video toggle icon in the player UI
+- Better error handling with user-friendly toast messages when video is unavailable
+- Improved black screen issue - video mode now properly falls back to audio on error
+- Fixed video playback detection for better stream selection
+
+## Bug Fixes
+
+- Fixed compile errors related to duplicate video result handling
+- Fixed black screen flicker issue by preventing auto-reset on playback errors
+- Improved video URL extraction and MIME type handling
+
+## Build Updates
+
+- Version bump: 1.0.7 (Build 8) → 1.0.8 (Build 9)
+
+---
+
+**Full Changelog**: https://github.com/chila254/AuraMusic/compare/v1.0.7...v1.0.8
+
+---
+
 # AuraMusic v1.0.7 (Build 8) Changelog
 
 ## New Features
