@@ -1,5 +1,6 @@
 package com.auramusic.flow
 
+import android.util.Log
 import com.auramusic.innertube.NewPipeExtractor
 import com.auramusic.innertube.YouTube
 import com.auramusic.innertube.models.YouTubeClient.Companion.WEB_REMIX
@@ -7,6 +8,7 @@ import com.auramusic.innertube.YouTube.SearchFilter
 import com.auramusic.innertube.models.YTItem
 
 object FlowVideo {
+    private const val TAG = "FlowVideo"
     data class VideoStreamResult(
         val url: String,
         val mimeType: String
@@ -18,6 +20,81 @@ object FlowVideo {
         val channelName: String,
         val thumbnailUrl: String
     )
+
+    /**
+     * Available video quality options
+     */
+    enum class VideoQuality(val height: Int, val label: String) {
+        QUALITY_360P(360, "360p"),
+        QUALITY_480P(480, "480p"),
+        QUALITY_720P(720, "720p"),
+        QUALITY_1080P(1080, "1080p")
+    }
+
+    // Default preferred quality - 720p
+    var currentPreferredQuality: VideoQuality = VideoQuality.QUALITY_720P
+
+    /**
+     * Set preferred video quality
+     */
+    fun setPreferredVideoQuality(quality: VideoQuality) {
+        currentPreferredQuality = quality
+    }
+
+    /**
+     * Get all available qualities from a list of video streams
+     */
+    private fun getAvailableQualities(streams: List<org.schabi.newpipe.extractor.stream.VideoStream>): List<VideoQuality> {
+        val qualities = mutableSetOf<VideoQuality>()
+        for (stream in streams) {
+            val height = stream.height
+            when {
+                height >= 1080 -> qualities.add(VideoQuality.QUALITY_1080P)
+                height >= 720 -> qualities.add(VideoQuality.QUALITY_720P)
+                height >= 480 -> qualities.add(VideoQuality.QUALITY_480P)
+                height >= 360 -> qualities.add(VideoQuality.QUALITY_360P)
+            }
+        }
+        return qualities.sortedBy { it.height }
+    }
+
+    /**
+     * Find the best stream matching the preferred quality
+     * Falls back to lower quality if preferred not available
+     */
+    private fun findBestStream(
+        streams: List<org.schabi.newpipe.extractor.stream.VideoStream>,
+        requireAudio: Boolean
+    ): org.schabi.newpipe.extractor.stream.VideoStream? {
+        if (streams.isEmpty()) return null
+
+        // Filter streams based on whether we need audio
+        val filteredStreams = if (requireAudio) {
+            streams.filter { !it.isVideoOnly() }
+        } else {
+            streams
+        }
+
+        // Try to find exact quality match
+        for (quality in listOf(currentPreferredQuality, VideoQuality.QUALITY_720P, VideoQuality.QUALITY_480P, VideoQuality.QUALITY_360P)) {
+            val matching = filteredStreams.filter { stream ->
+                val height = stream.height
+                height == quality.height || (quality.height == 720 && height in 720..1080) ||
+                (quality.height == 480 && height in 480..720) ||
+                (quality.height == 360 && height in 360..480)
+            }
+            if (matching.isNotEmpty()) {
+                return matching.maxByOrNull { it.bitrate }
+            }
+        }
+
+        // Fallback to any stream with audio if required, or any stream
+        return if (requireAudio && filteredStreams.isNotEmpty()) {
+            filteredStreams.maxByOrNull { it.bitrate }
+        } else {
+            streams.maxByOrNull { it.bitrate }
+        }
+    }
 
     /**
      * Search for an official music video for a song
@@ -86,53 +163,70 @@ object FlowVideo {
         searchResult
     }
 
+    /**
+     * Get video stream URL using NewPipeExtractor
+     * Properly prioritizes muxed streams (video+audio) and respects quality preference
+     */
     suspend fun getVideoStreamUrl(videoId: String): Result<VideoStreamResult> = runCatching {
-        // First try NewPipeExtractor which gives us working stream URLs
         val streamInfo = NewPipeExtractor.getStreamInfo(videoId)
         
         if (streamInfo != null) {
             val muxedVideoStreams = streamInfo.videoStreams // These have both video and audio
             val videoOnlyStreams = streamInfo.videoOnlyStreams // These are video only (no audio)
             
-            if (muxedVideoStreams.isNotEmpty()) {
-                // Prefer muxed streams (video+audio) - prevents silent audio issue
-                // Prefer 720p quality
-                val preferred720p = muxedVideoStreams.filter { it.resolution?.contains("720") == true }
-                val bestStream = if (preferred720p.isNotEmpty()) {
-                    preferred720p.maxByOrNull { it.bitrate }
-                } else {
-                    muxedVideoStreams.maxByOrNull { it.bitrate }
+            Log.d(TAG,"FlowVideo: Found ${muxedVideoStreams.size} muxed and ${videoOnlyStreams.size} video-only streams")
+            
+            // First try: find muxed stream (has audio) matching preferred quality
+            val bestMuxedStream = findBestStream(muxedVideoStreams, requireAudio = true)
+            if (bestMuxedStream != null) {
+                val url = bestMuxedStream.content ?: bestMuxedStream.url
+                val mimeType = bestMuxedStream.format?.mimeType ?: "video/mp4"
+                if (url != null) {
+                    Log.d(TAG,"FlowVideo: Using muxed stream with resolution ${bestMuxedStream.resolution}")
+                    return@runCatching VideoStreamResult(url, mimeType)
                 }
-                
-                if (bestStream != null) {
-                    val url = bestStream.content ?: bestStream.url
-                    val mimeType = bestStream.format?.mimeType ?: "video/mp4"
+            }
+            
+            // Second try: find video-only stream matching preferred quality
+            val bestVideoOnlyStream = findBestStream(videoOnlyStreams, requireAudio = false)
+            if (bestVideoOnlyStream != null) {
+                val url = bestVideoOnlyStream.content ?: bestVideoOnlyStream.url
+                val mimeType = bestVideoOnlyStream.format?.mimeType ?: "video/mp4"
+                if (url != null) {
+                    Log.d(TAG,"FlowVideo: Using video-only stream with resolution ${bestVideoOnlyStream.resolution}")
+                    return@runCatching VideoStreamResult(url, mimeType)
+                }
+            }
+            
+            // Last resort: use highest bitrate muxed stream regardless of quality
+            if (muxedVideoStreams.isNotEmpty()) {
+                val fallbackStream = muxedVideoStreams.maxByOrNull { it.bitrate }
+                if (fallbackStream != null) {
+                    val url = fallbackStream.content ?: fallbackStream.url
+                    val mimeType = fallbackStream.format?.mimeType ?: "video/mp4"
                     if (url != null) {
+                        Log.d(TAG,"FlowVideo: Using fallback muxed stream with resolution ${fallbackStream.resolution}")
                         return@runCatching VideoStreamResult(url, mimeType)
                     }
                 }
             }
             
-            // Fallback to video-only streams if muxed not available
+            // Last resort: use highest bitrate video-only stream
             if (videoOnlyStreams.isNotEmpty()) {
-                val preferred720p = videoOnlyStreams.filter { it.resolution?.contains("720") == true }
-                val bestStream = if (preferred720p.isNotEmpty()) {
-                    preferred720p.maxByOrNull { it.bitrate }
-                } else {
-                    videoOnlyStreams.maxByOrNull { it.bitrate }
-                }
-                
-                if (bestStream != null) {
-                    val url = bestStream.content ?: bestStream.url
-                    val mimeType = bestStream.format?.mimeType ?: "video/mp4"
+                val fallbackStream = videoOnlyStreams.maxByOrNull { it.bitrate }
+                if (fallbackStream != null) {
+                    val url = fallbackStream.content ?: fallbackStream.url
+                    val mimeType = fallbackStream.format?.mimeType ?: "video/mp4"
                     if (url != null) {
+                        Log.d(TAG,"FlowVideo: Using fallback video-only stream with resolution ${fallbackStream.resolution}")
                         return@runCatching VideoStreamResult(url, mimeType)
                     }
                 }
             }
         }
 
-        // Fallback to YouTube player API
+        // Fallback to YouTube player API if NewPipe fails
+        Log.d(TAG,"FlowVideo: NewPipe failed, trying YouTube player API")
         val playerResponse = YouTube.player(videoId, client = WEB_REMIX).getOrThrow()
         
         if (playerResponse.playabilityStatus.status != "OK") {
@@ -147,49 +241,71 @@ object FlowVideo {
 
         // Try muxed formats first (has both audio and video)
         val muxedFormats = streamingData.formats ?: emptyList()
-        // Prefer 720p muxed videos (height between 720 and 1080)
-        val preferred720pMuxed = muxedFormats.filter { it.isVideo && (it.height ?: 0) in 720..1080 }
-        val videoMuxed = if (preferred720pMuxed.isNotEmpty()) {
-            preferred720pMuxed.maxByOrNull { it.bitrate }
-        } else {
-            muxedFormats.filter { it.isVideo }.maxByOrNull { it.bitrate }
-        }
         
-        var muxedUrl = videoMuxed?.url
-        val muxedMimeType = videoMuxed?.mimeType
+        // Find best muxed format based on preferred quality
+        val bestMuxedFormat = findBestFormat(muxedFormats, currentPreferredQuality, requireAudio = true)
+        
+        var muxedUrl = bestMuxedFormat?.url
+        val muxedMimeType = bestMuxedFormat?.mimeType
         
         // If URL is missing and we have signature cipher, try to deobfuscate
-        if (muxedUrl == null && videoMuxed != null && needsDeobfuscation) {
-            muxedUrl = NewPipeExtractor.getStreamUrl(videoMuxed, videoId)
+        if (muxedUrl == null && bestMuxedFormat != null && needsDeobfuscation) {
+            muxedUrl = NewPipeExtractor.getStreamUrl(bestMuxedFormat, videoId)
         }
         
         if (muxedUrl != null) {
+            Log.d(TAG,"FlowVideo: Using YouTube muxed format with height ${bestMuxedFormat?.height}")
             return@runCatching VideoStreamResult(muxedUrl, muxedMimeType ?: "video/mp4")
         }
 
-        // Try adaptive formats - only use as last resort (usually video-only)
+        // Try adaptive formats
         val adaptiveFormats = streamingData.adaptiveFormats
-        // Prefer 720p adaptive videos
-        val preferred720pAdaptive = adaptiveFormats.filter { it.isVideo && (it.height ?: 0) in 720..1080 }
-        val adaptiveVideo = if (preferred720pAdaptive.isNotEmpty()) {
-            preferred720pAdaptive.maxByOrNull { it.bitrate }
-        } else {
-            adaptiveFormats.filter { it.isVideo }.maxByOrNull { it.bitrate }
-        }
+        val bestAdaptiveFormat = findBestFormat(adaptiveFormats, currentPreferredQuality, requireAudio = false)
         
-        var adaptiveUrl = adaptiveVideo?.url
-        val adaptiveMimeType = adaptiveVideo?.mimeType
+        var adaptiveUrl = bestAdaptiveFormat?.url
+        val adaptiveMimeType = bestAdaptiveFormat?.mimeType
         
         // If URL is missing and we have signature cipher, try to deobfuscate
-        if (adaptiveUrl == null && adaptiveVideo != null && needsDeobfuscation) {
-            adaptiveUrl = NewPipeExtractor.getStreamUrl(adaptiveVideo, videoId)
+        if (adaptiveUrl == null && bestAdaptiveFormat != null && needsDeobfuscation) {
+            adaptiveUrl = NewPipeExtractor.getStreamUrl(bestAdaptiveFormat, videoId)
         }
         
         if (adaptiveUrl != null) {
+            Log.d(TAG, "Using YouTube adaptive format with height ${bestAdaptiveFormat?.height}")
             return@runCatching VideoStreamResult(adaptiveUrl, adaptiveMimeType ?: "video/mp4")
         }
 
         throw Exception("No video URL available")
+    }
+
+    /**
+     * Find best format based on preferred quality
+     */
+    private fun findBestFormat(
+        formats: List<com.auramusic.innertube.models.response.PlayerResponse.StreamingData.Format>,
+        quality: VideoQuality,
+        requireAudio: Boolean
+    ): com.auramusic.innertube.models.response.PlayerResponse.StreamingData.Format? {
+        if (formats.isEmpty()) return null
+
+        // Filter to video formats
+        val videoFormats = formats.filter { it.isVideo }
+
+        // Try to find exact quality match
+        val targetHeight = quality.height
+        val exactMatch = videoFormats.find { (it.height ?: 0) == targetHeight }
+        if (exactMatch != null) {
+            return exactMatch
+        }
+
+        // Try to find close quality (within range)
+        val closeMatch = videoFormats.find { (it.height ?: 0) in (targetHeight - 120)..(targetHeight + 60) }
+        if (closeMatch != null) {
+            return closeMatch
+        }
+
+        // Fallback to highest bitrate video format
+        return videoFormats.maxByOrNull { it.bitrate }
     }
 
     suspend fun hasVideoPlayback(videoId: String): Boolean {
