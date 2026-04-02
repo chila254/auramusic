@@ -165,7 +165,7 @@ fun PlayerSettings(
     )
     val (videoModeEnabled, onVideoModeEnabledChange) = rememberPreference(
         VideoModeEnabledKey,
-        defaultValue = false
+        defaultValue = true
     )
     val (pauseOnMute, onPauseOnMuteChange) = rememberPreference(
         PauseOnMute,

@@ -948,7 +948,7 @@
     <!-- Video mode -->
     <string name="switch_to_video">Switch to video</string>
     <string name="switch_to_audio">Switch to audio</string>
-    <string name="enable_video_mode">Enable video mode</string>
-    <string name="enable_video_mode_desc">Show toggle button in player to switch between audio and video</string>
+    <string name="enable_video_mode">Video Mode (Experimental)</string>
+    <string name="enable_video_mode_desc">Enable video playback for songs - tap the video icon in the player to switch</string>
     <string name="video_not_available">Video not available for this track</string>
 </resources>

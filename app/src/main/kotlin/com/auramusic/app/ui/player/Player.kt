@@ -273,7 +273,7 @@ fun BottomSheetPlayer(
 
     val sliderStyle by rememberEnumPreference(SliderStyleKey, SliderStyle.DEFAULT)
     val squigglySlider by rememberPreference(SquigglySliderKey, defaultValue = false)
-    val videoModeToggleEnabled by rememberPreference(VideoModeEnabledKey, defaultValue = false)
+    val videoModeToggleEnabled by rememberPreference(VideoModeEnabledKey, defaultValue = true)
     
     // Video mode state
     val videoModeEnabled by playerConnection.videoModeEnabled.collectAsState()

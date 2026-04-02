@@ -1679,7 +1679,20 @@ class MusicService :
         mediaItem: MediaItem?,
         reason: Int,
     ) {
-        resetVideoMode()
+        // Don't reset video mode if:
+        // 1. We're currently switching to video mode (_isVideoSwitching is true)
+        // 2. The transition is due to our own video mode switch (same mediaId)
+        // Only reset when actually changing to a NEW song
+        val currentMediaId = currentMediaMetadata.value?.id
+        val newMediaId = mediaItem?.mediaId
+        
+        val isNewSong = currentMediaId != null && newMediaId != null && currentMediaId != newMediaId
+        
+        if (isNewSong || !_isVideoSwitching.value) {
+            resetVideoMode()
+        } else {
+            Timber.d("onMediaItemTransition: Skipping video mode reset - likely a video mode switch")
+        }
 
         lastPlaybackSpeed = -1.0f // force update song
 
@@ -1741,6 +1754,14 @@ class MusicService :
     override fun onPlaybackStateChanged(
         @Player.State playbackState: Int,
     ) {
+        // If we're in video mode and playback fails, show an error but don't auto-switch
+        // Let the user manually toggle back to audio
+        if (isVideoMode && playbackState == Player.STATE_IDLE) {
+            // Player went idle while in video mode - check if this is due to an error
+            // We'll rely on onPlayerError to handle this
+            Timber.d("onPlaybackStateChanged: Video mode, player went to STATE_IDLE")
+        }
+
         // Save state when playback state changes (but not during silence skipping)
         if (dataStore.get(PersistentQueueKey, true) && !isSilenceSkipping) {
             saveQueueToDisk()
@@ -2060,19 +2081,16 @@ class MusicService :
         Timber.tag(TAG).w(error, "Player error occurred for $mediaId: errorCode=${error.errorCode}, message=${error.message}, isVideoMode=$isVideoMode")
         
         // If in video mode and error occurs, try to switch back to audio instead of skipping
+        // BUT first check if this is a video stream error - if so, don't auto-reset, let user toggle manually
         if (isVideoMode && mediaId != null) {
-            Timber.tag(TAG).d("Video mode error - switching back to audio instead of skipping")
-            val original = originalAudioMediaItem
-            if (original != null) {
-                val index = player.currentMediaItemIndex
-                val position = player.currentPosition
-                player.replaceMediaItem(index, original)
-                player.seekTo(index, position)
-            }
-            isVideoMode = false
-            _videoModeEnabled.value = false
-            currentVideoUrl = null
-            originalAudioMediaItem = null
+            Timber.tag(TAG).d("Video mode error - checking if should auto-recover")
+            
+            // Don't auto-switch - let the user see the error and manually toggle
+            // This prevents the black screen flicker issue
+            _videoModeMessage.value = "Video playback failed - tap to switch to audio"
+            
+            // Just report the error but don't reset video mode automatically
+            // The user will manually toggle back to audio if needed
             return
         }
         
@@ -2949,18 +2967,22 @@ class MusicService :
      */
     fun setVideoMode(enabled: Boolean) {
         Timber.d("setVideoMode: Called with enabled = $enabled, current isVideoMode = $isVideoMode")
-        
+        android.util.Log.d("MusicService", ">>> setVideoMode called: enabled=$enabled, current isVideoMode=$isVideoMode")
+
         if (enabled == isVideoMode) {
             Timber.d("setVideoMode: Already in requested mode, skipping")
+            android.util.Log.d("MusicService", ">>> Already in requested mode, skipping")
             return
         }
 
         val mediaId = currentMediaMetadata.value?.id ?: run {
             Timber.d("setVideoMode: No current media, skipping")
+            android.util.Log.d("MusicService", ">>> No current media, skipping")
             return
         }
 
         Timber.d("setVideoMode: Current mediaId: $mediaId")
+        android.util.Log.d("MusicService", ">>> Current mediaId: $mediaId")
 
         videoSwitchJob?.cancel()
         _isVideoSwitching.value = true
@@ -2995,7 +3017,9 @@ class MusicService :
 
                             if (videoUrl.isBlank()) {
                                 Timber.e("setVideoMode: Video URL is blank after parsing")
-                                _videoFetchError.value = "Video URL is empty"
+                                android.util.Log.e("MusicService", ">>> Video URL is blank - setting error message")
+                                _videoFetchError.value = "Video URL is empty - This song may not have a video available"
+                                _videoModeMessage.value = "No video available for this song"
                                 resetVideoMode()
                                 return@launch
                             }
@@ -3025,10 +3049,14 @@ class MusicService :
                             player.playWhenReady = true
                             isVideoMode = true
                             _videoModeEnabled.value = true
+                            _videoModeMessage.value = "Video mode enabled"
                             Timber.d("setVideoMode: SUCCESS - Video stream prepared with mimeType: $mimeType, player state: ${player.playbackState}, playWhenReady: true")
+                            android.util.Log.d("MusicService", ">>> SUCCESS - Video mode enabled, setting message")
                         } else {
-                            Timber.w("setVideoMode: Video URL was null or blank")
-                            _videoFetchError.value = "Video URL not found"
+                        Timber.w("setVideoMode: Video URL was null or blank")
+                            android.util.Log.w("MusicService", ">>> Video URL null/blank - setting error message")
+                            _videoFetchError.value = "Video URL not found - This song may not have a video"
+                            _videoModeMessage.value = "No video available for this song"
                             // Auto-fallback to audio mode if video URL is null
                             resetVideoMode()
                         }
