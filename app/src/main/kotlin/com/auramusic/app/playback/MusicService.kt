@@ -1679,8 +1679,7 @@ class MusicService :
         mediaItem: MediaItem?,
         reason: Int,
     ) {
-        // Don't reset video mode automatically - let user toggle it
-        // resetVideoMode()
+        resetVideoMode()
 
         lastPlaybackSpeed = -1.0f // force update song
 
@@ -2501,7 +2500,7 @@ class MusicService :
 
     private fun createDataSourceFactory(): DataSource.Factory {
         return ResolvingDataSource.Factory(createCacheDataSource()) { dataSpec ->
-            val mediaId = dataSpec.key ?: error("No media id")
+            val mediaId = (dataSpec.key ?: error("No media id")).removeSuffix("_video")
 
             // If the URI is already a resolved HTTP URL (video mode), pass through
             val uri = dataSpec.uri.toString()
@@ -2972,7 +2971,7 @@ class MusicService :
 
                     if (videoResult.isSuccess) {
                         val videoData = videoResult.getOrNull()
-                        if (videoData != null) {
+                        if (videoData != null && videoData.isNotBlank()) {
                             // Parse URL|mimeType format
                             val parts = videoData.split("|", limit = 2)
                             val videoUrl = parts[0].trim()
@@ -2981,6 +2980,13 @@ class MusicService :
 
                             Timber.d("setVideoMode: Video URL: $videoUrl, MIME type: $mimeType")
                             Timber.d("setVideoMode: Full video data: $videoData")
+
+                            if (videoUrl.isBlank()) {
+                                Timber.e("setVideoMode: Video URL is blank after parsing")
+                                _videoFetchError.value = "Video URL is empty"
+                                resetVideoMode()
+                                return@launch
+                            }
 
                             val currentItem = player.getMediaItemAt(index)
                             val videoMediaItem = currentItem.buildUpon()
@@ -2991,18 +2997,17 @@ class MusicService :
 
                             // Replace current item with video item without clearing the queue
                             player.replaceMediaItem(index, videoMediaItem)
-
-                            // Stop and prepare to ensure clean video transition
-                            player.stop()
+                            // IMPORTANT: Must call prepare() to load the new video stream
                             player.prepare()
-
+                            // Seek to position after prepare
                             if (position > 0) {
                                 player.seekTo(index, position)
                             }
-                            player.playWhenReady = wasPlaying
+                            // Ensure playback starts - video mode should auto-play
+                            player.playWhenReady = true
                             isVideoMode = true
                             _videoModeEnabled.value = true
-                            Timber.d("setVideoMode: Video stream ready with mimeType: $mimeType, player state: ${player.playbackState}, playWhenReady: $wasPlaying")
+                            Timber.d("setVideoMode: Video stream prepared with mimeType: $mimeType, player state: ${player.playbackState}, playWhenReady: true")
                         } else {
                             Timber.w("setVideoMode: Video URL was null")
                             _videoFetchError.value = "Video URL not found"

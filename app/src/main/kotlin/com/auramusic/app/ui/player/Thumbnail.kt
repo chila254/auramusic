@@ -528,10 +528,12 @@ private fun ThumbnailItem(
                 }
             )
             .padding(horizontal = PlayerHorizontalPadding)
-            .graphicsLayer {
-                // Render entire thumbnail item on separate hardware layer for smooth animations
-                compositingStrategy = CompositingStrategy.Offscreen
-            }
+            .then(
+                if (videoModeEnabled) Modifier
+                else Modifier.graphicsLayer {
+                    compositingStrategy = CompositingStrategy.Offscreen
+                }
+            )
             .pointerInput(Unit) {
                 detectTapGestures(
                     onDoubleTap = { offset ->
@@ -637,13 +639,17 @@ private fun ThumbnailImage(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .graphicsLayer {
-                compositingStrategy = CompositingStrategy.Offscreen
-            }
+            .then(
+                if (videoModeEnabled) Modifier
+                else Modifier.graphicsLayer {
+                    compositingStrategy = CompositingStrategy.Offscreen
+                }
+            )
             .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
         if (videoModeEnabled) {
-            // Video player view with improved configuration
+            // Video player view - Log for debugging
+            android.util.Log.d("Thumbnail", "Rendering video player, player state: ${player.playbackState}, isPlaying: ${player.isPlaying}")
             AndroidView(
                 factory = { context ->
                     PlayerView(context).apply {
@@ -655,62 +661,17 @@ private fun ThumbnailImage(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.MATCH_PARENT
                         )
-                        // Ensure video surface is properly configured
-                        setShutterBackgroundColor(android.graphics.Color.BLACK)
-
-                        // Enable video rendering with proper surface setup
+                        setShutterBackgroundColor(android.graphics.Color.TRANSPARENT)
                         keepScreenOn = true
-
-                        // Ensure video rendering is enabled
-                        // PlayerView will automatically create the appropriate surface
-
-                        // Add error listener for video debugging
-                        player.addListener(object : androidx.media3.common.Player.Listener {
-                            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-                                android.util.Log.e("VideoPlayer", "Video playback error: ${error.message}", error)
-                            }
-
-                            override fun onPlaybackStateChanged(playbackState: Int) {
-                                android.util.Log.d("VideoPlayer", "Playback state changed: $playbackState")
-                            }
-
-                            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                                android.util.Log.d("VideoPlayer", "Is playing changed: $isPlaying")
-                            }
-
-                            override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
-                                android.util.Log.d("VideoPlayer", "Video size changed: ${videoSize.width}x${videoSize.height}")
-                            }
-
-                            override fun onRenderedFirstFrame() {
-                                android.util.Log.d("VideoPlayer", "First frame rendered")
-                            }
-                        })
                     }
                 },
                 modifier = Modifier.fillMaxSize(),
                 update = { playerView ->
+                    // Always ensure player is set
                     playerView.player = player
-                    // Force layout update when player changes
+                    // Force update
                     playerView.requestLayout()
-                    playerView.invalidate()
-                    playerView.postInvalidate()
-
-                    // Ensure video surface is properly set up
-                    // PlayerView handles surface creation automatically
-
-                    // Log current media item for debugging
-                    player.currentMediaItem?.let { mediaItem ->
-                        android.util.Log.d("VideoPlayer", "Current media item URI: ${mediaItem.localConfiguration?.uri}")
-                        android.util.Log.d("VideoPlayer", "Current media item MIME: ${mediaItem.localConfiguration?.mimeType}")
-                        android.util.Log.d("VideoPlayer", "Player playback state: ${player.playbackState}")
-                        android.util.Log.d("VideoPlayer", "Player is playing: ${player.isPlaying}")
-                    }
-
-                    // Force player to prepare if needed
-                    if (player.playbackState == androidx.media3.common.Player.STATE_IDLE) {
-                        player.prepare()
-                    }
+                    android.util.Log.d("Thumbnail", "PlayerView updated, player: ${player != null}, playbackState: ${player?.playbackState}")
                 }
             )
         } else {
