@@ -142,6 +142,7 @@ import com.auramusic.app.constants.SliderStyleKey
 import com.auramusic.app.constants.SquigglySliderKey
 import com.auramusic.app.constants.ThumbnailCornerRadius
 import com.auramusic.app.constants.UseNewPlayerDesignKey
+import com.auramusic.app.constants.VideoModeEnabledKey
 import com.auramusic.app.db.entities.LyricsEntity
 import com.auramusic.app.extensions.togglePlayPause
 import com.auramusic.app.extensions.toggleRepeatMode
@@ -176,7 +177,7 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 import com.auramusic.app.ui.component.Icon as MIcon
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun BottomSheetPlayer(
     state: BottomSheetState,
@@ -272,11 +273,21 @@ fun BottomSheetPlayer(
 
     val sliderStyle by rememberEnumPreference(SliderStyleKey, SliderStyle.DEFAULT)
     val squigglySlider by rememberPreference(SquigglySliderKey, defaultValue = false)
+    val videoModeToggleEnabled by rememberPreference(VideoModeEnabledKey, defaultValue = false)
     
     // Video mode state
     val videoModeEnabled by playerConnection.videoModeEnabled.collectAsState()
     val isVideoSwitching by playerConnection.isVideoSwitching.collectAsState()
     val isVideoAvailable by playerConnection.isVideoAvailable.collectAsState()
+    val videoFetchError by playerConnection.videoFetchError.collectAsState()
+
+    // Show error toast when video fetch fails
+    LaunchedEffect(videoFetchError) {
+        videoFetchError?.let { error ->
+            Toast.makeText(context, "Video error: $error", Toast.LENGTH_LONG).show()
+            playerConnection.clearVideoError()
+        }
+    }
 
     // Check video availability when song changes
     LaunchedEffect(mediaMetadata?.id) {
@@ -981,36 +992,42 @@ fun BottomSheetPlayer(
                         }
 
                         // Video mode toggle button
-                        AnimatedContent(
-                            targetState = isVideoAvailable,
-                            label = "VideoToggle"
-                        ) { available ->
-                            timber.log.Timber.d("VideoToggle: AnimatedContent available = $available")
-                            if (available) {
-                                FilledIconButton(
-                                    onClick = { playerConnection.toggleVideoMode() },
-                                    enabled = !isVideoSwitching,
-                                    shape = middleShape,
-                                    colors = IconButtonDefaults.filledIconButtonColors(
-                                        containerColor = if (videoModeEnabled) 
-                                            MaterialTheme.colorScheme.primary 
-                                        else 
-                                            textButtonColor,
-                                        contentColor = if (videoModeEnabled) 
-                                            MaterialTheme.colorScheme.onPrimary 
-                                        else 
-                                            iconButtonColor,
-                                    ),
-                                    modifier = Modifier.size(42.dp),
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.slow_motion_video),
-                                        contentDescription = if (videoModeEnabled) 
-                                            stringResource(R.string.switch_to_audio) 
-                                        else 
-                                            stringResource(R.string.switch_to_video),
+                        if (videoModeToggleEnabled) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.size(42.dp)
+                            ) {
+                                if (isVideoSwitching) {
+                                    ContainedLoadingIndicator(
                                         modifier = Modifier.size(24.dp)
                                     )
+                                } else {
+                                    FilledIconButton(
+                                        onClick = {
+                                            playerConnection.toggleVideoMode()
+                                        },
+                                        shape = middleShape,
+                                        colors = IconButtonDefaults.filledIconButtonColors(
+                                            containerColor = if (videoModeEnabled) 
+                                                MaterialTheme.colorScheme.primary 
+                                            else 
+                                                textButtonColor,
+                                            contentColor = if (videoModeEnabled) 
+                                                MaterialTheme.colorScheme.onPrimary 
+                                            else 
+                                                iconButtonColor,
+                                        ),
+                                        modifier = Modifier.size(42.dp),
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.slow_motion_video),
+                                            contentDescription = if (videoModeEnabled) 
+                                                stringResource(R.string.switch_to_audio) 
+                                            else 
+                                                stringResource(R.string.switch_to_video),
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1113,6 +1130,43 @@ fun BottomSheetPlayer(
                                     painter = painterResource(R.drawable.share),
                                     contentDescription = null,
                                     tint = iconButtonColor,
+                                    modifier = Modifier
+                                        .align(Alignment.Center)
+                                        .size(24.dp),
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.size(12.dp))
+
+                    AnimatedContent(
+                        targetState = isVideoAvailable,
+                        label = "VideoToggle"
+                    ) { available ->
+                        if (available) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(24.dp))
+                                    .background(
+                                        if (videoModeEnabled) 
+                                            MaterialTheme.colorScheme.primary 
+                                        else 
+                                            textButtonColor
+                                    )
+                                    .clickable { playerConnection.toggleVideoMode() },
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.slow_motion_video),
+                                    contentDescription = if (videoModeEnabled) 
+                                        stringResource(R.string.switch_to_audio) 
+                                    else 
+                                        stringResource(R.string.switch_to_video),
+                                    tint = if (videoModeEnabled) 
+                                        MaterialTheme.colorScheme.onPrimary 
+                                    else 
+                                        iconButtonColor,
                                     modifier = Modifier
                                         .align(Alignment.Center)
                                         .size(24.dp),

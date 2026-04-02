@@ -62,6 +62,7 @@ import com.auramusic.app.constants.SimilarContent
 import com.auramusic.app.constants.SkipSilenceInstantKey
 import com.auramusic.app.constants.SkipSilenceKey
 import com.auramusic.app.constants.StopMusicOnTaskClearKey
+import com.auramusic.app.constants.VideoModeEnabledKey
 import com.auramusic.app.ui.component.DefaultDialog
 import com.auramusic.app.ui.component.EnumDialog
 import com.auramusic.app.ui.component.IconButton
@@ -160,6 +161,10 @@ fun PlayerSettings(
     )
     val (stopMusicOnTaskClear, onStopMusicOnTaskClearChange) = rememberPreference(
         StopMusicOnTaskClearKey,
+        defaultValue = false
+    )
+    val (videoModeEnabled, onVideoModeEnabledChange) = rememberPreference(
+        VideoModeEnabledKey,
         defaultValue = false
     )
     val (pauseOnMute, onPauseOnMuteChange) = rememberPreference(
@@ -431,6 +436,27 @@ fun PlayerSettings(
                         )
                     },
                     onClick = { if (!crossfadeEnabled) onAudioOffloadChange(!audioOffload) }
+                ))
+                add(Material3SettingsItem(
+                    icon = painterResource(R.drawable.slow_motion_video),
+                    title = { Text(stringResource(R.string.enable_video_mode)) },
+                    description = { Text(stringResource(R.string.enable_video_mode_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = videoModeEnabled,
+                            onCheckedChange = onVideoModeEnabledChange,
+                            thumbContent = {
+                                Icon(
+                                    painter = painterResource(
+                                        id = if (videoModeEnabled) R.drawable.check else R.drawable.close
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    },
+                    onClick = { onVideoModeEnabledChange(!videoModeEnabled) }
                 ))
                 // Only show Cast setting in GMS builds (not in F-Droid/FOSS)
                 if (BuildConfig.CAST_AVAILABLE) {

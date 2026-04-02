@@ -30,6 +30,7 @@ rootProject.name = "AuraMusic"
 
 include(":app")
 include(":innertube")
+include(":flow")
 include(":kugou")
 include(":lrclib")
 include(":kizzy")

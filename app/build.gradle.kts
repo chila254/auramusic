@@ -297,6 +297,7 @@ dependencies {
     implementation(libs.ktor.serialization.json)
 
     implementation(project(":innertube"))
+    implementation(project(":flow"))
     implementation(project(":kugou"))
     implementation(project(":lrclib"))
     implementation(project(":kizzy"))

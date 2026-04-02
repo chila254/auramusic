@@ -148,6 +148,7 @@ import com.auramusic.app.playback.queues.filterExplicit
 import com.auramusic.app.playback.queues.filterVideoSongs
 import com.auramusic.app.utils.CoilBitmapLoader
 import com.auramusic.app.utils.DiscordRPC
+import com.auramusic.app.utils.FlowPlayerUtils
 import com.auramusic.app.utils.NetworkConnectivityObserver
 import com.auramusic.app.utils.ScrobbleManager
 import com.auramusic.app.utils.SyncUtils
@@ -2858,6 +2859,8 @@ class MusicService :
     val videoModeEnabled: StateFlow<Boolean> = _videoModeEnabled.asStateFlow()
     private val _isVideoSwitching = MutableStateFlow(false)
     val isVideoSwitching: StateFlow<Boolean> = _isVideoSwitching.asStateFlow()
+    private val _videoFetchError = MutableStateFlow<String?>(null)
+    val videoFetchError: StateFlow<String?> = _videoFetchError.asStateFlow()
 
     private fun resetVideoMode() {
         videoSwitchJob?.cancel()
@@ -2892,27 +2895,38 @@ class MusicService :
                     // Save original item before switching
                     originalAudioMediaItem = player.getMediaItemAt(index)
 
-                    val videoUrl = withContext(Dispatchers.IO) {
-                        YTPlayerUtils.getVideoStreamUrl(mediaId).getOrNull()
+                    val videoResult = withContext(Dispatchers.IO) {
+                        FlowPlayerUtils.getVideoStreamUrl(mediaId)
                     }
 
-                    if (videoUrl != null) {
-                        currentVideoUrl = videoUrl
-                        val currentItem = player.getMediaItemAt(index)
-                        val videoMediaItem = currentItem.buildUpon()
-                            .setUri(videoUrl)
-                            .setCustomCacheKey(mediaId + "_video")
-                            .build()
+                    if (videoResult.isSuccess) {
+                        val videoData = videoResult.getOrNull()
+                        if (videoData != null) {
+                            // Parse URL|mimeType format
+                            val parts = videoData.split("|")
+                            val videoUrl = parts[0]
+                            val mimeType = if (parts.size > 1) parts[1] else "video/mp4"
+                            currentVideoUrl = videoUrl
+                            val currentItem = player.getMediaItemAt(index)
+                            val videoMediaItem = currentItem.buildUpon()
+                                .setUri(videoUrl)
+                                .setMimeType(mimeType)
+                                .setCustomCacheKey(mediaId + "_video")
+                                .build()
 
-                        player.replaceMediaItem(index, videoMediaItem)
-                        player.seekTo(index, position)
-                        player.playWhenReady = wasPlaying
-                        isVideoMode = true
-                        _videoModeEnabled.value = true
-                        Timber.d("setVideoMode: Video stream ready")
+                            player.replaceMediaItem(index, videoMediaItem)
+                            player.seekTo(index, position)
+                            player.playWhenReady = wasPlaying
+                            isVideoMode = true
+                            _videoModeEnabled.value = true
+                            Timber.d("setVideoMode: Video stream ready with mimeType: $mimeType")
+                        } else {
+                            Timber.w("setVideoMode: Video URL was null")
+                            _videoFetchError.value = "Video URL not found"
+                        }
                     } else {
-                        Timber.w("setVideoMode: No video stream available")
-                        originalAudioMediaItem = null
+                        Timber.e(videoResult.exceptionOrNull(), "setVideoMode: Failed to get video URL")
+                        _videoFetchError.value = videoResult.exceptionOrNull()?.message ?: "Failed to fetch video"
                     }
                 } else {
                     // Switch back to audio
@@ -2944,8 +2958,12 @@ class MusicService :
      */
     suspend fun checkVideoAvailability(mediaId: String): Boolean {
         return withContext(Dispatchers.IO) {
-            YTPlayerUtils.hasVideoPlayback(mediaId)
+            FlowPlayerUtils.hasVideoPlayback(mediaId)
         }
+    }
+
+    fun clearVideoError() {
+        _videoFetchError.value = null
     }
 
     /**

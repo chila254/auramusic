@@ -165,4 +165,17 @@ object NewPipeExtractor {
             emptyList()
         }
     }
+
+    fun getStreamInfo(videoId: String): StreamInfo? {
+        init()
+        return try {
+            StreamInfo.getInfo(
+                NewPipe.getService(0),
+                "https://www.youtube.com/watch?v=$videoId"
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
 }
