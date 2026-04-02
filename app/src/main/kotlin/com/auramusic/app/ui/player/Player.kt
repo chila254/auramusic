@@ -280,12 +280,17 @@ fun BottomSheetPlayer(
     val isVideoSwitching by playerConnection.isVideoSwitching.collectAsState()
     val isVideoAvailable by playerConnection.isVideoAvailable.collectAsState()
     val videoFetchError by playerConnection.videoFetchError.collectAsState()
+    val videoModeMessage by playerConnection.videoModeMessage.collectAsState()
 
     // Show error toast when video fetch fails
-    LaunchedEffect(videoFetchError) {
+    LaunchedEffect(videoFetchError, videoModeMessage) {
         videoFetchError?.let { error ->
-            Toast.makeText(context, "Video error: $error", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, error, Toast.LENGTH_LONG).show()
             playerConnection.clearVideoError()
+        }
+        videoModeMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            playerConnection.clearVideoModeMessage()
         }
     }
 

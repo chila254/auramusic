@@ -2901,6 +2901,8 @@ class MusicService :
     val isVideoSwitching: StateFlow<Boolean> = _isVideoSwitching.asStateFlow()
     private val _videoFetchError = MutableStateFlow<String?>(null)
     val videoFetchError: StateFlow<String?> = _videoFetchError.asStateFlow()
+    private val _videoModeMessage = MutableStateFlow<String?>(null)
+    val videoModeMessage: StateFlow<String?> = _videoModeMessage.asStateFlow()
     private val _isVideoAvailable = MutableStateFlow(false)
     val isVideoAvailable: StateFlow<Boolean> = _isVideoAvailable.asStateFlow()
 
@@ -2912,6 +2914,7 @@ class MusicService :
         currentVideoUrl = null
         originalAudioMediaItem = null
         _videoFetchError.value = null
+        _videoModeMessage.value = null
     }
 
     /**
@@ -3081,6 +3084,10 @@ class MusicService :
 
     fun clearVideoError() {
         _videoFetchError.value = null
+    }
+
+    fun clearVideoModeMessage() {
+        _videoModeMessage.value = null
     }
 
     /**

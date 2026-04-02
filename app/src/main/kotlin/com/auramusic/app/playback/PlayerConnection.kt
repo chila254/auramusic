@@ -160,6 +160,7 @@ class PlayerConnection(
     val isVideoSwitching = service.isVideoSwitching
     val isVideoAvailable = service.isVideoAvailable
     val videoFetchError = service.videoFetchError
+    val videoModeMessage = service.videoModeMessage
 
     fun toggleVideoMode() {
         service.setVideoMode(!videoModeEnabled.value)
@@ -173,6 +174,10 @@ class PlayerConnection(
 
     fun clearVideoError() {
         service.clearVideoError()
+    }
+
+    fun clearVideoModeMessage() {
+        service.clearVideoModeMessage()
     }
 
     val waitingForNetworkConnection = service.waitingForNetworkConnection
