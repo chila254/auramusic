@@ -83,6 +83,8 @@ import com.auramusic.app.constants.AutoDownloadOnLikeKey
 import com.auramusic.app.constants.AutoLoadMoreKey
 import com.auramusic.app.constants.AutoSkipNextOnErrorKey
 import com.auramusic.app.constants.CrossfadeDurationKey
+import com.auramusic.app.constants.VideoQuality
+import com.auramusic.app.constants.VideoQualityKey
 import com.auramusic.app.constants.CrossfadeEnabledKey
 import com.auramusic.app.constants.CrossfadeGaplessKey
 import com.auramusic.app.constants.DisableLoadMoreWhenRepeatAllKey
@@ -489,6 +491,18 @@ class MusicService :
         
         audioQuality = dataStore.get(AudioQualityKey).toEnum(com.auramusic.app.constants.AudioQuality.AUTO)
         playerVolume = MutableStateFlow(dataStore.get(PlayerVolumeKey, 1f).coerceIn(0f, 1f))
+
+        // Initialize video quality preference from settings
+        val savedVideoQuality = dataStore.get(VideoQualityKey, "QUALITY_720P")
+        val flowVideoQuality = when (savedVideoQuality) {
+            "QUALITY_1080P" -> com.auramusic.flow.FlowVideo.VideoQuality.QUALITY_1080P
+            "QUALITY_720P" -> com.auramusic.flow.FlowVideo.VideoQuality.QUALITY_720P
+            "QUALITY_480P" -> com.auramusic.flow.FlowVideo.VideoQuality.QUALITY_480P
+            "QUALITY_360P" -> com.auramusic.flow.FlowVideo.VideoQuality.QUALITY_360P
+            else -> com.auramusic.flow.FlowVideo.VideoQuality.QUALITY_720P
+        }
+        com.auramusic.flow.FlowVideo.setPreferredVideoQuality(flowVideoQuality)
+        Timber.d("Initialized video quality preference: $savedVideoQuality")
 
         // Initialize Google Cast
         initializeCast()

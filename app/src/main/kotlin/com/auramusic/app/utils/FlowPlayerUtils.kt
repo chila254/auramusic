@@ -1,15 +1,30 @@
 package com.auramusic.app.utils
 
+import com.auramusic.app.constants.VideoQuality
 import com.auramusic.flow.FlowVideo
-import com.auramusic.flow.VideoItem
 import com.auramusic.flow.FlowVideo.VideoStreamResult
 import com.auramusic.flow.FlowVideo.VideoSearchResult
+import com.auramusic.flow.VideoItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 object FlowPlayerUtils {
     private const val logTag = "FlowPlayerUtils"
+
+    /**
+     * Set the preferred video quality before fetching video URLs
+     */
+    fun setPreferredVideoQuality(quality: VideoQuality) {
+        // Map PreferenceKeys.VideoQuality to FlowVideo.VideoQuality
+        val flowQuality = when (quality) {
+            VideoQuality.QUALITY_360P -> com.auramusic.flow.FlowVideo.VideoQuality.QUALITY_360P
+            VideoQuality.QUALITY_480P -> com.auramusic.flow.FlowVideo.VideoQuality.QUALITY_480P
+            VideoQuality.QUALITY_720P -> com.auramusic.flow.FlowVideo.VideoQuality.QUALITY_720P
+            VideoQuality.QUALITY_1080P -> com.auramusic.flow.FlowVideo.VideoQuality.QUALITY_1080P
+        }
+        FlowVideo.setPreferredVideoQuality(flowQuality)
+    }
 
     suspend fun getVideoStreamUrl(videoId: String): Result<String> = withContext(Dispatchers.IO) {
         Timber.tag(logTag).d("FlowPlayerUtils: Fetching video stream URL for videoId: $videoId")

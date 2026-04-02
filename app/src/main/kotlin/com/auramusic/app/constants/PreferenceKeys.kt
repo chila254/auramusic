@@ -79,6 +79,15 @@ enum class AudioQuality {
     LOW,
 }
 
+enum class VideoQuality {
+    QUALITY_360P,
+    QUALITY_480P,
+    QUALITY_720P,
+    QUALITY_1080P,
+}
+
+val VideoQualityKey = stringPreferencesKey("videoQuality")
+
 val AudioOffload = booleanPreferencesKey("enableOffload")
 
 val VideoModeEnabledKey = booleanPreferencesKey("videoModeEnabled")
