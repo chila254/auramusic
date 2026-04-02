@@ -385,10 +385,10 @@ fun Thumbnail(
                         rows = GridCells.Fixed(1),
                         flingBehavior = rememberSnapFlingBehavior(thumbnailSnapLayoutInfoProvider),
                         userScrollEnabled = isScrollEnabled,
-                        modifier = if (isLandscape) {
-                            Modifier.size(dimensions.thumbnailSize + (PlayerHorizontalPadding * 2))
-                        } else {
-                            Modifier.fillMaxSize()
+                        modifier = when {
+                            videoModeEnabled -> Modifier.fillMaxSize() // Video fills entire player area
+                            isLandscape -> Modifier.size(dimensions.thumbnailSize + (PlayerHorizontalPadding * 2))
+                            else -> Modifier.fillMaxSize()
                         }
                     ) {
                         items(
@@ -569,7 +569,13 @@ private fun ThumbnailItem(
     ) {
         Box(
             modifier = Modifier
-                .size(dimensions.thumbnailSize)
+                .then(
+                    if (videoModeEnabled && item.mediaId == currentMediaId) {
+                        Modifier.fillMaxSize() // Video fills entire player area
+                    } else {
+                        Modifier.size(dimensions.thumbnailSize)
+                    }
+                )
                 .clip(RoundedCornerShape(dimensions.cornerRadius))
         ) {
             if (hidePlayerThumbnail) {
