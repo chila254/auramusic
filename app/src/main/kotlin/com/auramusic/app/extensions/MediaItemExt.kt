@@ -9,11 +9,13 @@ import android.os.Bundle
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata.MEDIA_TYPE_MUSIC
+import androidx.media3.common.MediaMetadata.MEDIA_TYPE_VIDEO
 import com.auramusic.innertube.models.SongItem
 import com.auramusic.app.db.entities.Song
 import com.auramusic.app.models.MediaMetadata
 import com.auramusic.app.models.toMediaMetadata
 import com.auramusic.app.ui.utils.resize
+import com.auramusic.innertube.models.WatchEndpoint.WatchEndpointMusicSupportedConfigs.WatchEndpointMusicConfig.Companion.MUSIC_VIDEO_TYPE_ATV
 
 val MediaItem.metadata: MediaMetadata?
     get() = localConfiguration?.tag as? MediaMetadata
@@ -32,7 +34,7 @@ fun Song.toMediaItem() = MediaItem.Builder()
             .setAlbumTitle(song.albumName)
             .setAlbumArtist(artists.firstOrNull()?.name)
             .setDisplayTitle(song.title)
-            .setMediaType(MEDIA_TYPE_MUSIC)
+            .setMediaType(if (song.isVideo) MEDIA_TYPE_VIDEO else MEDIA_TYPE_MUSIC)
             .setIsBrowsable(false)
             .setIsPlayable(true)
             .setExtras(Bundle().apply {
@@ -56,7 +58,7 @@ fun SongItem.toMediaItem() = MediaItem.Builder()
             .setAlbumTitle(album?.name)
             .setAlbumArtist(artists.firstOrNull()?.name)
             .setDisplayTitle(title)
-            .setMediaType(MEDIA_TYPE_MUSIC)
+            .setMediaType(if (isVideoSong) MEDIA_TYPE_VIDEO else MEDIA_TYPE_MUSIC)
             .setIsBrowsable(false)
             .setIsPlayable(true)
             .setExtras(Bundle().apply {
@@ -80,7 +82,7 @@ fun MediaMetadata.toMediaItem() = MediaItem.Builder()
             .setAlbumTitle(album?.title)
             .setAlbumArtist(artists.firstOrNull()?.name)
             .setDisplayTitle(title)
-            .setMediaType(MEDIA_TYPE_MUSIC)
+            .setMediaType(if (isVideoSong) MEDIA_TYPE_VIDEO else MEDIA_TYPE_MUSIC)
             .setIsBrowsable(false)
             .setIsPlayable(true)
             .setExtras(Bundle().apply {
