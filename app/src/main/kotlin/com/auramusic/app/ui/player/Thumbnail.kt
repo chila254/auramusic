@@ -610,10 +610,10 @@ private fun ThumbnailItem(
                 )
             }
             
-            // Cast button at top-right corner of thumbnail
+            // Cast button at top corner of thumbnail
             CastButton(
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
+                    .align(if (videoModeEnabled) Alignment.TopStart else Alignment.TopEnd)
                     .padding(8.dp),
                 tintColor = textBackgroundColor
             )
