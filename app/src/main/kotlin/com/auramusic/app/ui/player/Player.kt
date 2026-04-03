@@ -611,40 +611,24 @@ fun BottomSheetPlayer(
         mutableStateOf(false)
     }
 
-    // Full Video Player state and flags
-    var showFullVideoPlayer by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    // Track if user manually closed full video player
-    var hasUserClosedFullVideo by remember { mutableStateOf(false) }
-
-    // Auto-open full video player for video songs and when video mode is enabled - DISABLED
-    // We now show video controls on thumbnail instead
-    // LaunchedEffect(videoModeEnabled, mediaMetadata?.isVideoSong) {
-    //     val shouldShowVideo = (videoModeEnabled || mediaMetadata?.isVideoSong == true) && isVideoAvailable
-    //     if (shouldShowVideo && !showFullVideoPlayer && !hasUserClosedFullVideo) {
-    //         showFullVideoPlayer = true
-    //     }
-    // }
-
-    // Auto-show lyrics when video starts playing (for both video songs and regular songs with video)
-    // Only auto-show if user hasn't manually toggled lyrics yet and NOT in full video player
+    // Auto-show lyrics when video starts playing - DISABLED
+    // Videos now have their own screen with native controls
     var hasUserToggledLyrics by remember { mutableStateOf(false) }
     
-    // Reset hasUserToggledLyrics when song changes to allow auto-show for new videos
+    // Reset hasUserToggledLyrics when song changes
     LaunchedEffect(mediaMetadata?.id) {
         hasUserToggledLyrics = false
     }
     
-    // Only auto-show lyrics in the now-playing view when NOT showing full video player
-    LaunchedEffect(videoModeEnabled, mediaMetadata?.isVideoSong, showFullVideoPlayer) {
-        val hasVideo = videoModeEnabled || mediaMetadata?.isVideoSong == true
-        // Don't auto-show in now-playing view if full video player is showing
-        if (hasVideo && !showFullVideoPlayer && !hasUserToggledLyrics && !showInlineLyrics) {
-            showInlineLyrics = true
-        }
-    }
+    // Auto-show lyrics for videos - DISABLED
+    // Videos now have their own screen with native controls
+    // User must manually toggle lyrics if desired
+    // LaunchedEffect(videoModeEnabled, mediaMetadata?.isVideoSong, showFullVideoPlayer) {
+    //     val hasVideo = videoModeEnabled || mediaMetadata?.isVideoSong == true
+    //     if (hasVideo && !showFullVideoPlayer && !hasUserToggledLyrics && !showInlineLyrics) {
+    //         showInlineLyrics = true
+    //     }
+    // }
 
     // Track user manual toggle
     fun onLyricsToggle() {
