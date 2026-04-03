@@ -76,22 +76,28 @@ object FlowVideo {
             streams
         }
 
-        // Try to find exact quality match
-        for (quality in listOf(currentPreferredQuality, VideoQuality.QUALITY_1080P, VideoQuality.QUALITY_720P, VideoQuality.QUALITY_480P, VideoQuality.QUALITY_360P)) {
+        // Quality preference order: try exact match first, then fall back to lower qualities
+        val qualityOrder = listOf(
+            currentPreferredQuality,
+            VideoQuality.QUALITY_1080P,
+            VideoQuality.QUALITY_720P,
+            VideoQuality.QUALITY_480P,
+            VideoQuality.QUALITY_360P
+        )
+
+        // First pass: try to find exact or closest match at or below preferred quality
+        for (quality in qualityOrder) {
+            // Find streams at exactly the preferred quality or lower (not higher)
             val matching = filteredStreams.filter { stream ->
-                val height = stream.height
-                // Less restrictive: prefer exact match or higher quality
-                // For 720p, accept 720-1080+ (any quality at or above)
-                height >= quality.height
+                stream.height <= quality.height && stream.height > 0
             }
             if (matching.isNotEmpty()) {
-                // Return highest quality among matching (max height, not max bitrate)
+                // Return the highest quality that doesn't exceed preferred
                 return matching.maxByOrNull { it.height }
             }
         }
 
-        // Fallback to any stream with audio if required, or any stream
-        // Use max height (quality) instead of max bitrate
+        // Fallback: if no quality at or below preferred found, find any quality
         return if (requireAudio && filteredStreams.isNotEmpty()) {
             filteredStreams.maxByOrNull { it.height }
         } else {
