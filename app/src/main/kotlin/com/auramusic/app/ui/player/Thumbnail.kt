@@ -773,7 +773,6 @@ private fun VideoSettingsOverlay(
                             VideoQuality.QUALITY_480P -> "480p"
                             VideoQuality.QUALITY_720P -> "720p"
                             VideoQuality.QUALITY_1080P -> "1080p"
-                            else -> "720p"
                         }
                         val isSelected = currentQuality == quality.name
                         
