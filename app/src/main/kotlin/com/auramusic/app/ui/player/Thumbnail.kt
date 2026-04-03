@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -692,6 +693,13 @@ private fun ThumbnailImage(
             VideoSettingsOverlay(
                 modifier = Modifier.align(Alignment.TopEnd)
             )
+            
+            // Video lyrics overlay at bottom (like YouTube subtitles)
+            VideoLyricsOverlay(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 50.dp)
+            )
         } else {
             // Album art image
             AsyncImage(
@@ -731,18 +739,38 @@ private fun VideoSettingsOverlay(
     }
     
     Box(modifier = modifier.padding(8.dp)) {
-        IconButton(
-            onClick = { showMenu = !showMenu },
-            modifier = Modifier
-                .size(36.dp)
-                .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Icon(
-                painter = painterResource(R.drawable.more_horiz),
-                contentDescription = "Video settings",
-                tint = Color.White,
-                modifier = Modifier.size(20.dp)
-            )
+            // Lyrics toggle button
+            IconButton(
+                onClick = { /* Toggle lyrics - handled by Player */ },
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.lyrics),
+                    contentDescription = "Toggle lyrics",
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            
+            // Settings button
+            IconButton(
+                onClick = { showMenu = !showMenu },
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.more_horiz),
+                    contentDescription = "Video settings",
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
         
         if (showMenu) {
@@ -827,4 +855,42 @@ private fun SeekEffectOverlay(
             .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(8.dp))
             .padding(8.dp)
     )
+}
+
+/**
+ * Video lyrics overlay displayed at bottom like YouTube subtitles
+ */
+@Composable
+private fun VideoLyricsOverlay(
+    modifier: Modifier = Modifier
+) {
+    val playerConnection = LocalPlayerConnection.current ?: return
+    val currentLyrics by playerConnection.currentLyrics.collectAsState(initial = null)
+    
+    val lyricsData = currentLyrics
+    val lyricsText = remember(lyricsData) {
+        if (lyricsData != null && !lyricsData.lyrics.isNullOrEmpty()) {
+            lyricsData.lyrics
+        } else null
+    }
+    
+    if (lyricsText != null) {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .background(
+                    Color.Black.copy(alpha = 0.6f),
+                    RoundedCornerShape(4.dp)
+                )
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Text(
+                text = lyricsText.take(150),
+                color = Color.White,
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
 }
