@@ -98,6 +98,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -115,6 +116,8 @@ import androidx.core.view.WindowCompat
 import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.common.Player.STATE_ENDED
+import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
 import androidx.palette.graphics.Palette
 import coil3.compose.AsyncImage
@@ -608,6 +611,22 @@ fun BottomSheetPlayer(
         mutableStateOf(false)
     }
 
+    // Full Video Player state and flags
+    var showFullVideoPlayer by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    // Track if user manually closed full video player
+    var hasUserClosedFullVideo by remember { mutableStateOf(false) }
+
+    // Auto-open full video player for video songs and when video mode is enabled
+    LaunchedEffect(videoModeEnabled, mediaMetadata?.isVideoSong) {
+        val shouldShowVideo = (videoModeEnabled || mediaMetadata?.isVideoSong == true) && isVideoAvailable
+        if (shouldShowVideo && !showFullVideoPlayer && !hasUserClosedFullVideo) {
+            showFullVideoPlayer = true
+        }
+    }
+
     // Auto-show lyrics when video starts playing (for both video songs and regular songs with video)
     // Only auto-show if user hasn't manually toggled lyrics yet
     var hasUserToggledLyrics by remember { mutableStateOf(false) }
@@ -1082,6 +1101,8 @@ fun BottomSheetPlayer(
                                 } else {
                                     FilledIconButton(
                                         onClick = {
+                                            // Open full video player when enabling video mode
+                                            showFullVideoPlayer = true
                                             playerConnection.toggleVideoMode()
                                         },
                                         shape = middleShape,
@@ -1883,6 +1904,236 @@ fun BottomSheetPlayer(
             )
         }
     }
+    
+    // Full Screen Video Player Dialog
+    if (showFullVideoPlayer) {
+        FullVideoPlayer(
+            mediaMetadata = mediaMetadata,
+            onDismiss = {
+                showFullVideoPlayer = false
+                hasUserClosedFullVideo = true
+                // Turn off video mode when closing full player
+                if (videoModeEnabled) {
+                    playerConnection.toggleVideoMode()
+                }
+            },
+            showLyrics = showInlineLyrics,
+            onToggleLyrics = { onLyricsToggle() }
+        )
+    }
+}
+
+@Composable
+fun FullVideoPlayer(
+    mediaMetadata: MediaMetadata?,
+    onDismiss: () -> Unit,
+    showLyrics: Boolean,
+    onToggleLyrics: () -> Unit
+) {
+    val playerConnection = LocalPlayerConnection.current ?: return
+    val player = playerConnection.player
+    
+    var showControls by remember { mutableStateOf(true) }
+    var isDragging by remember { mutableStateOf(false) }
+    var seekPosition by remember { mutableLongStateOf(0L) }
+    
+    val position = player.currentPosition
+    val duration = player.duration.coerceAtLeast(0)
+    
+    // Auto-hide controls after 3 seconds
+    LaunchedEffect(showControls, player.isPlaying) {
+        if (showControls && !isDragging && player.isPlaying) {
+            delay(3000)
+            showControls = false
+        }
+    }
+    
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                showControls = !showControls
+            }
+    ) {
+        // Video Player
+        AndroidView(
+            factory = { ctx ->
+                PlayerView(ctx).apply {
+                    this.player = player
+                    useController = false
+                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
+                    setBackgroundColor(android.graphics.Color.BLACK)
+                }
+            },
+            modifier = Modifier.fillMaxSize(),
+            update = { view ->
+                view.player = player
+            }
+        )
+        
+        // Lyrics Overlay at bottom
+        if (showLyrics) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .padding(16.dp)
+            ) {
+                InlineLyricsView(
+                    mediaMetadata = mediaMetadata,
+                    showLyrics = true,
+                    positionProvider = { position }
+                )
+            }
+        }
+        
+        // Controls Overlay
+        if (showControls) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.4f))
+            ) {
+                // Top bar with close button
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    androidx.compose.material3.IconButton(onClick = onDismiss) {
+                        Icon(
+                            painter = painterResource(R.drawable.arrow_back),
+                            contentDescription = "Close",
+                            tint = Color.White,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                    
+                    // Song title
+                    mediaMetadata?.let {
+                        Text(
+                            text = it.title,
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 16.dp)
+                        )
+                    }
+                    
+                    // Lyrics toggle
+                    androidx.compose.material3.IconButton(onClick = onToggleLyrics) {
+                        Icon(
+                            painter = painterResource(R.drawable.lyrics),
+                            contentDescription = "Toggle lyrics",
+                            tint = if (showLyrics) MaterialTheme.colorScheme.primary else Color.White,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.weight(1f))
+                
+                // Bottom controls
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    // Progress bar
+                    Slider(
+                        value = if (isDragging) seekPosition.toFloat() else position.toFloat().coerceIn(0f, duration.toFloat()),
+                        onValueChange = { value ->
+                            isDragging = true
+                            seekPosition = value.toLong()
+                        },
+                        onValueChangeFinished = {
+                            isDragging = false
+                            player.seekTo(seekPosition)
+                        },
+                        valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    
+                    // Time labels
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = formatDuration(if (isDragging) seekPosition else position),
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Text(
+                            text = formatDuration(duration),
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    // Playback controls
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        androidx.compose.material3.IconButton(onClick = { player.seekTo((player.currentPosition - 10000).coerceAtLeast(0)) }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_skip_previous),
+                                contentDescription = "Rewind 10s",
+                                tint = Color.White,
+                                modifier = Modifier.size(36.dp)
+                            )
+                        }
+                        
+                        androidx.compose.material3.IconButton(
+                            onClick = { 
+                                if (player.isPlaying) player.pause() else player.play()
+                            },
+                            modifier = Modifier.size(64.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(
+                                    if (player.isPlaying) R.drawable.pause else R.drawable.play
+                                ),
+                                contentDescription = if (player.isPlaying) "Pause" else "Play",
+                                tint = Color.White,
+                                modifier = Modifier.size(48.dp)
+                            )
+                        }
+                        
+                        androidx.compose.material3.IconButton(onClick = { player.seekTo((player.currentPosition + 10000).coerceAtMost(duration)) }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_skip_next),
+                                contentDescription = "Forward 10s",
+                                tint = Color.White,
+                                modifier = Modifier.size(36.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatDuration(ms: Long): String {
+    val totalSeconds = ms / 1000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return "%d:%02d".format(minutes, seconds)
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
