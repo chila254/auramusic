@@ -45,11 +45,11 @@ object FlowPlayerUtils {
      * Get video stream URL with automatic search fallback for regular songs
      * This searches for official music video if direct lookup fails
      */
-    suspend fun getVideoStreamUrlWithFallback(songTitle: String, artistName: String, videoId: String): Result<VideoSearchResult> = withContext(Dispatchers.IO) {
-        Timber.tag(logTag).d("FlowPlayerUtils: Trying to get video with fallback for: $songTitle by $artistName")
+    suspend fun getVideoStreamUrlWithFallback(songTitle: String, artistName: String, videoId: String, isVideoSong: Boolean = true): Result<VideoSearchResult> = withContext(Dispatchers.IO) {
+        Timber.tag(logTag).d("FlowPlayerUtils: Trying to get video with fallback for: $songTitle by $artistName (isVideoSong=$isVideoSong)")
         
         try {
-            val result = FlowVideo.getVideoStreamUrlWithFallback(songTitle, artistName, videoId)
+            val result = FlowVideo.getVideoStreamUrlWithFallback(songTitle, artistName, videoId, isVideoSong)
             result.onSuccess { searchResult ->
                 Timber.tag(logTag).d("FlowPlayerUtils: Found video via fallback: ${searchResult.videoId}")
             }

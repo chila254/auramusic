@@ -3001,13 +3001,15 @@ class MusicService :
                     // Get song info for video search fallback
                     val songTitle = currentMediaMetadata.value?.title ?: ""
                     val artistName = currentMediaMetadata.value?.artists?.firstOrNull()?.name ?: ""
+                    val isVideoSong = currentMediaMetadata.value?.isVideoSong == true
                     
-                    Timber.d("setVideoMode: Trying video for '$songTitle' by '$artistName'")
-                    android.util.Log.d("MusicService", ">>> Searching video for: $songTitle - $artistName")
+                    Timber.d("setVideoMode: Trying video for '$songTitle' by '$artistName', isVideoSong=$isVideoSong")
+                    android.util.Log.d("MusicService", ">>> Searching video for: $songTitle - $artistName, isVideoSong=$isVideoSong")
                     
-                    // First try direct video lookup, then fallback to search
+                    // For video songs: try direct lookup first (they have real video content)
+                    // For regular songs: skip direct lookup and search for official music video
                     val searchResult = withContext(Dispatchers.IO) {
-                        FlowPlayerUtils.getVideoStreamUrlWithFallback(songTitle, artistName, mediaId)
+                        FlowPlayerUtils.getVideoStreamUrlWithFallback(songTitle, artistName, mediaId, isVideoSong)
                     }
 
                     if (searchResult.isSuccess) {
@@ -3025,11 +3027,13 @@ class MusicService :
                                 val streamData = streamResult.getOrNull()
                                 val parts = streamData?.split("|", limit = 2) ?: listOf("")
                                 val videoUrl = parts[0].trim()
-                                val mimeType = if (parts.size > 1) parts[1].trim() else "video/mp4"
+                                // Sanitize MIME type: strip codec params to prevent NAL parsing errors
+                                val rawMimeType = if (parts.size > 1) parts[1].trim() else "video/mp4"
+                                val mimeType = rawMimeType.split(";").first().trim()
                                 currentVideoUrl = videoUrl
 
-                                Timber.d("setVideoMode: Search fallback - Video URL: $videoUrl, MIME type: $mimeType")
-                                android.util.Log.d("MusicService", ">>> Got stream URL: $videoUrl")
+                                Timber.d("setVideoMode: Search fallback - Video URL: $videoUrl, MIME type: $mimeType (raw: $rawMimeType)")
+                                android.util.Log.d("MusicService", ">>> Got stream URL: $videoUrl, mimeType: $mimeType")
 
                                 if (videoUrl.isBlank()) {
                                     Timber.e("setVideoMode: Video URL is blank after parsing")

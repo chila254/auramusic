@@ -83,7 +83,7 @@ enum class VideoQuality {
     QUALITY_360P,
     QUALITY_480P,
     QUALITY_720P,
-    QUALITY_1080P,
+    QUALITY_1080P
 }
 
 val VideoQualityKey = stringPreferencesKey("videoQuality")

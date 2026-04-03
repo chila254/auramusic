@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import org.json.JSONArray
 import org.json.JSONObject
@@ -155,8 +156,11 @@ object Updater {
                 
                 var releaseInfo: ReleaseInfo? = null
                 
-                // Try to parse as latest release
-                if (response.isSuccessful && body.isNotEmpty()) {
+                // Check if we got rate limited (GitHub returns error object instead of release)
+                if (!response.isSuccessful || body.contains("rate limit")) {
+                    Timber.w("GitHub API rate limited or error response: ${response.code}")
+                    // Try fallback to releases list
+                } else if (body.isNotEmpty()) {
                     try {
                         val json = JSONObject(body)
                         if (json.has("tag_name")) {
@@ -175,27 +179,37 @@ object Updater {
                 
                 // Fallback: fetch all releases and use the first one (most recent)
                 if (releaseInfo == null) {
+                    Timber.d("Falling back to releases list endpoint")
                     val allReleasesRequest = Request.Builder()
                         .url("$GITHUB_API_BASE/releases?per_page=1")
                         .build()
-                    val allReleasesResponse = client.newCall(allReleasesRequest).execute().body?.string() ?: ""
+                    val allReleasesResponse = client.newCall(allReleasesRequest).execute()
+                    val allReleasesBody = allReleasesResponse.body?.string() ?: ""
                     
-                    if (allReleasesResponse.isNotEmpty()) {
-                        val jsonArray = JSONArray(allReleasesResponse)
-                        if (jsonArray.length() > 0) {
-                            val releaseObj = jsonArray.getJSONObject(0)
-                            releaseInfo = ReleaseInfo(
-                                tagName = releaseObj.getString("tag_name"),
-                                versionName = releaseObj.getString("name"),
-                                description = releaseObj.getString("body"),
-                                releaseDate = releaseObj.getString("published_at"),
-                                assets = parseAssets(releaseObj.getJSONArray("assets"))
-                            )
+                    // Check for rate limit on fallback too
+                    if (!allReleasesResponse.isSuccessful || allReleasesBody.contains("rate limit")) {
+                        Timber.w("GitHub API fallback also rate limited")
+                        // Try unauthenticated - fall through to throw
+                    } else if (allReleasesBody.isNotEmpty()) {
+                        try {
+                            val jsonArray = JSONArray(allReleasesBody)
+                            if (jsonArray.length() > 0) {
+                                val releaseObj = jsonArray.getJSONObject(0)
+                                releaseInfo = ReleaseInfo(
+                                    tagName = releaseObj.getString("tag_name"),
+                                    versionName = releaseObj.getString("name"),
+                                    description = releaseObj.getString("body"),
+                                    releaseDate = releaseObj.getString("published_at"),
+                                    assets = parseAssets(releaseObj.getJSONArray("assets"))
+                                )
+                            }
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to parse releases fallback")
                         }
                     }
                 }
                 
-                releaseInfo ?: throw Exception("No releases found")
+                releaseInfo ?: throw Exception("GitHub API rate limited. Please try again later.")
             }.also { result ->
                 if (result.isSuccess) {
                     cachedReleaseInfo = result.getOrNull()

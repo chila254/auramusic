@@ -44,7 +44,6 @@ fun PlaybackError(
         ?: stringResource(R.string.error_unknown)
     
     // Check if this is an age-restricted content error
-    // Age-restricted content typically returns 403 Forbidden or contains age-related messages
     val isAgeRestricted = rawErrorMessage.contains("age", ignoreCase = true) ||
             rawErrorMessage.contains("Sign in to confirm your age", ignoreCase = true) ||
             rawErrorMessage.contains("LOGIN_REQUIRED", ignoreCase = true) ||
@@ -53,16 +52,31 @@ fun PlaybackError(
             rawErrorMessage.contains("Response code: 403", ignoreCase = true) ||
             error.errorCode == PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS
     
+    // Check if this is a NAL parsing error (malformed container)
+    val isNALParsingError = rawErrorMessage.contains("Invalid NAL length", ignoreCase = true) ||
+            rawErrorMessage.contains("contentIsMalformed", ignoreCase = true) ||
+            rawErrorMessage.contains("PARSING_CONTAINER_MALFORMED", ignoreCase = true) ||
+            error.errorCode == PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED
+    
     // Check if this is a stream/audio decoding error with corrupted data
     val isStreamError = rawErrorMessage.contains("srcPos=") ||
             rawErrorMessage.contains("src.length") ||
-            rawErrorMessage.contains("AudioTrack")
+            rawErrorMessage.contains("AudioTrack") ||
+            isNALParsingError
     
     val errorMessage = when {
         isAgeRestricted -> "This app does not support playing age-restricted songs. We are working on fixing this issue."
+        isNALParsingError -> "Unable to play this video. The video stream appears to be corrupted or in an unsupported format. Please try another video or skip to the next track."
         isStreamError -> "Unable to play this track. The audio stream may be corrupted or unavailable. Please try again later or skip to the next track."
         else -> rawErrorMessage
     }
+    
+    // For NAL parsing errors, show additional troubleshooting info
+    val additionalInfo = if (isNALParsingError) {
+        "\n\nThis error often occurs with corrupted video files or unsupported video formats."
+    } else ""
+    
+    val fullErrorMessage = errorMessage + additionalInfo
     
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -93,11 +107,11 @@ fun PlaybackError(
         
         // Error details
         Text(
-            text = errorMessage,
+            text = fullErrorMessage,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
-            maxLines = 3,
+            maxLines = 4,
             overflow = TextOverflow.Ellipsis
         )
         
