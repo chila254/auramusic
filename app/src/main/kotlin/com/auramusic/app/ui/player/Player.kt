@@ -608,6 +608,29 @@ fun BottomSheetPlayer(
         mutableStateOf(false)
     }
 
+    // Auto-show lyrics when video starts playing (for both video songs and regular songs with video)
+    // Only auto-show if user hasn't manually toggled lyrics yet
+    var hasUserToggledLyrics by remember { mutableStateOf(false) }
+    
+    // Reset hasUserToggledLyrics when song changes to allow auto-show for new videos
+    LaunchedEffect(mediaMetadata?.id) {
+        hasUserToggledLyrics = false
+    }
+    
+    LaunchedEffect(videoModeEnabled, mediaMetadata?.isVideoSong) {
+        val hasVideo = videoModeEnabled || mediaMetadata?.isVideoSong == true
+        if (hasVideo && !hasUserToggledLyrics && !showInlineLyrics) {
+            // Auto-show lyrics when video starts
+            showInlineLyrics = true
+        }
+    }
+
+    // Track user manual toggle
+    fun onLyricsToggle() {
+        hasUserToggledLyrics = true
+        showInlineLyrics = !showInlineLyrics
+    }
+
     // Position update - only for local playback
     // When casting, we use castPosition directly to avoid sync issues
     // Use isPlaying instead of playbackState to ensure continuous updates during playback
@@ -1855,7 +1878,7 @@ fun BottomSheetPlayer(
             showInlineLyrics = showInlineLyrics,
             playerBackground = playerBackground,
             onToggleLyrics = {
-                showInlineLyrics = !showInlineLyrics
+                onLyricsToggle()
             },
             )
         }
