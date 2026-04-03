@@ -664,7 +664,7 @@ private fun ThumbnailImage(
                     android.util.Log.d("Thumbnail", ">>> Creating PlayerView")
                     PlayerView(context).apply {
                         this.player = player
-                        useController = false
+                        useController = true
                         resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
                         setBackgroundColor(android.graphics.Color.BLACK)
                         layoutParams = ViewGroup.LayoutParams(
