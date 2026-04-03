@@ -746,6 +746,19 @@ private fun VideoSettingsOverlay(
         }
         
         if (showMenu) {
+            // Click outside to close menu
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .pointerInput(showMenu) {
+                        if (showMenu) {
+                            detectTapGestures(
+                                onTap = { showMenu = false }
+                            )
+                        }
+                    }
+            )
+            
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
