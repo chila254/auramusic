@@ -628,7 +628,7 @@ fun BottomSheetPlayer(
     }
 
     // Auto-show lyrics when video starts playing (for both video songs and regular songs with video)
-    // Only auto-show if user hasn't manually toggled lyrics yet
+    // Only auto-show if user hasn't manually toggled lyrics yet and NOT in full video player
     var hasUserToggledLyrics by remember { mutableStateOf(false) }
     
     // Reset hasUserToggledLyrics when song changes to allow auto-show for new videos
@@ -636,10 +636,11 @@ fun BottomSheetPlayer(
         hasUserToggledLyrics = false
     }
     
-    LaunchedEffect(videoModeEnabled, mediaMetadata?.isVideoSong) {
+    // Only auto-show lyrics in the now-playing view when NOT showing full video player
+    LaunchedEffect(videoModeEnabled, mediaMetadata?.isVideoSong, showFullVideoPlayer) {
         val hasVideo = videoModeEnabled || mediaMetadata?.isVideoSong == true
-        if (hasVideo && !hasUserToggledLyrics && !showInlineLyrics) {
-            // Auto-show lyrics when video starts
+        // Don't auto-show in now-playing view if full video player is showing
+        if (hasVideo && !showFullVideoPlayer && !hasUserToggledLyrics && !showInlineLyrics) {
             showInlineLyrics = true
         }
     }
@@ -1906,6 +1907,7 @@ fun BottomSheetPlayer(
     }
     
     // Full Screen Video Player Dialog
+    // Don't auto-show lyrics in full video player - user must toggle manually
     if (showFullVideoPlayer) {
         FullVideoPlayer(
             mediaMetadata = mediaMetadata,
@@ -1917,7 +1919,6 @@ fun BottomSheetPlayer(
                     playerConnection.toggleVideoMode()
                 }
             },
-            showLyrics = showInlineLyrics,
             onToggleLyrics = { onLyricsToggle() }
         )
     }
@@ -1927,11 +1928,13 @@ fun BottomSheetPlayer(
 fun FullVideoPlayer(
     mediaMetadata: MediaMetadata?,
     onDismiss: () -> Unit,
-    showLyrics: Boolean,
     onToggleLyrics: () -> Unit
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val player = playerConnection.player
+    
+    // Video player manages its own lyrics visibility
+    var showLyrics by remember { mutableStateOf(false) }
     
     var showControls by remember { mutableStateOf(true) }
     var isDragging by remember { mutableStateOf(false) }
@@ -2031,7 +2034,7 @@ fun FullVideoPlayer(
                     }
                     
                     // Lyrics toggle
-                    androidx.compose.material3.IconButton(onClick = onToggleLyrics) {
+                    androidx.compose.material3.IconButton(onClick = { showLyrics = !showLyrics }) {
                         Icon(
                             painter = painterResource(R.drawable.lyrics),
                             contentDescription = "Toggle lyrics",
