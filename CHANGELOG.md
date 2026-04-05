@@ -1,3 +1,37 @@
+# AuraMusic v1.0.10 (Build 11) Changelog
+
+## New Features
+
+### Video Player Improvements
+- **Video Switching Loading Indicator**: Added smooth loading animation while video is being fetched
+- **Improved Video Lyrics Sync**: Reduced polling interval from 150ms to 50ms for perfectly synced lyrics with video playback
+- **Music Video Search Algorithm Overhaul**: Completely rewritten video search with much higher accuracy
+  - Normalized title comparison with automatic bracketed content stripping
+  - Artist token matching for more reliable artist detection
+  - Multi-query search with cross-query result comparison
+  - Expanded exclusion list for non-official videos (karaoke, sped up, slowed, nightcore, etc.)
+  - Early exit for high-confidence matches
+  - Minimum confidence threshold for more reliable results
+
+### General Improvements
+- **Updater**: Added automatic redirect following for GitHub API requests
+
+## Changes
+- Repository moved to Team AuraMusic organization: https://github.com/Team-AuraMusic/AuraMusic
+- All repository URLs updated across entire codebase (settings, API, Discord RPC, README, etc.)
+- Build version bump: 1.0.9 (Build 10) → 1.0.10 (Build 11)
+
+## Bug Fixes
+- Fixed black screen flash when switching between audio/video modes
+- Fixed lyrics offset not being properly applied in video mode
+- Fixed video background during loading state
+
+---
+
+**Full Changelog**: https://github.com/TeamAuraMusic/AuraMusic/compare/v1.0.9...v1.0.10
+
+---
+
 # AuraMusic v1.0.9 (Build 10) Changelog
 
 ## New Features
@@ -81,7 +115,7 @@
 
 ---
 
-**Full Changelog**: https://github.com/chila254/AuraMusic/compare/v1.0.7...v1.0.8
+**Full Changelog**: https://github.com/TeamAuraMusic/AuraMusic/compare/v1.0.7...v1.0.8
 
 ---
 
@@ -111,7 +145,7 @@
 
 ---
 
-**Full Changelog**: https://github.com/chila254/AuraMusic/compare/v1.0.6...v1.0.7
+**Full Changelog**: https://github.com/TeamAuraMusic/AuraMusic/compare/v1.0.6...v1.0.7
 
 ---
 
@@ -135,7 +169,7 @@
 - New screen shows horizontal scrollable album list with cover art, title, and year
 
 ### Repository Update
-- Updated repository URL from `chila254/Auramusic-v1` to `chila254/AuraMusic`
+- Updated repository URL from `chila254/Auramusic-v1` to `TeamAuraMusic/AuraMusic`
 - Updated all internal links and references:
   - Settings > About screen GitHub link
   - Updater (GitHub API base)
@@ -169,7 +203,7 @@
 
 ---
 
-**Full Changelog**: https://github.com/chila254/AuraMusic/compare/v1.0.5...v1.0.6
+**Full Changelog**: https://github.com/TeamAuraMusic/AuraMusic/compare/v1.0.5...v1.0.6
 
 ---
 
@@ -203,4 +237,4 @@
 
 ---
 
-**Full Changelog**: https://github.com/chila254/AuraMusic/compare/v1.0.4...v1.0.5
+**Full Changelog**: https://github.com/TeamAuraMusic/AuraMusic/compare/v1.0.4...v1.0.5

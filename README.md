@@ -17,9 +17,9 @@
 <h1>Release numbers</h1>
 </div>
 
-[![Latest release](https://img.shields.io/github/v/release/chila254/AuraMusic?style=for-the-badge)](https://github.com/chila254/AuraMusic/releases)
-[![GitHub license](https://img.shields.io/github/license/chila254/AuraMusic?style=for-the-badge)](https://github.com/chila254/AuraMusic/blob/main/LICENSE)
-[![Downloads](https://img.shields.io/github/downloads/chila254/AuraMusic/total?style=for-the-badge)](https://github.com/chila254/AuraMusic/releases)
+[![Latest release](https://img.shields.io/github/v/release/TeamAuraMusic/AuraMusic?style=for-the-badge)](https://github.com/TeamAuraMusic/AuraMusic/releases)
+[![GitHub license](https://img.shields.io/github/license/TeamAuraMusic/AuraMusic?style=for-the-badge)](https://github.com/TeamAuraMusic/AuraMusic/blob/main/LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/TeamAuraMusic/AuraMusic/total?style=for-the-badge)](https://github.com/TeamAuraMusic/AuraMusic/releases)
 
 </div>
 
@@ -29,7 +29,7 @@
 <table>
 <tr>
 <td align="center">
-<a href="https://github.com/chila254/AuraMusic/releases/latest/download/AuraMusic.apk"><img src="https://github.com/machiav3lli/oandbackupx/blob/034b226cea5c1b30eb4f6a6f313e4dadcbb0ece4/badge_github.png" alt="Get it on GitHub" height="82"></a>
+<a href="https://github.com/TeamAuraMusic/AuraMusic/releases/latest/download/AuraMusic.apk"><img src="https://github.com/machiav3lli/oandbackupx/blob/034b226cea5c1b30eb4f6a6f313e4dadcbb0ece4/badge_github.png" alt="Get it on GitHub" height="82"></a>
 </td>
 </tr>
 </table>
@@ -101,7 +101,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/chila254/AuraMusic.git
+git clone https://github.com/TeamAuraMusic/AuraMusic.git
 cd AuraMusic
 
 # Setup API keys (optional)
@@ -157,7 +157,7 @@ Join our community on social media - more platforms coming soon!
 - [**RushLyrics**](https://github.com/shub39/Rush) – Additional lyrics data
 - [**Better Lyrics**](https://better-lyrics.boidu.dev) – Time-synced lyrics with word-by-word highlighting
 - [**SimpMusic Lyrics**](https://github.com/maxrave-dev/SimpMusic) – Lyrics data via SimpMusic API
-- [**AuraMusicServer**](https://github.com/chila254/AuraMusicServer) – Listen together implementation
+- [**AuraMusicServer**](https://github.com/TeamAuraMusic/AuraMusicServer) – Listen together implementation
 - [**MusicRecognizer**](https://github.com/aleksey-saenko/MusicRecognizer) – Music recognition and Shazam API
 
 The open-source community for tools, libraries, and APIs that make this project possible.

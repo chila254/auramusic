@@ -111,26 +111,34 @@ object FlowVideo {
         val songTitleLower = songTitle.lowercase().trim()
         val artistNameLower = artistName.lowercase().trim()
         
+        // Normalize: strip bracketed/parenthesized content for comparison
+        val cleanSongTitle = songTitleLower.replace(Regex("\\(.*?\\)|\\[.*?\\]"), "").trim()
+        
         // Keywords to exclude (lyrics videos, live performances, etc.)
         val excludeKeywords = listOf(
-            "lyrics", "lyric video", "lyrical", 
+            "lyrics", "lyric video", "lyrical",
             "live", "concert", "performance",
             "reaction", "react", "cover",
             "remix", "instrumental",
-            "visualizer", "audio"
+            "visualizer", "audio",
+            "karaoke", "sped up", "slowed",
+            "nightcore", "behind the scenes",
+            "making of", "fan made", "shorts",
+            "teaser", "trailer"
         )
         
-        // Preferred channels (official music channels)
-        val preferredChannels = listOf(
-            "vevo", "official", "music", "record"
-        )
+        // Artist name tokens for matching
+        val artistTokens = artistNameLower.split(" ", ",", "&").map { it.trim() }
+            .filter { it.length > 2 && it !in listOf("the", "and", "feat", "ft", "with", "de", "la") }
         
-        // Try multiple search queries to find the best video
+        // Try multiple search queries and keep the best result across ALL queries
         val searchQueries = listOf(
             "$songTitle $artistName official music video",
             "$songTitle $artistName music video",
             "$songTitle $artistName"
         )
+        
+        var overallBest: Pair<YTItem, Int>? = null
         
         for (searchQuery in searchQueries) {
             Log.d(TAG, "searchOfficialMusicVideo: Searching with query: $searchQuery")
@@ -144,11 +152,9 @@ object FlowVideo {
             val items = searchResult.getOrNull()?.items ?: continue
             if (items.isEmpty()) continue
             
-            // Score each video based on relevance
-            var bestScoredVideo: Pair<YTItem, Int>? = null // (item, score)
-            
             for (item in items) {
                 val title = item.title.lowercase()
+                val cleanTitle = title.replace(Regex("\\(.*?\\)|\\[.*?\\]"), "").trim()
                 val channelName = (item as? SongItem)?.artists?.firstOrNull()?.name?.lowercase() ?: ""
                 
                 var score = 0
@@ -160,63 +166,69 @@ object FlowVideo {
                 // Check for exclude keywords (lyrics, live, etc.)
                 val hasExcludedKeyword = excludeKeywords.any { title.contains(it) }
                 if (hasExcludedKeyword) {
-                    score -= 50 // Penalize heavily
+                    score -= 50
                 }
                 
-                // Check for preferred channel
-                val hasPreferredChannel = preferredChannels.any { 
-                    channelName.contains(it) || title.contains(it) 
+                // Title matching - require the song title to appear in the video title
+                val titleMatch = cleanTitle.contains(cleanSongTitle)
+                if (titleMatch) score += 40
+                
+                // Artist matching - check title and channel name
+                val artistMatch = title.contains(artistNameLower) || 
+                    channelName.contains(artistNameLower) ||
+                    (artistTokens.isNotEmpty() && artistTokens.all { token -> 
+                        title.contains(token) || channelName.contains(token)
+                    })
+                if (artistMatch) score += 35
+                
+                // Both title AND artist must match for a confident result
+                if (!titleMatch && !artistMatch) {
+                    score -= 60
+                } else if (!titleMatch) {
+                    score -= 25
+                } else if (!artistMatch) {
+                    score -= 30
                 }
-                if (hasPreferredChannel) score += 20
                 
-                // Title matching - check if song title is in video title (exact match first)
-                val titleHasSongName = title.contains(songTitleLower) || 
-                    songTitleLower.contains(title.take(minOf(30, title.length)))
-                if (titleHasSongName) score += 40
-                
-                // Check if artist name is mentioned (in title or channel) - EXACT match required
-                val artistInTitle = title.contains(artistNameLower) || 
-                    artistNameLower.split(" ").any { it.length > 2 && title.contains(it) }
-                if (artistInTitle) score += 35
-                
-                // Penalize if artist name not found at all
-                if (!artistInTitle) score -= 20
-                
-                // Check for "official" keyword
+                // Prefer official/VEVO channels
+                if (channelName.contains("vevo") || channelName.endsWith("official")) score += 25
                 if (title.contains("official")) score += 10
+                if (title.contains("music video") || title.contains(" mv ") || title.endsWith(" mv")) score += 10
                 
-                // Check for "music video" or "MV"
-                if (title.contains("music video") || title.contains(" mv ")) score += 10
+                Log.d(TAG, "searchOfficialMusicVideo: Scored '${item.title}' = $score (title=$titleMatch, artist=$artistMatch, excluded=$hasExcludedKeyword)")
                 
-                Log.d(TAG, "searchOfficialMusicVideo: Scored '$item.title' = $score (excluded: $hasExcludedKeyword)")
-                
-                // Only consider videos with positive score
-                if (score > 0) {
-                    if (bestScoredVideo == null || score > bestScoredVideo.second) {
-                        bestScoredVideo = item to score
+                // Only consider videos with positive score and require minimum confidence
+                if (score > 10) {
+                    if (overallBest == null || score > overallBest.second) {
+                        overallBest = item to score
                     }
                 }
             }
             
-            val selectedVideo = bestScoredVideo?.first
-            
-            if (selectedVideo != null) {
-                Log.d(TAG, "searchOfficialMusicVideo: Found video: ${selectedVideo.title} (score=${bestScoredVideo?.second})")
-                
-                // Extract artist name from SongItem if available
-                val channelName = if (selectedVideo is SongItem) {
-                    selectedVideo.artists.firstOrNull()?.name ?: artistName
-                } else {
-                    artistName
-                }
-                
-                return@runCatching VideoSearchResult(
-                    videoId = selectedVideo.id,
-                    title = selectedVideo.title,
-                    channelName = channelName,
-                    thumbnailUrl = selectedVideo.thumbnail ?: ""
-                )
+            // If we found a high-confidence match, no need to try more queries
+            if (overallBest != null && overallBest.second >= 80) {
+                Log.d(TAG, "searchOfficialMusicVideo: High confidence match found, skipping remaining queries")
+                break
             }
+        }
+        
+        val selectedVideo = overallBest?.first
+        
+        if (selectedVideo != null) {
+            Log.d(TAG, "searchOfficialMusicVideo: Found video: ${selectedVideo.title} (score=${overallBest?.second})")
+            
+            val channelName = if (selectedVideo is SongItem) {
+                selectedVideo.artists.firstOrNull()?.name ?: artistName
+            } else {
+                artistName
+            }
+            
+            return@runCatching VideoSearchResult(
+                videoId = selectedVideo.id,
+                title = selectedVideo.title,
+                channelName = channelName,
+                thumbnailUrl = selectedVideo.thumbnail ?: ""
+            )
         }
         
         throw Exception("No music video found for '$songTitle' by '$artistName'")

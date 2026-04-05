@@ -51,6 +51,8 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ContainedLoadingIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -673,6 +675,7 @@ private fun HiddenThumbnailPlaceholder(
  * Actual thumbnail image with caching and hardware layer rendering.
  * Also displays video when video mode is enabled with enhanced controls.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ThumbnailImage(
     artworkUri: String?,
@@ -683,6 +686,7 @@ private fun ThumbnailImage(
     val playerConnection = LocalPlayerConnection.current ?: return
     val player = playerConnection.player
     val context = LocalContext.current
+    val isVideoSwitching by playerConnection.isVideoSwitching.collectAsState()
     
     // [4] Auto-hide controls state
     var showControls by remember { mutableStateOf(true) }
@@ -736,14 +740,22 @@ private fun ThumbnailImage(
         modifier = modifier
             .fillMaxSize()
             .then(
-                if (videoModeEnabled) Modifier
+                if (videoModeEnabled || isVideoSwitching) Modifier
                 else Modifier.graphicsLayer {
                     compositingStrategy = CompositingStrategy.Offscreen
                 }
             )
-            .background(if (videoModeEnabled) Color.Black else MaterialTheme.colorScheme.surfaceVariant)
+            .background(if (videoModeEnabled || isVideoSwitching) Color.Black else MaterialTheme.colorScheme.surfaceVariant)
     ) {
-        if (videoModeEnabled) {
+        if (isVideoSwitching && !videoModeEnabled) {
+            // Show loading animation while video is being fetched
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                ContainedLoadingIndicator()
+            }
+        } else if (videoModeEnabled) {
             // Video player view - fix: use RESIZE_MODE_ZOOM for full fill
             AndroidView(
                 factory = { ctx ->
@@ -756,7 +768,7 @@ private fun ThumbnailImage(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.MATCH_PARENT
                         )
-                        setShutterBackgroundColor(android.graphics.Color.TRANSPARENT)
+                        setShutterBackgroundColor(android.graphics.Color.BLACK)
                         keepScreenOn = true
                     }
                 },
@@ -1290,10 +1302,10 @@ private fun VideoLyricsOverlay(
     val currentSong by playerConnection.currentSong.collectAsState(initial = null)
     val lyricsOffset = currentSong?.song?.lyricsOffset ?: 0
     
-    LaunchedEffect(mediaMetadata?.id) {
+    LaunchedEffect(mediaMetadata?.id, lyricsOffset) {
         while (isActive) {
             playerPosition = player.currentPosition - lyricsOffset
-            delay(150)
+            delay(50) // Faster polling for tighter video lyrics sync
         }
     }
 

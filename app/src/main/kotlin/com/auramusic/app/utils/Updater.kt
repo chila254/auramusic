@@ -35,6 +35,7 @@ object Updater {
     private val client = OkHttpClient.Builder()
     .connectTimeout(30, TimeUnit.SECONDS)
     .readTimeout(30, TimeUnit.SECONDS)
+    .followRedirects(true)
     .build()
     var lastCheckTime = -1L
         private set
@@ -43,7 +44,7 @@ object Updater {
     private var cachedAllReleases: List<ReleaseInfo> = emptyList()
     
     private const val CHECK_INTERVAL_MILLIS = 2 * 60 * 60 * 1000L // 2 hours
-    private const val GITHUB_API_BASE = "https://api.github.com/repos/chila254/AuraMusic"
+    private const val GITHUB_API_BASE = "https://api.github.com/repos/TeamAuraMusic/AuraMusic"
 
     /**
      * Compares two version strings.
