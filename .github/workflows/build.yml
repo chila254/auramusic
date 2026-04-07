@@ -47,7 +47,7 @@ jobs:
             cp app/google-services.json.example app/google-services.json
           fi
 
-- name: Create local.properties
+      - name: Create local.properties
         run: |
           pwd
           cat > local.properties << EOF
