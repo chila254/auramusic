@@ -48,7 +48,7 @@ jobs:
             cp app/google-services.json.example app/google-services.json
           fi
 
-- name: Create local.properties
+      - name: Create local.properties
         run: |
           cat > local.properties << EOF
           sdk.dir=$ANDROID_HOME
