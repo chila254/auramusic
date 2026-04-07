@@ -121,3 +121,31 @@ fun SongItem.toMediaMetadata() =
         libraryRemoveToken = libraryRemoveToken,
         suggestedBy = null
     )
+
+fun EpisodeItem.toMediaMetadata() =
+    MediaMetadata(
+        id = id,
+        title = title,
+        artists =
+        listOfNotNull(author?.let {
+            MediaMetadata.Artist(
+                id = it.id,
+                name = it.name,
+            )
+        }),
+        duration = duration ?: -1,
+        thumbnailUrl = thumbnail.resize(544, 544),
+        album =
+        podcast?.let {
+            MediaMetadata.Album(
+                id = it.id,
+                title = it.name,
+            )
+        },
+        explicit = explicit,
+        setVideoId = null,
+        musicVideoType = null,
+        libraryAddToken = libraryAddToken,
+        libraryRemoveToken = libraryRemoveToken,
+        suggestedBy = null
+    )

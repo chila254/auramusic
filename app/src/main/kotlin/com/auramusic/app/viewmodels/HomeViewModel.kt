@@ -269,6 +269,22 @@ class HomeViewModel @Inject constructor(
             reportException(it)
         }
 
+        YouTube.podcasts().onSuccess { podcastsPage ->
+            explorePage.value = explorePage.value?.copy(
+                podcasts = podcastsPage.featured
+            )
+        }.onFailure {
+            reportException(it)
+        }
+
+        YouTube.mixes().onSuccess { mixesPage ->
+            explorePage.value = explorePage.value?.copy(
+                mixes = mixesPage.mixes
+            )
+        }.onFailure {
+            reportException(it)
+        }
+
         allLocalItems.value = (quickPicks.value.orEmpty() + forgottenFavorites.value.orEmpty() + keepListening.value.orEmpty())
             .filter { it is Song || it is Album }
         allYtItems.value = similarRecommendations.value?.flatMap { it.items }.orEmpty() +

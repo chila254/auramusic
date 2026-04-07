@@ -83,7 +83,9 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.auramusic.innertube.models.AlbumItem
 import com.auramusic.innertube.models.ArtistItem
+import com.auramusic.innertube.models.EpisodeItem
 import com.auramusic.innertube.models.PlaylistItem
+import com.auramusic.innertube.models.PodcastItem
 import com.auramusic.innertube.models.SongItem
 import com.auramusic.innertube.models.WatchEndpoint
 import com.auramusic.innertube.models.YTItem
@@ -343,6 +345,10 @@ fun HomeScreen(
                             is AlbumItem -> navController.navigate("album/${item.id}")
                             is ArtistItem -> navController.navigate("artist/${item.id}")
                             is PlaylistItem -> navController.navigate("online_playlist/${item.id}")
+                            is PodcastItem -> navController.navigate("online_podcast/${item.id}")
+                            is EpisodeItem -> playerConnection.playQueue(
+                                YouTubeQueue.radio(item.toMediaMetadata())
+                            )
                         }
                     },
                     onLongClick = {
@@ -369,6 +375,18 @@ fun HomeScreen(
                                 is PlaylistItem -> YouTubePlaylistMenu(
                                     playlist = item,
                                     coroutineScope = scope,
+                                    onDismiss = menuState::dismiss
+                                )
+
+                                is PodcastItem -> YouTubePlaylistMenu(
+                                    playlist = item.asPlaylistItem(),
+                                    coroutineScope = scope,
+                                    onDismiss = menuState::dismiss
+                                )
+
+                                is EpisodeItem -> YouTubeSongMenu(
+                                    song = item.asSongItem(),
+                                    navController = navController,
                                     onDismiss = menuState::dismiss
                                 )
                             }
@@ -964,24 +982,54 @@ fun HomeScreen(
             }
 
             if (selectedChip == null) {
-                item(key = "explore_title") {
-                    NavigationTitle(
-                        title = stringResource(R.string.podcasts),
-                        onClick = {
-                            navController.navigate("podcasts")
-                        },
-                        modifier = Modifier.animateItem()
-                    )
+                explorePage?.podcasts?.takeIf { it.isNotEmpty() }?.let { podcasts ->
+                    item(key = "podcasts_title") {
+                        NavigationTitle(
+                            title = stringResource(R.string.podcasts),
+                            onClick = {
+                                navController.navigate("podcasts")
+                            },
+                            modifier = Modifier.animateItem()
+                        )
+                    }
+
+                    item(key = "podcasts_list") {
+                        LazyRow(
+                            contentPadding = WindowInsets.systemBars
+                                .only(WindowInsetsSides.Horizontal)
+                                .asPaddingValues(),
+                            modifier = Modifier.animateItem()
+                        ) {
+                            items(podcasts.flatMap { it.items }.take(10)) { item ->
+                                ytGridItem(item)
+                            }
+                        }
+                    }
                 }
 
-                item(key = "explore_section") {
-                    NavigationTitle(
-                        title = stringResource(R.string.charts),
-                        onClick = {
-                            navController.navigate("charts_screen")
-                        },
-                        modifier = Modifier.animateItem()
-                    )
+                explorePage?.mixes?.takeIf { it.isNotEmpty() }?.let { mixes ->
+                    item(key = "mixes_title") {
+                        NavigationTitle(
+                            title = stringResource(R.string.mixes),
+                            onClick = {
+                                navController.navigate("mixes")
+                            },
+                            modifier = Modifier.animateItem()
+                        )
+                    }
+
+                    item(key = "mixes_list") {
+                        LazyRow(
+                            contentPadding = WindowInsets.systemBars
+                                .only(WindowInsetsSides.Horizontal)
+                                .asPaddingValues(),
+                            modifier = Modifier.animateItem()
+                        ) {
+                            items(mixes.flatMap { it.items }.take(10)) { item ->
+                                ytGridItem(item)
+                            }
+                        }
+                    }
                 }
 
                 explorePage?.moodAndGenres?.let { moodAndGenres ->

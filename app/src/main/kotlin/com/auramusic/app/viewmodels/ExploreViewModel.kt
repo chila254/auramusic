@@ -79,6 +79,8 @@ constructor(
                         }
                     }
                 }
+                val podcasts = podcastsPage.value?.featured ?: emptyList()
+                val mixes = mixesPage.value?.mixes ?: emptyList()
                 explorePage.value =
                     page.copy(
                         newReleaseAlbums =
@@ -95,6 +97,8 @@ constructor(
                                     } ?: Int.MAX_VALUE
                                 firstArtistKey
                             }.filterExplicit(context.dataStore.get(HideExplicitKey, false)),
+                        podcasts = podcasts,
+                        mixes = mixes,
                     )
             }.onFailure {
                 reportException(it)

@@ -790,7 +790,7 @@ fun PlaylistListItem(
             placeHolder = {
                 val painter = when (playlist.playlist.name) {
                     stringResource(R.string.liked) -> R.drawable.favorite_border
-                    stringResource(R.string.offline) -> R.drawable.offline
+                    stringResource(R.string.offline) -> R.drawable.downloaded
                     stringResource(R.string.cached_playlist) -> R.drawable.cached
                     // R.drawable.backup as placeholder
                     stringResource(R.string.uploaded_playlist) -> R.drawable.backup
@@ -887,19 +887,19 @@ fun PlaylistGridItem(
         PlaylistThumbnail(
             thumbnails = playlist.thumbnails,
             size = width,
-            placeHolder = {
-                val painter = when (playlist.playlist.name) {
-                    stringResource(R.string.liked) -> R.drawable.favorite_border
-                    stringResource(R.string.offline) -> R.drawable.offline
-                    stringResource(R.string.cached_playlist) -> R.drawable.cached
-                    // R.drawable.backup as placeholder
-                    stringResource(R.string.uploaded_playlist) -> R.drawable.backup
-                    else -> if (autoPlaylist) R.drawable.trending_up else R.drawable.queue_music
-                }
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
+        placeHolder = {
+            val painter = when (playlist.playlist.name) {
+                stringResource(R.string.liked) -> R.drawable.favorite_border
+                stringResource(R.string.offline) -> R.drawable.downloaded
+                stringResource(R.string.cached_playlist) -> R.drawable.cached
+                // R.drawable.backup as placeholder
+                stringResource(R.string.uploaded_playlist) -> R.drawable.backup
+                else -> if (autoPlaylist) R.drawable.trending_up else R.drawable.queue_music
+            }
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize()
+            ) {
                     Icon(
                         painter = painterResource(painter),
                         contentDescription = null,
@@ -1711,7 +1711,7 @@ object Icon {
     fun Download(state: Int?) {
         when (state) {
             STATE_COMPLETED -> Icon(
-                painter = painterResource(R.drawable.offline),
+                painter = painterResource(R.drawable.downloaded),
                 contentDescription = null,
                 modifier = Modifier
                     .size(18.dp)

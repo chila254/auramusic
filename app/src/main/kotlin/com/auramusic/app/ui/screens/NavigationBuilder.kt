@@ -119,6 +119,10 @@ fun NavGraphBuilder.navigationBuilder(
         PodcastsScreen(navController, scrollBehavior)
     }
 
+    composable("mixes") {
+        MixesScreen(navController, scrollBehavior)
+    }
+
     composable("top_charts") {
         TopChartsScreen(navController, scrollBehavior)
     }

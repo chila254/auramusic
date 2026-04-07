@@ -28,6 +28,7 @@
     <string name="stats">Stats</string>
     <string name="mood_and_genres">Mood and Genres</string>
     <string name="podcasts">Podcasts</string>
+    <string name="mixes">Mixes</string>
     <string name="account">Account</string>
     <string name="quick_picks">Quick picks</string>
     <string name="quick_picks_empty">Listen to songs to generate your quick picks</string>
@@ -102,7 +103,7 @@
     <string name="cached_playlist">Cached</string>
     <string name="uploaded_playlist">Uploaded</string>
     <string name="liked">Liked</string>
-    <string name="offline">Offline</string>
+    <string name="offline">Downloaded</string>
     <string name="sync_playlist">Sync playlist</string>
     <string name="allows_for_sync_witch_youtube">Allows for sync with YouTube</string>
     <string name="not_logged_in_youtube">Not logged in to YouTube</string>
