@@ -1060,7 +1060,7 @@ fun BottomSheetPlayer(
                         }
 
                         // Video mode toggle button - only show for video songs (not regular songs)
-                        if (videoModeToggleEnabled && mediaMetadata?.isVideoSong == true) {
+                        if (videoModeToggleEnabled && mediaMetadata.isVideoSong == true) {
                             Box(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier.size(42.dp)
