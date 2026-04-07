@@ -82,13 +82,20 @@ fun AboutScreen(
         Spacer(Modifier.height(72.dp))
 
         // App Logo with pulse animation
-        Image(
-            painter = painterResource(R.drawable.ic_launcher_static_foreground),
-            contentDescription = "AuraMusic Logo",
+        Box(
             modifier = Modifier
                 .size(100.dp)
                 .scale(scale)
-        )
+                .clip(CircleShape)
+                .background(Color.Black),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(R.drawable.ic_launcher_foreground),
+                contentDescription = "AuraMusic Logo",
+                modifier = Modifier.size(100.dp)
+            )
+        }
 
         // App Name
         Text(

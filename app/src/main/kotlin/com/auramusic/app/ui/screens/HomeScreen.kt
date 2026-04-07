@@ -964,6 +964,26 @@ fun HomeScreen(
             }
 
             if (selectedChip == null) {
+                item(key = "explore_title") {
+                    NavigationTitle(
+                        title = stringResource(R.string.podcasts),
+                        onClick = {
+                            navController.navigate("podcasts")
+                        },
+                        modifier = Modifier.animateItem()
+                    )
+                }
+
+                item(key = "explore_section") {
+                    NavigationTitle(
+                        title = stringResource(R.string.charts),
+                        onClick = {
+                            navController.navigate("charts_screen")
+                        },
+                        modifier = Modifier.animateItem()
+                    )
+                }
+
                 explorePage?.moodAndGenres?.let { moodAndGenres ->
                     item(key = "mood_and_genres_title") {
                         NavigationTitle(

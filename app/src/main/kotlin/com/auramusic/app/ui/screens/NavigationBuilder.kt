@@ -36,6 +36,7 @@ import com.auramusic.app.ui.screens.playlist.CachePlaylistScreen
 import com.auramusic.app.ui.screens.playlist.LocalPlaylistScreen
 import com.auramusic.app.ui.screens.playlist.OnlinePlaylistScreen
 import com.auramusic.app.ui.screens.playlist.TopPlaylistScreen
+import com.auramusic.app.ui.screens.ExploreScreen
 import com.auramusic.app.ui.screens.search.OnlineSearchResult
 import com.auramusic.app.ui.screens.search.SearchScreen
 import com.auramusic.app.ui.screens.settings.AboutScreen
@@ -132,6 +133,10 @@ fun NavGraphBuilder.navigationBuilder(
 
     composable("charts_screen") {
         ChartsScreen(navController)
+    }
+
+    composable("explore") {
+        ExploreScreen(navController)
     }
 
     composable(

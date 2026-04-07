@@ -66,6 +66,7 @@ import com.auramusic.innertube.YouTube.SearchFilter.Companion.FILTER_ALBUM
 import com.auramusic.innertube.YouTube.SearchFilter.Companion.FILTER_ARTIST
 import com.auramusic.innertube.YouTube.SearchFilter.Companion.FILTER_COMMUNITY_PLAYLIST
 import com.auramusic.innertube.YouTube.SearchFilter.Companion.FILTER_FEATURED_PLAYLIST
+import com.auramusic.innertube.YouTube.SearchFilter.Companion.FILTER_PODCAST
 import com.auramusic.innertube.YouTube.SearchFilter.Companion.FILTER_SONG
 import com.auramusic.innertube.YouTube.SearchFilter.Companion.FILTER_VIDEO
 import com.auramusic.innertube.models.AlbumItem
@@ -353,6 +354,7 @@ fun OnlineSearchResult(
                     FILTER_ARTIST to stringResource(R.string.filter_artists),
                     FILTER_COMMUNITY_PLAYLIST to stringResource(R.string.filter_community_playlists),
                     FILTER_FEATURED_PLAYLIST to stringResource(R.string.filter_featured_playlists),
+                    FILTER_PODCAST to stringResource(R.string.podcasts),
                 ),
                 currentValue = searchFilter,
                 onValueUpdate = {
