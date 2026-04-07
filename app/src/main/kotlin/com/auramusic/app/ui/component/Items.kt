@@ -1090,6 +1090,8 @@ fun YouTubeGridItem(
             is AlbumItem -> joinByBullet(item.artists?.joinToString { it.name }, item.year?.toString())
             is ArtistItem -> null
             is PlaylistItem -> joinByBullet(item.author?.name, item.songCountText)
+            is PodcastItem -> joinByBullet(item.author?.name, item.episodeCountText)
+            is EpisodeItem -> joinByBullet(item.author?.name, makeTimeString(item.duration?.times(1000L)))
         }
         if (subtitle != null) {
             Text(
