@@ -76,7 +76,11 @@ jobs:
           EOF
 
       - name: Build FossUniversalRelease APK
-        run: ./gradlew assembleFossUniversalRelease --no-daemon
+        run: |
+          sed -i 's|maven.aliyun.com/repository/public|maven.google.com/repository/public|g' build.gradle.kts settings.gradle.kts 2>/dev/null || true
+          sed -i 's|maven.aliyun.com/repository/google|dl.google.com/dl/android/maven|g' build.gradle.kts settings.gradle.kts 2>/dev/null || true
+          sed -i 's|maven.aliyun.com/repository/central|repo.maven.apache.org/maven2|g' build.gradle.kts settings.gradle.kts 2>/dev/null || true
+          ./gradlew assembleFossUniversalRelease --no-daemon --no-configuration-cache
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
