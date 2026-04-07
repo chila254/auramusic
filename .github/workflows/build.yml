@@ -33,6 +33,7 @@ jobs:
           DEBUG_KEYSTORE: ${{ secrets.DEBUG_KEYSTORE }}
           RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE }}
         run: |
+          mkdir -p app/keystore
           echo "$DEBUG_KEYSTORE" | base64 -d > app/keystore/debug.keystore
           echo "$RELEASE_KEYSTORE" | base64 -d > app/keystore/release.keystore
 
