@@ -128,7 +128,7 @@ cp local.properties.example local.properties
 
 If you'd like to support my work, you can donate via PayPal:
 
-<a href="https://paypal.me/franklinfinyange">
+<a href="https://www.paypal.com/paypalme/franklinfinyage">
 <img src="https://www.paypalobjects.com/webstatic/mktg/Logo/pp-logo-200px.png" alt="PayPal" height="60">
 </a>
 
