@@ -109,11 +109,11 @@ fun TopChartsScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = item.title ?: "",
+                                text = item.title,
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             Text(
-                                text = item.artists?.firstOrNull()?.name ?: "",
+                                text = (item as? SongItem)?.artists?.firstOrNull()?.name ?: "",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

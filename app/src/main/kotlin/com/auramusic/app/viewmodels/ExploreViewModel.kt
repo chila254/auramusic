@@ -39,7 +39,7 @@ constructor(
     val mixesPage = MutableStateFlow<MixesPage?>(null)
     val top100ChartsPage = MutableStateFlow<Top100ChartsPage?>(null)
 
-    private suspend fun loadPodcasts() {
+    private suspend fun loadPodcastsInternal() {
         YouTube.podcasts().onSuccess { page ->
             podcastsPage.value = page
         }.onFailure {
@@ -47,7 +47,7 @@ constructor(
         }
     }
 
-    private suspend fun loadMixes() {
+    private suspend fun loadMixesInternal() {
         YouTube.mixes().onSuccess { page ->
             mixesPage.value = page
         }.onFailure {
@@ -55,7 +55,7 @@ constructor(
         }
     }
 
-    private suspend fun loadTop100Charts(countryCode: String = "US") {
+    private suspend fun loadTop100ChartsInternal(countryCode: String = "US") {
         YouTube.getTop100Charts(countryCode).onSuccess { page ->
             top100ChartsPage.value = page
         }.onFailure {
@@ -104,13 +104,13 @@ constructor(
     init {
         viewModelScope.launch(Dispatchers.IO) {
             load()
-            loadPodcasts()
-            loadMixes()
-            loadTop100Charts()
+            loadPodcastsInternal()
+            loadMixesInternal()
+            loadTop100ChartsInternal()
         }
     }
 
-    fun loadPodcasts() = viewModelScope.launch(Dispatchers.IO) { loadPodcasts() }
-    fun loadMixes() = viewModelScope.launch(Dispatchers.IO) { loadMixes() }
-    fun loadTop100Charts(countryCode: String = "US") = viewModelScope.launch(Dispatchers.IO) { loadTop100Charts(countryCode) }
+    fun loadPodcasts() = viewModelScope.launch(Dispatchers.IO) { loadPodcastsInternal() }
+    fun loadMixes() = viewModelScope.launch(Dispatchers.IO) { loadMixesInternal() }
+    fun loadTop100Charts(countryCode: String = "US") = viewModelScope.launch(Dispatchers.IO) { loadTop100ChartsInternal(countryCode) }
 }
