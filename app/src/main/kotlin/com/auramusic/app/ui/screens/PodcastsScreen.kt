@@ -21,9 +21,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.auramusic.app.R
-import com.auramusic.app.ui.screens.artist.ArtistItemsScreen
+import com.auramusic.app.ui.component.YouTubeListItem
 import com.auramusic.innertube.YouTube
 import com.auramusic.innertube.pages.RelatedPage
+import com.auramusic.innertube.PodcastsPage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -35,7 +36,7 @@ import javax.inject.Inject
 class PodcastsViewModel @Inject constructor(
     @ApplicationContext val context: Context,
 ) : ViewModel() {
-    val podcastsPage = MutableStateFlow<YouTube.PodcastsPage?>(null)
+    val podcastsPage = MutableStateFlow<PodcastsPage?>(null)
     val isLoading = MutableStateFlow(true)
 
     init {
@@ -91,16 +92,11 @@ fun PodcastsScreen(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                         )
                     }
-                    items(section.items.size) { index ->
-                        val item = section.items[index]
-                        ArtistItemsScreen.ArtistItem(
+                    items(section.items) { item ->
+                        YouTubeListItem(
                             item = item,
-                            index = index,
-                            isPlaying = false,
-                            playWhenReady = false,
-                            artistId = if (item is RelatedPage) item.id else null,
-                            onClick = { /* Navigate to podcast */ },
-                            onLongClick = { /* Add to queue */ }
+                            isActive = false,
+                            isPlaying = false
                         )
                     }
                 }

@@ -25,6 +25,7 @@ import com.auramusic.app.R
 import com.auramusic.innertube.YouTube
 import com.auramusic.innertube.pages.RelatedPage
 import com.auramusic.innertube.models.SongItem
+import com.auramusic.innertube.Top100ChartsPage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -36,7 +37,7 @@ import javax.inject.Inject
 class TopChartsViewModel @Inject constructor(
     @ApplicationContext val context: Context,
 ) : ViewModel() {
-    val topChartsPage = MutableStateFlow<YouTube.Top100ChartsPage?>(null)
+    val topChartsPage = MutableStateFlow<Top100ChartsPage?>(null)
     val isLoading = MutableStateFlow(true)
 
     init {
@@ -89,7 +90,6 @@ fun TopChartsScreen(
             ) {
                 items(items.size) { index ->
                     val item = items[index]
-                    val song = item.asSongItem
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -101,28 +101,22 @@ fun TopChartsScreen(
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.width(32.dp)
                         )
-                        item.thumbnail?.let { url ->
-                            AsyncImage(
-                                model = url,
-                                modifier = Modifier.size(56.dp),
-                                shape = MaterialTheme.shapes.small
-                            )
-                        }
+                        AsyncImage(
+                            model = item.thumbnail,
+                            contentDescription = null,
+                            modifier = Modifier.size(56.dp)
+                        )
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            song?.title?.let {
-                                Text(
-                                    text = it,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                            song?.artists?.firstOrNull()?.name?.let {
-                                Text(
-                                    text = it,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            Text(
+                                text = item.title ?: "",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = item.artists?.firstOrNull()?.name ?: "",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }

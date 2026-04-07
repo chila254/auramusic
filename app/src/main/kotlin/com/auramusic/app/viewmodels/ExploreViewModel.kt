@@ -11,9 +11,9 @@ import androidx.lifecycle.viewModelScope
 import com.auramusic.innertube.YouTube
 import com.auramusic.innertube.models.filterExplicit
 import com.auramusic.innertube.pages.ExplorePage
-import com.auramusic.innertube.YouTube.MixesPage
-import com.auramusic.innertube.YouTube.PodcastsPage
-import com.auramusic.innertube.YouTube.Top100ChartsPage
+import com.auramusic.innertube.PodcastsPage
+import com.auramusic.innertube.MixesPage
+import com.auramusic.innertube.Top100ChartsPage
 import com.auramusic.app.constants.HideExplicitKey
 import com.auramusic.app.db.MusicDatabase
 import com.auramusic.app.utils.dataStore
