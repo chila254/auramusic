@@ -591,6 +591,37 @@ object YouTube {
             .mapNotNull(MoodAndGenres.Companion::fromSectionListRendererContent)
     }
 
+    suspend fun podcasts(): Result<PodcastsPage> = runCatching {
+        val response = innerTube.browse(WEB_REMIX, browseId = "FEmusic_podcasts").body<BrowseResponse>()
+        PodcastsPage(
+            featured = response.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents?.mapNotNull { content ->
+                content.musicCarouselShelfRenderer?.let { renderer ->
+                    val title = renderer.header?.musicCarouselShelfBasicHeaderRenderer?.title?.runs?.firstOrNull()?.text ?: return@let null
+                    val items = renderer.contents.mapNotNull { item ->
+                        item.musicTwoRowItemRenderer?.let { RelatedPage.Companion.fromMusicTwoRowItemRenderer(it) }
+                    }.filterNotNull()
+                    if (items.isEmpty()) null else PodcastsPage.PodcastSection(title, items)
+                }
+            }.filterNotNull().orEmpty()
+        )
+    }
+
+    suspend fun mixes(): Result<MixesPage> = runCatching {
+        val response = innerTube.browse(WEB_REMIX, browseId = "FEmusic_mixes").body<BrowseResponse>()
+        MixesPage(
+            mixes = response.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents?.mapNotNull { content ->
+                content.musicCarouselShelfRenderer?.let { renderer ->
+                    renderer.header?.musicCarouselShelfBasicHeaderRenderer?.title?.runs?.firstOrNull()?.text?.let { title ->
+                        val items = renderer.contents.mapNotNull { item ->
+                            item.musicTwoRowItemRenderer?.let { RelatedPage.Companion.fromMusicTwoRowItemRenderer(it) }
+                        }.filterNotNull()
+                        if (items.isEmpty()) null else MixesPage.MixSection(title, items)
+                    }
+                }
+            }.filterNotNull().orEmpty()
+        )
+    }
+
     suspend fun browse(browseId: String, params: String?): Result<BrowseResult> = runCatching {
         val response = innerTube.browse(WEB_REMIX, browseId = browseId, params = params).body<BrowseResponse>()
         BrowseResult(
@@ -742,6 +773,57 @@ object YouTube {
             params = "ggMGCgQIgAQ%3D",
             continuation = continuation
         ).body<BrowseResponse>()
+
+        val sections = mutableListOf<ChartsPage.ChartSection>()
+    
+        response.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()
+            ?.tabRenderer?.content?.sectionListRenderer?.contents?.forEach { content ->
+            
+                content.musicCarouselShelfRenderer?.let { renderer ->
+                    val title = renderer.header?.musicCarouselShelfBasicHeaderRenderer?.title?.runs?.firstOrNull()?.text
+                        ?: return@forEach
+            
+                    val items = renderer.contents.mapNotNull { item ->
+                        when {
+                            item.musicResponsiveListItemRenderer != null -> 
+                                convertToChartItem(item.musicResponsiveListItemRenderer)
+                            item.musicTwoRowItemRenderer != null -> 
+                                convertMusicTwoRowItem(item.musicTwoRowItemRenderer)
+                            else -> null
+                        }
+                    }.filterNotNull()
+            
+                    if (items.isNotEmpty()) {
+                        sections.add(ChartsPage.ChartSection(title, items))
+                    }
+                }
+            }
+
+        ChartsPage(sections)
+    }
+
+    suspend fun getTop100Charts(countryCode: String = "US"): Result<Top100ChartsPage> = runCatching {
+        val response = innerTube.browse(
+            client = WEB_REMIX,
+            browseId = "FEmusic_charts",
+            params = "ggMGCgQIbRibJGAkQChAKEAcQBDA%3D",
+            continuation = null
+        ).body<BrowseResponse>()
+
+        val topItems = response.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()
+            ?.tabRenderer?.content?.sectionListRenderer?.contents?.firstOrNull()
+            ?.musicCarouselShelfRenderer?.contents?.mapNotNull { item ->
+                when {
+                    item.musicResponsiveListItemRenderer != null -> 
+                        convertToChartItem(item.musicResponsiveListItemRenderer)
+                    item.musicTwoRowItemRenderer != null -> 
+                        convertMusicTwoRowItem(item.musicTwoRowItemRenderer)
+                    else -> null
+                }
+            }.filterNotNull().take(100).orEmpty()
+
+        Top100ChartsPage(countryCode, topItems)
+    }
 
         val sections = mutableListOf<ChartsPage.ChartSection>()
     
@@ -1231,3 +1313,26 @@ object YouTube {
         return null
     }
 }
+
+data class PodcastsPage(
+    val featured: List<PodcastSection>
+) {
+    data class PodcastSection(
+        val title: String,
+        val items: List<RelatedPage>
+    )
+}
+
+data class MixesPage(
+    val mixes: List<MixSection>
+) {
+    data class MixSection(
+        val title: String,
+        val items: List<RelatedPage>
+    )
+}
+
+data class Top100ChartsPage(
+    val countryCode: String,
+    val items: List<ChartItem>
+)
