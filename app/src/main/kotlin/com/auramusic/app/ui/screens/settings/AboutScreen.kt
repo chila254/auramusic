@@ -38,14 +38,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -87,7 +84,7 @@ fun AboutScreen(
         // App Logo with pulse animation
         Box(
             modifier = Modifier
-                .size(120.dp)
+                .size(140.dp)
                 .scale(scale),
             contentAlignment = Alignment.Center
         ) {
@@ -95,16 +92,15 @@ fun AboutScreen(
                 painter = painterResource(R.drawable.ic_launcher_foreground),
                 contentDescription = "AuraMusic Logo",
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(120.dp)
                     .clip(CircleShape)
             )
         }
 
-        // App Name with gradient-like effect
+        // App Name
         Text(
-            text = "AURAMUSIC",
-            style = MaterialTheme.typography.headlineLarge.copy(
-                fontFamily = FontFamily.Serif,
+            text = "AuraMusic",
+            style = MaterialTheme.typography.displaySmall.copy(
                 fontWeight = FontWeight.Bold
             ),
             color = MaterialTheme.colorScheme.primary
@@ -116,25 +112,6 @@ fun AboutScreen(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
             textAlign = TextAlign.Center
-        )
-
-        // Rotating music note icon
-        val rotation by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(8000, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart
-            ),
-            label = "rotate"
-        )
-        Icon(
-            painter = painterResource(R.drawable.music_note),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-            modifier = Modifier
-                .size(32.dp)
-                .rotate(rotation)
         )
 
         // Version and Architecture
