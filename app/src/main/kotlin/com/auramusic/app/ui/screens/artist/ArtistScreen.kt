@@ -759,6 +759,10 @@ fun ArtistScreen(
                                                             is AlbumItem -> navController.navigate("album/${item.id}")
                                                             is ArtistItem -> navController.navigate("artist/${item.id}")
                                                             is PlaylistItem -> navController.navigate("online_playlist/${item.id}")
+                                                            is PodcastItem -> navController.navigate("online_podcast/${item.id}")
+                                                            is EpisodeItem -> playerConnection.playQueue(
+                                                                YouTubeQueue.radio(item.toMediaMetadata())
+                                                            )
                                                         }
                                                     },
                                                     onLongClick = {
@@ -789,6 +793,18 @@ fun ArtistScreen(
                                                                     YouTubePlaylistMenu(
                                                                         playlist = item,
                                                                         coroutineScope = coroutineScope,
+                                                                        onDismiss = menuState::dismiss,
+                                                                    )
+                                                                is PodcastItem ->
+                                                                    YouTubePlaylistMenu(
+                                                                        playlist = item.asPlaylistItem(),
+                                                                        coroutineScope = coroutineScope,
+                                                                        onDismiss = menuState::dismiss,
+                                                                    )
+                                                                is EpisodeItem ->
+                                                                    YouTubeSongMenu(
+                                                                        song = item.asSongItem(),
+                                                                        navController = navController,
                                                                         onDismiss = menuState::dismiss,
                                                                     )
                                                             }

@@ -214,6 +214,22 @@ fun OnlineSearchScreen(
                                             onDismiss()
                                         }
                                     )
+                                    is PodcastItem -> YouTubePlaylistMenu(
+                                        playlist = item.asPlaylistItem(),
+                                        coroutineScope = scope,
+                                        onDismiss = {
+                                            menuState.dismiss()
+                                            onDismiss()
+                                        }
+                                    )
+                                    is EpisodeItem -> YouTubeSongMenu(
+                                        song = item.asSongItem(),
+                                        navController = navController,
+                                        onDismiss = {
+                                            menuState.dismiss()
+                                            onDismiss()
+                                        }
+                                    )
                                 }
                             }
                         }
@@ -250,6 +266,14 @@ fun OnlineSearchScreen(
                                     navController.navigate("online_playlist/${item.id}")
                                     onDismiss()
                                 }
+                                is PodcastItem -> {
+                                    navController.navigate("online_podcast/${item.id}")
+                                    onDismiss()
+                                }
+                                is EpisodeItem -> {
+                                    playerConnection.playQueue(YouTubeQueue.radio(item.toMediaMetadata()))
+                                    onDismiss()
+                                }
                             }
                         },
                         onLongClick = {
@@ -282,6 +306,22 @@ fun OnlineSearchScreen(
                                     is PlaylistItem -> YouTubePlaylistMenu(
                                         playlist = item,
                                         coroutineScope = coroutineScope,
+                                        onDismiss = {
+                                            menuState.dismiss()
+                                            onDismiss()
+                                        }
+                                    )
+                                    is PodcastItem -> YouTubePlaylistMenu(
+                                        playlist = item.asPlaylistItem(),
+                                        coroutineScope = coroutineScope,
+                                        onDismiss = {
+                                            menuState.dismiss()
+                                            onDismiss()
+                                        }
+                                    )
+                                    is EpisodeItem -> YouTubeSongMenu(
+                                        song = item.asSongItem(),
+                                        navController = navController,
                                         onDismiss = {
                                             menuState.dismiss()
                                             onDismiss()

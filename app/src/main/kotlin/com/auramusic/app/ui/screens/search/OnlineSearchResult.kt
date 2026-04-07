@@ -211,6 +211,18 @@ fun OnlineSearchResult(
                             coroutineScope = coroutineScope,
                             onDismiss = menuState::dismiss,
                         )
+                    is PodcastItem ->
+                        YouTubePlaylistMenu(
+                            playlist = item.asPlaylistItem(),
+                            coroutineScope = coroutineScope,
+                            onDismiss = menuState::dismiss,
+                        )
+                    is EpisodeItem ->
+                        YouTubeSongMenu(
+                            song = item.asSongItem(),
+                            navController = navController,
+                            onDismiss = menuState::dismiss,
+                        )
                 }
             }
         }
@@ -220,6 +232,8 @@ fun OnlineSearchResult(
             when (item) {
                 is SongItem -> mediaMetadata?.id == item.id
                 is AlbumItem -> mediaMetadata?.album?.id == item.id
+                is PodcastItem -> mediaMetadata?.album?.id == item.id
+                is EpisodeItem -> mediaMetadata?.id == item.id
                 else -> false
             },
             isPlaying = isPlaying,
