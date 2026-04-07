@@ -99,24 +99,17 @@ fun ExploreScreen(
     val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
-    val backStackEntry by navController.currentBackStackEntryAsState()
-    val scrollToTop by backStackEntry?.savedStateHandle
-        ?.getStateFlow("scrollToTop", false)?.collectAsState() ?: return
-
-    LaunchedEffect(Unit) {
-        if (chartsPage == null) {
-            chartsViewModel.loadCharts()
-        }
+    val lazyGridState = rememberLazyGridState()
+    val snapLayoutInfoProvider = remember(lazyGridState) {
+        SnapLayoutInfoProvider(
+            lazyGridState = lazyGridState,
+            positionInLayout = { layoutSize, itemSize ->
+                (layoutSize * 0.475f / 2f - itemSize / 2f)
+            },
+        )
     }
 
-    LaunchedEffect(scrollToTop) {
-        if (scrollToTop) {
-            scrollState.animateScrollTo(0)
-            backStackEntry?.savedStateHandle?.set("scrollToTop", false)
-        }
-    }
-
-    Box(
+    Scaffold(
         modifier = Modifier.fillMaxSize(),
     ) {
         Column(
@@ -177,27 +170,46 @@ fun ExploreScreen(
                                                 .height(12.dp)
                                                 .width(80.dp)
                                                 .background(MaterialTheme.colorScheme.onSurface),
-            )
-        }
-    }
-}
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Podcasts section
+                    NavigationTitle(
+                        title = stringResource(R.string.podcasts),
+                        onClick = {
+                            navController.navigate("podcasts")
+                        },
+                    )
+
+                    // Top 100 Charts section
+                    NavigationTitle(
+                        title = "Top 100 Charts",
+                        onClick = {
+                            navController.navigate("top_charts")
+                        },
+                    )
+                }
+            } else {
+                // Podcasts section
+                NavigationTitle(
+                    title = stringResource(R.string.podcasts),
+                    onClick = {
+                        navController.navigate("podcasts")
+                    },
+                )
+
+                // Top 100 Charts section
+                NavigationTitle(
+                    title = "Top 100 Charts",
+                    onClick = {
+                        navController.navigate("top_charts")
+                    },
+                )
             }
-
-            // Podcasts section
-            NavigationTitle(
-                title = stringResource(R.string.podcasts),
-                onClick = {
-                    navController.navigate("podcasts")
-                },
-            )
-
-            // Top 100 Charts section
-            NavigationTitle(
-                title = "Top 100 Charts",
-                onClick = {
-                    navController.navigate("top_charts")
-                },
-            )
         }
     }
 }
