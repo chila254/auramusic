@@ -32,6 +32,33 @@ constructor(
     val database: MusicDatabase,
 ) : ViewModel() {
     val explorePage = MutableStateFlow<ExplorePage?>(null)
+    val podcastsPage = MutableStateFlow<com.auramusic.innertube.YouTube.PodcastsPage?>(null)
+    val mixesPage = MutableStateFlow<com.auramusic.innertube.YouTube.MixesPage?>(null)
+    val top100ChartsPage = MutableStateFlow<com.auramusic.innertube.YouTube.Top100ChartsPage?>(null)
+
+    private suspend fun loadPodcasts() {
+        YouTube.podcasts().onSuccess { page ->
+            podcastsPage.value = page
+        }.onFailure {
+            reportException(it)
+        }
+    }
+
+    private suspend fun loadMixes() {
+        YouTube.mixes().onSuccess { page ->
+            mixesPage.value = page
+        }.onFailure {
+            reportException(it)
+        }
+    }
+
+    private suspend fun loadTop100Charts(countryCode: String = "US") {
+        YouTube.getTop100Charts(countryCode).onSuccess { page ->
+            top100ChartsPage.value = page
+        }.onFailure {
+            reportException(it)
+        }
+    }
 
     private suspend fun load() {
         YouTube
@@ -74,6 +101,13 @@ constructor(
     init {
         viewModelScope.launch(Dispatchers.IO) {
             load()
+            loadPodcasts()
+            loadMixes()
+            loadTop100Charts()
         }
     }
+
+    fun loadPodcasts() = viewModelScope.launch(Dispatchers.IO) { loadPodcasts() }
+    fun loadMixes() = viewModelScope.launch(Dispatchers.IO) { loadMixes() }
+    fun loadTop100Charts(countryCode: String = "US") = viewModelScope.launch(Dispatchers.IO) { loadTop100Charts(countryCode) }
 }
