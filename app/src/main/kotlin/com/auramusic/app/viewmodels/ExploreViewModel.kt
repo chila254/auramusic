@@ -79,8 +79,9 @@ constructor(
                         }
                     }
                 }
-                val podcasts = podcastsPage.value?.featured ?: emptyList()
-                val mixes = mixesPage.value?.mixes ?: emptyList()
+                // Use podcasts/mixes from explore page itself, fall back to separate browse calls
+                val podcasts = page.podcasts.ifEmpty { podcastsPage.value?.featured ?: emptyList() }
+                val mixes = page.mixes.ifEmpty { mixesPage.value?.mixes ?: emptyList() }
                 explorePage.value =
                     page.copy(
                         newReleaseAlbums =
@@ -107,10 +108,10 @@ constructor(
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            // Load podcasts and mixes first so they're available when load() merges them into explorePage
-            loadPodcastsInternal()
-            loadMixesInternal()
             load()
+            // If explore() didn't find podcasts/mixes sections, try separate browse calls
+            if (explorePage.value?.podcasts.isNullOrEmpty()) loadPodcastsInternal()
+            if (explorePage.value?.mixes.isNullOrEmpty()) loadMixesInternal()
         }
         viewModelScope.launch(Dispatchers.IO) {
             loadTop100ChartsInternal()

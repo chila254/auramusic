@@ -564,18 +564,39 @@ object YouTube {
 
     suspend fun explore(): Result<ExplorePage> = runCatching {
         val response = innerTube.browse(WEB_REMIX, browseId = "FEmusic_explore").body<BrowseResponse>()
+        val sections = response.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents
+        val knownBrowseIds = setOf("FEmusic_new_releases_albums", "FEmusic_moods_and_genres")
+
+        // Extract remaining carousel sections as generic sections (podcasts, mixes, etc.)
+        val otherSections = sections?.filter { content ->
+            val browseId = content.musicCarouselShelfRenderer?.header?.musicCarouselShelfBasicHeaderRenderer?.moreContentButton?.buttonRenderer?.navigationEndpoint?.browseEndpoint?.browseId
+            content.musicCarouselShelfRenderer != null && browseId !in knownBrowseIds
+        }?.mapNotNull { content ->
+            content.musicCarouselShelfRenderer?.let { renderer ->
+                val title = renderer.header?.musicCarouselShelfBasicHeaderRenderer?.title?.runs?.firstOrNull()?.text ?: return@let null
+                val items = renderer.contents.mapNotNull { item ->
+                    item.musicTwoRowItemRenderer?.let { RelatedPage.Companion.fromMusicTwoRowItemRenderer(it) }
+                }
+                if (items.isEmpty()) null else title to items
+            }
+        }.orEmpty()
+
         ExplorePage(
-            newReleaseAlbums = response.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents?.find {
+            newReleaseAlbums = sections?.find {
                 it.musicCarouselShelfRenderer?.header?.musicCarouselShelfBasicHeaderRenderer?.moreContentButton?.buttonRenderer?.navigationEndpoint?.browseEndpoint?.browseId == "FEmusic_new_releases_albums"
             }?.musicCarouselShelfRenderer?.contents
                 ?.mapNotNull { it.musicTwoRowItemRenderer }
                 ?.mapNotNull(NewReleaseAlbumPage::fromMusicTwoRowItemRenderer).orEmpty(),
-            moodAndGenres = response.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents?.find {
+            moodAndGenres = sections?.find {
                 it.musicCarouselShelfRenderer?.header?.musicCarouselShelfBasicHeaderRenderer?.moreContentButton?.buttonRenderer?.navigationEndpoint?.browseEndpoint?.browseId == "FEmusic_moods_and_genres"
             }?.musicCarouselShelfRenderer?.contents
                 ?.mapNotNull { it.musicNavigationButtonRenderer }
                 ?.mapNotNull(MoodAndGenres.Companion::fromMusicNavigationButtonRenderer)
-                .orEmpty()
+                .orEmpty(),
+            podcasts = otherSections.filter { it.first.contains("podcast", ignoreCase = true) }
+                .map { PodcastsPage.PodcastSection(it.first, it.second) },
+            mixes = otherSections.filter { it.first.contains("mix", ignoreCase = true) || it.first.contains("playlist", ignoreCase = true) }
+                .map { MixesPage.MixSection(it.first, it.second) },
         )
     }
 

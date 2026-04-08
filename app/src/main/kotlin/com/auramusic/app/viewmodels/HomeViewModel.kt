@@ -269,20 +269,25 @@ class HomeViewModel @Inject constructor(
             reportException(it)
         }
 
-        YouTube.podcasts().onSuccess { podcastsPage ->
-            explorePage.value = explorePage.value?.copy(
-                podcasts = podcastsPage.featured
-            )
-        }.onFailure {
-            reportException(it)
+        // If explore() didn't return podcasts/mixes, try separate browse calls
+        if (explorePage.value?.podcasts.isNullOrEmpty()) {
+            YouTube.podcasts().onSuccess { podcastsPage ->
+                explorePage.value = explorePage.value?.copy(
+                    podcasts = podcastsPage.featured
+                )
+            }.onFailure {
+                reportException(it)
+            }
         }
 
-        YouTube.mixes().onSuccess { mixesPage ->
-            explorePage.value = explorePage.value?.copy(
-                mixes = mixesPage.mixes
-            )
-        }.onFailure {
-            reportException(it)
+        if (explorePage.value?.mixes.isNullOrEmpty()) {
+            YouTube.mixes().onSuccess { mixesPage ->
+                explorePage.value = explorePage.value?.copy(
+                    mixes = mixesPage.mixes
+                )
+            }.onFailure {
+                reportException(it)
+            }
         }
 
         allLocalItems.value = (quickPicks.value.orEmpty() + forgottenFavorites.value.orEmpty() + keepListening.value.orEmpty())
@@ -306,9 +311,11 @@ class HomeViewModel @Inject constructor(
                 return@launch
             }
 
+            val existingTitles = homePage.value?.sections.orEmpty().map { it.title }.toSet()
+            val newSections = nextSections.sections.filter { it.title !in existingTitles }
             homePage.value = nextSections.copy(
                 chips = homePage.value?.chips,
-                sections = (homePage.value?.sections.orEmpty() + nextSections.sections).map { section ->
+                sections = (homePage.value?.sections.orEmpty() + newSections).map { section ->
                     section.copy(items = section.items.filterExplicit(hideExplicit).filterVideoSongs(hideVideoSongs))
                 }
             )
