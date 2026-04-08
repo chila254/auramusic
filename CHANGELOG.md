@@ -1,3 +1,43 @@
+# AuraMusic v1.0.11 (Build 12) Changelog
+
+## Features
+- Added podcasts and episodes support
+- Added Top 100 charts with extended sections
+- Improved video mode with auto-enable and simplified UI
+- Remove video mode for Regular Songs 
+  
+## Improvements
+- Enhanced About screen (icon, tablet layout, animations)
+- Updated Explore, Search, and Top Charts UI
+- Improved icon and drawable handling
+
+## Fixes
+- Fixed compilation errors across multiple screens
+- Fixed PayPal donation link behavior
+- Fixed video mode syntax issues
+- Fixed exhaustive when expression errors
+- Fixed deprecated API usage (HiltViewModel)
+- Fixed navigation and scaffold issues
+- Fixed LocalPlayerConnection reference issues
+
+## Performance
+- Improved app stability and reduced crashes
+- Optimized memory and resource usage
+
+## CI/CD
+- Added GitHub Actions workflow for automated builds
+- Fixed APK output path and detection
+- Fixed keystore decoding and signing
+- Updated Gradle configuration and repositories
+
+## Build
+- Bumped versionCode to 12
+- Bumped versionName to 1.0.11
+
+
+**Full Changelog**: https://github.com/TeamAuraMusic/AuraMusic/compare/v1.0.10...v1.0.11
+
+
 # AuraMusic v1.0.10 (Build 11) Changelog
 
 ## New Features
