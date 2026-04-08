@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -72,53 +73,110 @@ fun HeroCarousel(
         }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+    BoxWithConstraints(
+        modifier = modifier.fillMaxWidth(),
     ) {
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .clip(RoundedCornerShape(16.dp)),
-            pageSpacing = 12.dp,
-        ) { page ->
-            val item = items[page]
-            HeroCarouselCard(
-                item = item,
-                onClick = { onItemClick(item) },
-                onPlayClick = { onPlayClick(item) },
-            )
+        val screenWidth = maxWidth
+        val isSmallScreen = screenWidth < 360.dp
+        val isTablet = screenWidth >= 600.dp
+
+        val carouselHeight = when {
+            isTablet -> 340.dp
+            isSmallScreen -> 180.dp
+            else -> 240.dp
+        }
+        val horizontalPadding = when {
+            isTablet -> 24.dp
+            isSmallScreen -> 12.dp
+            else -> 16.dp
+        }
+        val cornerRadius = when {
+            isTablet -> 20.dp
+            isSmallScreen -> 12.dp
+            else -> 16.dp
+        }
+        val contentPadding = when {
+            isTablet -> 20.dp
+            isSmallScreen -> 10.dp
+            else -> 14.dp
+        }
+        val playButtonSize = when {
+            isTablet -> 52.dp
+            isSmallScreen -> 36.dp
+            else -> 40.dp
+        }
+        val playIconSize = when {
+            isTablet -> 26.dp
+            isSmallScreen -> 16.dp
+            else -> 20.dp
+        }
+        val titleStyle = when {
+            isTablet -> MaterialTheme.typography.titleLarge
+            isSmallScreen -> MaterialTheme.typography.titleSmall
+            else -> MaterialTheme.typography.titleMedium
+        }
+        val subtitleStyle = when {
+            isTablet -> MaterialTheme.typography.bodyMedium
+            isSmallScreen -> MaterialTheme.typography.labelSmall
+            else -> MaterialTheme.typography.bodySmall
         }
 
-        if (items.size > 1) {
-            Spacer(modifier = Modifier.height(10.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = horizontalPadding),
+        ) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(carouselHeight)
+                    .clip(RoundedCornerShape(cornerRadius)),
+                pageSpacing = if (isTablet) 16.dp else 12.dp,
+            ) { page ->
+                val item = items[page]
+                HeroCarouselCard(
+                    item = item,
+                    onClick = { onItemClick(item) },
+                    onPlayClick = { onPlayClick(item) },
+                    cornerRadius = cornerRadius,
+                    contentPadding = contentPadding,
+                    playButtonSize = playButtonSize,
+                    playIconSize = playIconSize,
+                    titleStyle = titleStyle,
+                    subtitleStyle = subtitleStyle,
+                )
+            }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                items.forEachIndexed { index, _ ->
-                    val isSelected = pagerState.currentPage == index
-                    val width by animateDpAsState(
-                        targetValue = if (isSelected) 20.dp else 6.dp,
-                        animationSpec = tween(300),
-                        label = "indicator_width"
-                    )
-                    Box(
-                        modifier = Modifier
-                            .padding(horizontal = 3.dp)
-                            .height(6.dp)
-                            .width(width)
-                            .clip(CircleShape)
-                            .background(
-                                if (isSelected) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
-                            )
-                    )
+            if (items.size > 1) {
+                Spacer(modifier = Modifier.height(if (isTablet) 14.dp else 10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    items.forEachIndexed { index, _ ->
+                        val isSelected = pagerState.currentPage == index
+                        val indicatorWidth = if (isTablet) 24.dp else 20.dp
+                        val indicatorDot = if (isTablet) 8.dp else 6.dp
+                        val width by animateDpAsState(
+                            targetValue = if (isSelected) indicatorWidth else indicatorDot,
+                            animationSpec = tween(300),
+                            label = "indicator_width"
+                        )
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 3.dp)
+                                .height(indicatorDot)
+                                .width(width)
+                                .clip(CircleShape)
+                                .background(
+                                    if (isSelected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
+                                )
+                        )
+                    }
                 }
             }
         }
@@ -130,11 +188,17 @@ private fun HeroCarouselCard(
     item: YTItem,
     onClick: () -> Unit,
     onPlayClick: () -> Unit,
+    cornerRadius: androidx.compose.ui.unit.Dp,
+    contentPadding: androidx.compose.ui.unit.Dp,
+    playButtonSize: androidx.compose.ui.unit.Dp,
+    playIconSize: androidx.compose.ui.unit.Dp,
+    titleStyle: androidx.compose.ui.text.TextStyle,
+    subtitleStyle: androidx.compose.ui.text.TextStyle,
 ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(cornerRadius))
             .clickable(onClick = onClick),
     ) {
         AsyncImage(
@@ -167,7 +231,7 @@ private fun HeroCarouselCard(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(contentPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(
@@ -175,7 +239,7 @@ private fun HeroCarouselCard(
             ) {
                 Text(
                     text = item.title,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = titleStyle,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     maxLines = 1,
@@ -185,7 +249,7 @@ private fun HeroCarouselCard(
                 if (!subtitle.isNullOrBlank()) {
                     Text(
                         text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = subtitleStyle,
                         color = Color.White.copy(alpha = 0.8f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -201,12 +265,12 @@ private fun HeroCarouselCard(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                 ),
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier.size(playButtonSize),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.play),
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(playIconSize),
                 )
             }
         }
