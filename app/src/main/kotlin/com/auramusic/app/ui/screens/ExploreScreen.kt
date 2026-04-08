@@ -60,6 +60,7 @@ import com.auramusic.innertube.models.PodcastItem
 import com.auramusic.innertube.models.SongItem
 import com.auramusic.innertube.models.WatchEndpoint
 import com.auramusic.innertube.models.YTItem
+import com.auramusic.app.models.toMediaMetadata
 import com.auramusic.app.LocalPlayerAwareWindowInsets
 import com.auramusic.app.LocalPlayerConnection
 import com.auramusic.app.R
