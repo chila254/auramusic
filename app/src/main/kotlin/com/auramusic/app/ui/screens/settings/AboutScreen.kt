@@ -38,7 +38,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalUriHandler
@@ -87,22 +86,14 @@ fun AboutScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Spacer(Modifier.height(80.dp))
+            Spacer(Modifier.height(120.dp))
 
             // App Icon with gradient background
             Box(
                 modifier = Modifier
                     .size(if (isTablet) 160.dp else 120.dp)
                     .clip(CircleShape)
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFFFF812A),
-                                Color(0xFFFF3C62),
-                                Color(0xFFFF0E8E)
-                            )
-                        )
-                    ),
+                    .background(Color.Black),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
