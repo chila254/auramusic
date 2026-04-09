@@ -36,9 +36,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.aspectRatio
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -56,7 +55,6 @@ private data class CarouselDimens(
     val height: Dp,
     val horizontalPadding: Dp,
     val cornerRadius: Dp,
-    val contentPadding: Dp,
     val playButtonSize: Dp,
     val playIconSize: Dp,
     val pageSpacing: Dp,
@@ -71,8 +69,8 @@ private fun rememberCarouselDimens(screenWidth: Dp): CarouselDimens {
     val isTablet = screenWidth >= 600.dp
     return CarouselDimens(
         height = when {
-            isTablet -> 420.dp
-            isSmallScreen -> 220.dp
+            isTablet -> 500.dp
+            isSmallScreen -> 280.dp
             else -> 280.dp
         },
         horizontalPadding = when {
@@ -83,11 +81,6 @@ private fun rememberCarouselDimens(screenWidth: Dp): CarouselDimens {
         cornerRadius = when {
             isTablet -> 20.dp
             isSmallScreen -> 12.dp
-            else -> 16.dp
-        },
-        contentPadding = when {
-            isTablet -> 24.dp
-            isSmallScreen -> 10.dp
             else -> 16.dp
         },
         playButtonSize = when {
@@ -153,11 +146,6 @@ fun HeroCarousel(
         val isSmallScreen = maxWidth < 360.dp
         val isTablet = maxWidth >= 600.dp
 
-        val titleStyle = when {
-            isTablet -> MaterialTheme.typography.titleLarge
-            isSmallScreen -> MaterialTheme.typography.titleSmall
-            else -> MaterialTheme.typography.titleMedium
-        }
         val subtitleStyle = when {
             isTablet -> MaterialTheme.typography.bodyMedium
             isSmallScreen -> MaterialTheme.typography.labelSmall
@@ -183,10 +171,8 @@ fun HeroCarousel(
                     onClick = { onItemClick(item) },
                     onPlayClick = { onPlayClick(item) },
                     cornerRadius = dimens.cornerRadius,
-                    contentPadding = dimens.contentPadding,
                     playButtonSize = dimens.playButtonSize,
                     playIconSize = dimens.playIconSize,
-                    titleStyle = titleStyle,
                     subtitleStyle = subtitleStyle,
                 )
             }
@@ -230,75 +216,28 @@ private fun HeroCarouselCard(
     onClick: () -> Unit,
     onPlayClick: () -> Unit,
     cornerRadius: Dp,
-    contentPadding: Dp,
     playButtonSize: Dp,
     playIconSize: Dp,
-    titleStyle: androidx.compose.ui.text.TextStyle,
     subtitleStyle: androidx.compose.ui.text.TextStyle,
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .clip(RoundedCornerShape(cornerRadius))
-            .clickable(onClick = onClick),
-    ) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(item.thumbnail)
-                .crossfade(true)
-                .build(),
-            contentDescription = item.title,
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxSize(),
-        )
-
-        // Bottom gradient overlay
+    Column {
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.8f),
-                        ),
-                    )
-                )
-        )
-
-        // Content at bottom
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
                 .fillMaxWidth()
-                .padding(contentPadding),
-            verticalAlignment = Alignment.CenterVertically,
+                .clip(RoundedCornerShape(cornerRadius))
+                .clickable(onClick = onClick),
         ) {
-            Column(
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(
-                    text = item.title,
-                    style = titleStyle,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                val subtitle = item.subtitle
-                if (!subtitle.isNullOrBlank()) {
-                    Text(
-                        text = subtitle,
-                        style = subtitleStyle,
-                        color = Color.White.copy(alpha = 0.8f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(item.thumbnail)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = item.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(16f / 9f),
+            )
 
             IconButton(
                 onClick = onPlayClick,
@@ -306,7 +245,9 @@ private fun HeroCarouselCard(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                 ),
-                modifier = Modifier.size(playButtonSize),
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(playButtonSize),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.play),
@@ -314,6 +255,19 @@ private fun HeroCarouselCard(
                     modifier = Modifier.size(playIconSize),
                 )
             }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        val subtitle = item.subtitle
+        if (!subtitle.isNullOrBlank()) {
+            Text(
+                text = subtitle,
+                style = subtitleStyle.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }

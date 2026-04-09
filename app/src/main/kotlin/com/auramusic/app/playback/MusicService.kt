@@ -3055,6 +3055,7 @@ class MusicService :
 
                                 Timber.d("setVideoMode: Replacing media item at index $index")
                                 player.replaceMediaItem(index, videoMediaItem)
+                                player.playWhenReady = false
                                 player.prepare()
                                 Timber.d("setVideoMode: Called prepare(), player state: ${player.playbackState}")
                                 
@@ -3062,7 +3063,16 @@ class MusicService :
                                     player.seekTo(index, position)
                                     Timber.d("setVideoMode: Seeked to position $position")
                                 }
-                                player.playWhenReady = true
+                                val readyListener = object : Player.Listener {
+                                    override fun onPlaybackStateChanged(@Player.State state: Int) {
+                                        if (state == Player.STATE_READY) {
+                                            player.removeListener(this)
+                                            player.playWhenReady = true
+                                            Timber.d("setVideoMode: Auto-started playback after buffer ready")
+                                        }
+                                    }
+                                }
+                                player.addListener(readyListener)
                                 isVideoMode = true
                                 _videoModeEnabled.value = true
                                 _videoModeMessage.value = "Video mode enabled: ${videoData.title}"
