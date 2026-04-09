@@ -1305,7 +1305,7 @@ private fun VideoLyricsOverlay(
     LaunchedEffect(mediaMetadata?.id, lyricsOffset) {
         while (isActive) {
             playerPosition = player.currentPosition - lyricsOffset
-            delay(50) // Faster polling for tighter video lyrics sync
+            delay(16) // Match frame rate for tight video lyrics sync
         }
     }
 

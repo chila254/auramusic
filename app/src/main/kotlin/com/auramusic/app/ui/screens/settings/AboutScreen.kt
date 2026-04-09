@@ -35,11 +35,20 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
@@ -89,10 +98,36 @@ fun AboutScreen(
         ) {
             Spacer(Modifier.height(120.dp))
 
-            // App Icon with gradient background
+            // Pulsating animation for the app icon
+            val infiniteTransition = rememberInfiniteTransition(label = "icon_anim")
+            val scale by infiniteTransition.animateFloat(
+                initialValue = 1f,
+                targetValue = 1.08f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(1200, easing = LinearEasing),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "icon_pulse"
+            )
+            val rotation by infiniteTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = 360f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(8000, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart
+                ),
+                label = "icon_spin"
+            )
+
+            // App Icon with gradient background and animation
             Box(
                 modifier = Modifier
                     .size(if (isTablet) 160.dp else 120.dp)
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        rotationZ = rotation
+                    }
                     .clip(CircleShape)
                     .background(Color.Black),
                 contentAlignment = Alignment.Center
@@ -149,19 +184,19 @@ fun AboutScreen(
                     )
                 }
 
-                if (BuildConfig.DEBUG) {
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.errorContainer
-                    ) {
-                        Text(
-                            text = "DEBUG",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
-                    }
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = if (BuildConfig.DEBUG) MaterialTheme.colorScheme.errorContainer
+                           else MaterialTheme.colorScheme.tertiaryContainer
+                ) {
+                    Text(
+                        text = if (BuildConfig.DEBUG) "DEBUG" else "RELEASE",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = if (BuildConfig.DEBUG) MaterialTheme.colorScheme.onErrorContainer
+                               else MaterialTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
                 }
             }
 
@@ -344,8 +379,7 @@ fun AboutScreen(
                                 painter = painterResource(R.drawable.paypal),
                                 contentDescription = "PayPal",
                                 modifier = Modifier
-                                    .size(32.dp)
-                                    .padding(4.dp)
+                                    .size(40.dp)
                             )
                         }
                     }

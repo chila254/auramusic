@@ -3064,12 +3064,16 @@ class MusicService :
                                     Timber.d("setVideoMode: Seeked to position $position")
                                 }
                                 val readyListener = object : Player.Listener {
-                                    override fun onPlaybackStateChanged(@Player.State state: Int) {
-                                        if (state == Player.STATE_READY) {
-                                            player.removeListener(this)
-                                            player.playWhenReady = true
-                                            Timber.d("setVideoMode: Auto-started playback after buffer ready")
-                                        }
+                                    override fun onRenderedFirstFrame() {
+                                        player.removeListener(this)
+                                        player.playWhenReady = true
+                                        Timber.d("setVideoMode: Auto-started playback after first video frame rendered")
+                                    }
+                                    
+                                    override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                                        player.removeListener(this)
+                                        player.playWhenReady = true
+                                        Timber.e(error, "setVideoMode: Error waiting for video frame, starting playback anyway")
                                     }
                                 }
                                 player.addListener(readyListener)
