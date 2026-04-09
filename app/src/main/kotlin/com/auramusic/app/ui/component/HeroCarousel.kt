@@ -146,6 +146,11 @@ fun HeroCarousel(
         val isSmallScreen = maxWidth < 360.dp
         val isTablet = maxWidth >= 600.dp
 
+        val titleStyle = when {
+            isTablet -> MaterialTheme.typography.titleLarge
+            isSmallScreen -> MaterialTheme.typography.titleSmall
+            else -> MaterialTheme.typography.titleMedium
+        }
         val subtitleStyle = when {
             isTablet -> MaterialTheme.typography.bodyMedium
             isSmallScreen -> MaterialTheme.typography.labelSmall
@@ -173,6 +178,7 @@ fun HeroCarousel(
                     cornerRadius = dimens.cornerRadius,
                     playButtonSize = dimens.playButtonSize,
                     playIconSize = dimens.playIconSize,
+                    titleStyle = titleStyle,
                     subtitleStyle = subtitleStyle,
                 )
             }
@@ -218,6 +224,7 @@ private fun HeroCarouselCard(
     cornerRadius: Dp,
     playButtonSize: Dp,
     playIconSize: Dp,
+    titleStyle: androidx.compose.ui.text.TextStyle,
     subtitleStyle: androidx.compose.ui.text.TextStyle,
 ) {
     Column {
@@ -259,12 +266,21 @@ private fun HeroCarouselCard(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        Text(
+            text = item.title,
+            style = titleStyle,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+
         val subtitle = item.subtitle
         if (!subtitle.isNullOrBlank()) {
             Text(
                 text = subtitle,
-                style = subtitleStyle.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface,
+                style = subtitleStyle,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
