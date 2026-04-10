@@ -1072,12 +1072,12 @@ private fun VideoSettingsButton(
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
-                                    painter = painterResource(R.drawable.ic_lyrics),
+                                    painter = painterResource(R.drawable.ic_subtitles),
                                     contentDescription = null,
                                     modifier = Modifier.size(24.dp).padding(end = 12.dp),
                                     tint = Color.White
                                 )
-                                Text("Subtitles")
+                                Text("Captions CC")
                             }
                             Text(
                                 text = if (videoLyricsEnabled) "On" else "Off",
@@ -1288,33 +1288,56 @@ private fun VideoLyricsOverlay(
 
     // Fetch YouTube subtitles: try caption tracks first (like SmartTube), fallback to transcript
     var transcriptText by remember { mutableStateOf<String?>(null) }
+    var isLoadingCaptions by remember { mutableStateOf(false) }
+    var captionError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(mediaMetadata?.id) {
-        val videoId = mediaMetadata?.id ?: return@LaunchedEffect
+        val rawVideoId = mediaMetadata?.id ?: return@LaunchedEffect
+        // Strip any suffixes like "_video" that might be added for video mode
+        val videoId = rawVideoId.removeSuffix("_video").ifEmpty { rawVideoId }
+        
         transcriptText = null
-        delay(300)
+        captionError = null
+        isLoadingCaptions = true
+        
+        delay(500) // Slightly longer delay to ensure player is ready
         withContext(Dispatchers.IO) {
-            // Try caption tracks first (extracted from player response like SmartTube)
-            val captionResult = YouTube.getCaptionTracks(videoId)
-            val captionTrack = captionResult.getOrNull()?.firstOrNull()
-            if (captionTrack != null) {
-                YouTube.fetchSubtitleFromCaptionTrack(captionTrack.baseUrl)
-                    .onSuccess {
-                        if (it.isNotEmpty()) {
-                            transcriptText = it
+            try {
+                // Try caption tracks first (extracted from player response like SmartTube)
+                val captionResult = YouTube.getCaptionTracks(videoId)
+                val captionTracks = captionResult.getOrNull()
+                
+                if (!captionTracks.isNullOrEmpty()) {
+                    val captionTrack = captionTracks.firstOrNull()
+                    if (captionTrack != null) {
+                        val fetchResult = YouTube.fetchSubtitleFromCaptionTrack(captionTrack.baseUrl)
+                        fetchResult.onSuccess { text ->
+                            if (text.isNotEmpty()) {
+                                transcriptText = text
+                            }
+                        }.onFailure { e ->
+                            captionError = e.message
                         }
                     }
-                    .onFailure {
-                        // Log failure but continue to transcript fallback
+                } else {
+                    captionError = "No caption tracks available"
+                }
+                
+                // Fallback to transcript API if caption tracks didn't work
+                if (transcriptText == null) {
+                    val transcriptResult = YouTube.transcript(videoId)
+                    transcriptResult.onSuccess { text ->
+                        transcriptText = text
+                    }.onFailure { e ->
+                        if (captionError == null) {
+                            captionError = "Transcript: ${e.message}"
+                        }
                     }
-            }
-            // Fallback to transcript API if caption tracks didn't work
-            if (transcriptText == null) {
-                YouTube.transcript(videoId)
-                    .onSuccess { transcriptText = it }
-                    .onFailure {
-                        // Transcript also failed, subtitles won't be available
-                    }
+                }
+            } catch (e: Exception) {
+                captionError = e.message
+            } finally {
+                isLoadingCaptions = false
             }
         }
     }
