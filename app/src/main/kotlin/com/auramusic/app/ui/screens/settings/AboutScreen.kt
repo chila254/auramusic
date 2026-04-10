@@ -61,6 +61,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.auramusic.app.BuildConfig
 import com.auramusic.app.R
+import com.auramusic.app.constants.MiniPlayerHeight
+import com.auramusic.app.constants.NavigationBarHeight
 import com.auramusic.app.ui.utils.backToMain
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -120,7 +122,7 @@ fun AboutScreen(
                 label = "icon_spin"
             )
 
-            // App Icon with gradient background and animation
+            // App Icon with animation
             Box(
                 modifier = Modifier
                     .size(if (isTablet) 160.dp else 120.dp)
@@ -144,14 +146,14 @@ fun AboutScreen(
 
             Spacer(Modifier.height(8.dp))
 
-            // App Name - AuraMusic
+            // App Name - AuraMusic (dynamic Material theme color)
             Text(
                 text = "AuraMusic",
                 style = if (isTablet) MaterialTheme.typography.displaySmall else MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
                 ),
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.primary
             )
 
             // Version and Architecture
@@ -250,26 +252,39 @@ fun AboutScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Image(
-                        painter = painterResource(R.drawable.chila254_profile),
-                        contentDescription = "chila254",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(CircleShape)
-                    )
-                    Text(
-                        text = "chila254",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.chila254_profile),
+                            contentDescription = "chila254",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(100.dp)
+                                .clip(CircleShape)
+                        )
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "chila254",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Lead Developer",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
 
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // GitHub
@@ -448,9 +463,13 @@ fun AboutScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // License Info
+            // License Info (clickable)
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        uriHandler.openUri("https://github.com/TeamAuraMusic/AuraMusic/blob/main/LICENSE")
+                    },
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                 ),
@@ -478,7 +497,8 @@ fun AboutScreen(
                 }
             }
 
-            Spacer(Modifier.height(40.dp))
+            // Extra bottom padding to avoid mini player blocking content
+            Spacer(Modifier.height(MiniPlayerHeight + NavigationBarHeight + 24.dp))
         }
     }
 

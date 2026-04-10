@@ -1243,7 +1243,7 @@ private fun VideoLyricsOverlay(
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val player = playerConnection.player
 
-    // Fetch YouTube transcript (subtitles) directly
+    // Fetch YouTube subtitles: try caption tracks first (like SmartTube), fallback to transcript
     var transcriptText by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(mediaMetadata?.id) {
@@ -1251,9 +1251,18 @@ private fun VideoLyricsOverlay(
         transcriptText = null
         delay(300)
         withContext(Dispatchers.IO) {
-            YouTube.transcript(videoId)
-                .onSuccess { transcriptText = it }
-                .onFailure { transcriptText = null }
+            // Try caption tracks first (extracted from player response like SmartTube)
+            val captionResult = YouTube.getCaptionTracks(videoId)
+            val captionTrack = captionResult.getOrNull()?.firstOrNull()
+            if (captionTrack != null) {
+                YouTube.fetchSubtitleFromCaptionTrack(captionTrack.baseUrl)
+                    .onSuccess { if (it.isNotEmpty()) transcriptText = it }
+            }
+            // Fallback to transcript API if caption tracks didn't work
+            if (transcriptText == null) {
+                YouTube.transcript(videoId)
+                    .onSuccess { transcriptText = it }
+            }
         }
     }
 

@@ -383,6 +383,8 @@ class InnerTube {
 
     suspend fun getSwJsData() = withRetry { httpClient.get("https://music.youtube.com/sw.js_data") }
 
+    suspend fun getUrl(url: String) = withRetry { httpClient.get(url) }
+
     suspend fun accountMenu(client: YouTubeClient) = withRetry {
         httpClient.post("account/account_menu") {
             ytClient(client, setLogin = true)

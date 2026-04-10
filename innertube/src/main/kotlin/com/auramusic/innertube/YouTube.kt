@@ -72,7 +72,9 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import java.net.Proxy
 import kotlin.random.Random
 
@@ -1067,6 +1069,39 @@ object YouTube {
                 .trim(' ')
             "[%02d:%02d.%03d]$text".format(time / 60000, (time / 1000) % 60, time % 1000)
         }!!
+    }
+
+    /**
+     * Get caption tracks from the player response (like SmartTube does).
+     * Returns a list of available caption tracks with their URLs.
+     */
+    suspend fun getCaptionTracks(videoId: String): Result<List<PlayerResponse.Captions.PlayerCaptionsTracklistRenderer.CaptionTrack>> = runCatching {
+        val response = innerTube.player(WEB, videoId, null, null).body<PlayerResponse>()
+        response.captions?.playerCaptionsTracklistRenderer?.captionTracks ?: emptyList()
+    }
+
+    /**
+     * Fetch subtitle content from a caption track URL in JSON3 format.
+     * Returns timed text as "[MM:SS.mmm]text" lines (same format as transcript).
+     */
+    suspend fun fetchSubtitleFromCaptionTrack(captionTrackUrl: String): Result<String> = runCatching {
+        val url = if ("fmt=" in captionTrackUrl) captionTrackUrl else "$captionTrackUrl&fmt=json3"
+        val responseText = innerTube.getUrl(url).bodyAsText()
+        val json = Json.parseToJsonElement(responseText).jsonObject
+        val events = json["events"]?.jsonArray ?: error("No events in subtitle response")
+        buildString {
+            for (event in events) {
+                val obj = event.jsonObject
+                val startMs = obj["tStartMs"]?.jsonPrimitive?.longOrNull ?: continue
+                val segs = obj["segs"]?.jsonArray ?: continue
+                val text = segs.joinToString("") {
+                    it.jsonObject["utf8"]?.jsonPrimitive?.contentOrNull ?: ""
+                }.trim().replace("\n", " ")
+                if (text.isNotEmpty()) {
+                    appendLine("[%02d:%02d.%03d]$text".format(startMs / 60000, (startMs / 1000) % 60, startMs % 1000))
+                }
+            }
+        }.trim()
     }
 
     suspend fun visitorData(): Result<String> = runCatching {
