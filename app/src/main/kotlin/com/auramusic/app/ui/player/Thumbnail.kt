@@ -1072,7 +1072,7 @@ private fun VideoSettingsButton(
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
-                                    painter = painterResource(R.drawable.subtitles),
+                                    painter = painterResource(R.drawable.ic_lyrics),
                                     contentDescription = null,
                                     modifier = Modifier.size(24.dp).padding(end = 12.dp),
                                     tint = Color.White
@@ -1279,7 +1279,7 @@ private fun VideoLyricsOverlay(
     val player = playerConnection.player
 
     // Check if video subtitles are enabled
-    val (videoLyricsEnabled, _) = rememberEnumPreference(
+    val (videoLyricsEnabled, _) = rememberPreference(
         VideoLyricsEnabledKey,
         defaultValue = true
     )
