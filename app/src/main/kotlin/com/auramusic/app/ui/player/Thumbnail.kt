@@ -738,12 +738,12 @@ private fun ThumbnailImage(
         modifier = modifier
             .fillMaxSize()
             .then(
-                if (videoModeEnabled || isVideoSwitching) Modifier
+                if (videoModeEnabled) Modifier
                 else Modifier.graphicsLayer {
                     compositingStrategy = CompositingStrategy.Offscreen
                 }
             )
-            .background(if (videoModeEnabled || isVideoSwitching) Color.Black else MaterialTheme.colorScheme.surfaceVariant)
+            .background(if (videoModeEnabled) Color.Black else MaterialTheme.colorScheme.surfaceVariant)
     ) {
         if (isVideoSwitching && !videoModeEnabled) {
             // Show loading animation while video is being fetched

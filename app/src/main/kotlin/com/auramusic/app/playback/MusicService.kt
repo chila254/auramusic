@@ -1706,6 +1706,12 @@ class MusicService :
             scrobbleManager?.onSongStart(player.currentMetadata, duration = player.duration)
         }
 
+        // Ensure playback continues when transitioning to new media item (including in background)
+        // This fixes autoplay not starting until app is reopened
+        if (player.playWhenReady && !player.isPlaying && player.playbackState == Player.STATE_READY) {
+            player.play()
+        }
+
         // Sync Cast when media changes and Cast is connected
         // Skip if this change was triggered by Cast sync (to prevent loops)
         if (castConnectionHandler?.isCasting?.value == true && 
