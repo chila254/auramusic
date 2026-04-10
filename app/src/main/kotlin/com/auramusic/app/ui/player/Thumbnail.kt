@@ -68,7 +68,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
+import com.auramusic.innertube.YouTube
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -118,19 +118,15 @@ import com.auramusic.app.constants.SwipeThumbnailKey
 import com.auramusic.app.constants.ThumbnailCornerRadius
 import com.auramusic.app.constants.VideoQuality
 import com.auramusic.app.constants.VideoQualityKey
-import com.auramusic.app.db.entities.LyricsEntity
-import com.auramusic.app.di.LyricsHelperEntryPoint
 import com.auramusic.app.listentogether.RoomRole
-import com.auramusic.app.LocalDatabase
 import com.auramusic.app.ui.component.CastButton
 import com.auramusic.app.utils.FlowPlayerUtils
 import com.auramusic.app.utils.rememberEnumPreference
 import com.auramusic.app.utils.rememberPreference
-import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
@@ -1243,36 +1239,25 @@ private fun VideoLyricsOverlay(
     modifier: Modifier = Modifier
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
-    val currentLyrics by playerConnection.currentLyrics.collectAsState(initial = null)
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val player = playerConnection.player
-    val context = LocalContext.current
-    val database = LocalDatabase.current
-    val coroutineScope = rememberCoroutineScope()
 
-    // Fetch lyrics from providers if not in DB
-    LaunchedEffect(mediaMetadata?.id, currentLyrics) {
-        val meta = mediaMetadata ?: return@LaunchedEffect
-        if (currentLyrics != null) return@LaunchedEffect
+    // Fetch YouTube transcript (subtitles) directly
+    var transcriptText by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(mediaMetadata?.id) {
+        val videoId = mediaMetadata?.id ?: return@LaunchedEffect
+        transcriptText = null
         delay(300)
-        coroutineScope.launch(Dispatchers.IO) {
-            try {
-                val entryPoint = EntryPointAccessors.fromApplication(
-                    context.applicationContext,
-                    LyricsHelperEntryPoint::class.java
-                )
-                val lyricsHelper = entryPoint.lyricsHelper()
-                val fetched = lyricsHelper.getLyrics(meta)
-                database.query {
-                    upsert(LyricsEntity(meta.id, fetched.lyrics, fetched.provider))
-                }
-            } catch (_: Exception) {}
+        withContext(Dispatchers.IO) {
+            YouTube.transcript(videoId)
+                .onSuccess { transcriptText = it }
+                .onFailure { transcriptText = null }
         }
     }
 
-    val lyricsText = remember(currentLyrics) {
-        val text = currentLyrics?.lyrics
-        if (!text.isNullOrEmpty() && text != LyricsEntity.LYRICS_NOT_FOUND) text else null
+    val lyricsText = remember(transcriptText) {
+        if (!transcriptText.isNullOrEmpty()) transcriptText else null
     }
 
     data class LyricLine(val timeMs: Long, val text: String)
