@@ -261,7 +261,7 @@ fun AboutScreen(
                         Image(
                             painter = painterResource(R.drawable.chila254_profile),
                             contentDescription = "chila254",
-                            contentScale = ContentScale.Crop,
+                            contentScale = ContentScale.Fit,
                             modifier = Modifier
                                 .size(100.dp)
                                 .clip(CircleShape)
@@ -283,8 +283,10 @@ fun AboutScreen(
                         }
                     }
 
+                    Spacer(Modifier.height(16.dp))
+
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(32.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // GitHub

@@ -116,6 +116,7 @@ import com.auramusic.app.constants.PlayerHorizontalPadding
 import com.auramusic.app.constants.SeekExtraSeconds
 import com.auramusic.app.constants.SwipeThumbnailKey
 import com.auramusic.app.constants.ThumbnailCornerRadius
+import com.auramusic.app.constants.VideoLyricsEnabledKey
 import com.auramusic.app.constants.VideoQuality
 import com.auramusic.app.constants.VideoQualityKey
 import com.auramusic.app.listentogether.RoomRole
@@ -997,6 +998,10 @@ private fun VideoSettingsButton(
         VideoQualityKey,
         defaultValue = VideoQuality.QUALITY_720P
     )
+    val (videoLyricsEnabled, onVideoLyricsEnabledChange) = rememberPreference(
+        VideoLyricsEnabledKey,
+        defaultValue = true
+    )
 
     Box(modifier = modifier) {
         IconButton(
@@ -1057,6 +1062,36 @@ private fun VideoSettingsButton(
                     }
                 )
                 
+                // Subtitles option
+                DropdownMenuItem(
+                    text = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    painter = painterResource(R.drawable.subtitles),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(24.dp).padding(end = 12.dp),
+                                    tint = Color.White
+                                )
+                                Text("Subtitles")
+                            }
+                            Text(
+                                text = if (videoLyricsEnabled) "On" else "Off",
+                                color = Color.Gray,
+                                fontSize = 13.sp
+                            )
+                        }
+                    },
+                    onClick = {
+                        onVideoLyricsEnabledChange(!videoLyricsEnabled)
+                        expanded = false
+                    }
+                )
+
                 // Video fit option
                 DropdownMenuItem(
                     text = {
@@ -1230,7 +1265,7 @@ private fun SeekEffectOverlay(
 
 /**
  * Video lyrics overlay displayed at bottom like YouTube subtitles.
- * Always enabled when video is playing. Features:
+ * Enabled when video is playing and subtitles are toggled on. Features:
  * [1] Animated fade transitions between lyric lines
  * [2] Next lyric line preview
  * [3] Glow/shadow effect for readability
@@ -1242,6 +1277,14 @@ private fun VideoLyricsOverlay(
     val playerConnection = LocalPlayerConnection.current ?: return
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val player = playerConnection.player
+
+    // Check if video subtitles are enabled
+    val (videoLyricsEnabled, _) = rememberEnumPreference(
+        VideoLyricsEnabledKey,
+        defaultValue = true
+    )
+
+    if (!videoLyricsEnabled) return
 
     // Fetch YouTube subtitles: try caption tracks first (like SmartTube), fallback to transcript
     var transcriptText by remember { mutableStateOf<String?>(null) }
@@ -1256,12 +1299,22 @@ private fun VideoLyricsOverlay(
             val captionTrack = captionResult.getOrNull()?.firstOrNull()
             if (captionTrack != null) {
                 YouTube.fetchSubtitleFromCaptionTrack(captionTrack.baseUrl)
-                    .onSuccess { if (it.isNotEmpty()) transcriptText = it }
+                    .onSuccess {
+                        if (it.isNotEmpty()) {
+                            transcriptText = it
+                        }
+                    }
+                    .onFailure {
+                        // Log failure but continue to transcript fallback
+                    }
             }
             // Fallback to transcript API if caption tracks didn't work
             if (transcriptText == null) {
                 YouTube.transcript(videoId)
                     .onSuccess { transcriptText = it }
+                    .onFailure {
+                        // Transcript also failed, subtitles won't be available
+                    }
             }
         }
     }
@@ -1273,11 +1326,13 @@ private fun VideoLyricsOverlay(
     data class LyricLine(val timeMs: Long, val text: String)
 
     val parsedLines = remember(lyricsText) {
-        if (lyricsText == null || !lyricsText.startsWith("[")) return@remember emptyList<LyricLine>()
+        if (lyricsText.isNullOrBlank()) return@remember emptyList<LyricLine>()
         val result = mutableListOf<LyricLine>()
         val regex = Regex("""\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\](.*)""")
         for (line in lyricsText.lines()) {
-            val match = regex.find(line.trim()) ?: continue
+            val trimmedLine = line.trim()
+            if (trimmedLine.isEmpty()) continue
+            val match = regex.find(trimmedLine) ?: continue
             val minutes = match.groupValues[1].toLongOrNull() ?: 0
             val seconds = match.groupValues[2].toLongOrNull() ?: 0
             val millis = match.groupValues[3].padEnd(3, '0').toLongOrNull() ?: 0
