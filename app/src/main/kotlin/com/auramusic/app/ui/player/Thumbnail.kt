@@ -910,11 +910,15 @@ private fun ThumbnailImage(
             }
             
             // Always-on captions at bottom (like YouTube)
-            // Positioned absolute at bottom to always be visible
+            // Positioned absolute at bottom with additional padding for fullscreen
             VideoLyricsOverlay(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 12.dp)
+                    .padding(
+                        start = 16.dp,
+                        end = 16.dp,
+                        bottom = if (videoModeEnabled) 80.dp else 12.dp
+                    )
             )
         } else {
             // Album art image
