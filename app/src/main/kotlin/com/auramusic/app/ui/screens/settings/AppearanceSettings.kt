@@ -69,6 +69,7 @@ import com.auramusic.app.constants.LyricsAnimationStyle
 import com.auramusic.app.constants.LyricsAnimationStyleKey
 import com.auramusic.app.constants.LyricsClickKey
 import com.auramusic.app.constants.LyricsGlowEffectKey
+import com.auramusic.app.constants.LiquidGlassEffectKey
 import com.auramusic.app.constants.LyricsLineSpacingKey
 import com.auramusic.app.constants.LyricsScrollKey
 import com.auramusic.app.constants.LyricsTextPositionKey
@@ -201,6 +202,10 @@ fun AppearanceSettings(
     val (lyricsAnimationStyle, onLyricsAnimationStyleChange) = rememberEnumPreference(
         LyricsAnimationStyleKey,
         defaultValue = LyricsAnimationStyle.NONE
+    )
+    val (liquidGlassEnabled, onLiquidGlassEnabledChange) = rememberPreference(
+        LiquidGlassEffectKey,
+        defaultValue = false
     )
     val (lyricsTextSize, onLyricsTextSizeChange) = rememberPreference(LyricsTextSizeKey, defaultValue = 24f)
     val (lyricsLineSpacing, onLyricsLineSpacingChange) = rememberPreference(LyricsLineSpacingKey, defaultValue = 1.3f)
@@ -916,6 +921,29 @@ fun AppearanceSettings(
                             )
                         },
                         onClick = { onPureBlackMiniPlayerChange(!pureBlackMiniPlayer) }
+                    )
+                )
+                add(
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.ic_lyrics),
+                        title = { Text(stringResource(R.string.liquid_glass_effect)) },
+                        description = { Text(stringResource(R.string.liquid_glass_effect_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = liquidGlassEnabled,
+                                onCheckedChange = onLiquidGlassEnabledChange,
+                                thumbContent = {
+                                    Icon(
+                                        painter = painterResource(
+                                            id = if (liquidGlassEnabled) R.drawable.check else R.drawable.close
+                                        ),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(SwitchDefaults.IconSize)
+                                    )
+                                }
+                            )
+                        },
+                        onClick = { onLiquidGlassEnabledChange(!liquidGlassEnabled) }
                     )
                 )
             }

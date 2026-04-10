@@ -384,6 +384,8 @@
     <string name="follow_theme">Follow theme</string>
     <string name="gradient">Gradient</string>
     <string name="player_background_blur">Blur</string>
+    <string name="liquid_glass_effect">Liquid glass effect</string>
+    <string name="liquid_glass_effect_desc">Apple-style frosted glass on mini player and cards</string>
     <string name="hide_player_thumbnail">Hide player thumbnail</string>
     <string name="hide_player_thumbnail_desc">Hide the thumbnail in the mini player</string>
     <string name="crop_album_art">Crop album art</string>

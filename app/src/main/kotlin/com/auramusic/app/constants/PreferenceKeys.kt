@@ -401,6 +401,7 @@ val AutoTranslateLyricsMismatchKey = booleanPreferencesKey("autoTranslateLyricsM
 val TranslateModeKey = stringPreferencesKey("translateMode")
 val TranslateLanguageKey = stringPreferencesKey("translateLanguage")
 val LyricsGlowEffectKey = booleanPreferencesKey("lyricsGlowEffect")
+val LiquidGlassEffectKey = booleanPreferencesKey("liquidGlassEffect")
 
 val LyricsAnimationStyleKey = stringPreferencesKey("lyricsAnimationStyle")
 enum class LyricsAnimationStyle {

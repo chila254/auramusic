@@ -83,6 +83,7 @@ import com.auramusic.app.LocalPlayerConnection
 import com.auramusic.app.R
 import com.auramusic.app.constants.CropAlbumArtKey
 import com.auramusic.app.constants.DarkModeKey
+import com.auramusic.app.constants.LiquidGlassEffectKey
 import com.auramusic.app.constants.MiniPlayerHeight
 import com.auramusic.app.constants.PureBlackMiniPlayerKey
 import com.auramusic.app.constants.SwipeSensitivityKey
@@ -211,7 +212,12 @@ private fun NewMiniPlayer(
     }
     
     // Memoize colors
-    val backgroundColor = if (pureBlack && useDarkTheme) Color.Black else MaterialTheme.colorScheme.surfaceContainer
+    val liquidGlassEnabled by rememberPreference(LiquidGlassEffectKey, defaultValue = false)
+    val backgroundColor = when {
+        pureBlack && useDarkTheme -> Color.Black
+        liquidGlassEnabled -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
+        else -> MaterialTheme.colorScheme.surfaceContainer
+    }
     val primaryColor = MaterialTheme.colorScheme.primary
     val outlineColor = MaterialTheme.colorScheme.outline
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
