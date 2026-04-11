@@ -214,10 +214,21 @@ private fun NewMiniPlayer(
     // Memoize colors
     val liquidGlassEnabled by rememberPreference(LiquidGlassEffectKey, defaultValue = false)
     val backgroundColor = when {
+        // Pure black mode - always black regardless of liquid glass
         pureBlack && useDarkTheme -> Color.Black
-        liquidGlassEnabled -> MaterialTheme.colorScheme.surfaceVariant.copy(
-            alpha = if (useDarkTheme) 0.4f else 0.25f
-        )
+        // Liquid glass effect - works in all theme modes including pure black
+        liquidGlassEnabled -> {
+            val isDark = useDarkTheme
+            // Use surfaceVariant with adjusted alpha for glass effect
+            // For dark mode with pure black, use slightly different color to make it visible
+            if (isDark && pureBlack) {
+                Color(0xFF1A1A1A) // Dark gray visible on pure black
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(
+                    alpha = if (isDark) 0.4f else 0.25f
+                )
+            }
+        }
         else -> MaterialTheme.colorScheme.surfaceContainer
     }
     val primaryColor = MaterialTheme.colorScheme.primary

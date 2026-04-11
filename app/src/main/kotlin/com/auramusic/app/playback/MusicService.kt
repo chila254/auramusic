@@ -3143,11 +3143,15 @@ class MusicService :
                                     Timber.d("setVideoMode: Added ${subtitleConfigs.size} subtitle tracks to media item")
                                 }
                                 
-                                val videoMediaItem = videoMediaItemBuilder
-                                    .setMimeType(mimeType)
-                                    .setCustomCacheKey(mediaId + "_video")
-                                    .build()
+                                val videoMediaItem = videoMediaItemBuilder.build()
 
+                                // Enable subtitles by default on track selection
+                                player.trackSelectionParameters = player.trackSelectionParameters
+                                    .buildUpon()
+                                    .setPreferredTextLanguage("en")
+                                    .setRendererDisabled(C.TRACK_TYPE_TEXT, false)
+                                    .build()
+                                
                                 Timber.d("setVideoMode: Replacing media item at index $index")
                                 player.replaceMediaItem(index, videoMediaItem)
                                 player.playWhenReady = false

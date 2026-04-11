@@ -931,15 +931,17 @@ fun AppearanceSettings(
                         trailingContent = {
                             Switch(
                                 checked = liquidGlassEnabled,
-                                onCheckedChange = onLiquidGlassEnabledChange,
+                                onCheckedChange = { enabled ->
+                                    onLiquidGlassEnabledChange(enabled)
+                                },
                                 thumbContent = {
-                                    Icon(
-                                        painter = painterResource(
-                                            id = if (liquidGlassEnabled) R.drawable.check else R.drawable.close
-                                        ),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(SwitchDefaults.IconSize)
-                                    )
+                                    if (liquidGlassEnabled) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.check),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(SwitchDefaults.IconSize)
+                                        )
+                                    }
                                 }
                             )
                         },
