@@ -72,6 +72,7 @@ import com.auramusic.app.extensions.hasOutline
 import com.auramusic.app.extensions.lyrics
 import com.auramusic.app.extensions.metadata
 import com.auramusic.app.inet.MiniAsync
+import com.auramusic.app.lyrics.LyricsHelper
 import com.auramusic.app.playback.queues.Queue
 import com.auramusic.app.sessions.CastSessionHandler
 import com.auramusic.app.sessions.MediaSessionServiceCb
