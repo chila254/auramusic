@@ -51,6 +51,7 @@ import com.auramusic.app.playback.MusicService.Companion.ROOT
 import com.auramusic.app.playback.MusicService.Companion.SHUFFLE_ACTION
 import com.auramusic.app.playback.MusicService.Companion.SONG
 import com.auramusic.app.playback.MusicService.Companion.YOUTUBE_PLAYLIST
+import com.auramusic.app.playback.MusicService.Companion.SEARCH
 import com.auramusic.app.utils.dataStore
 import com.auramusic.app.utils.get
 import com.auramusic.app.utils.reportException
