@@ -166,7 +166,6 @@ import com.auramusic.app.lyrics.LyricsUtils.romanizeJapanese
 import com.auramusic.app.lyrics.LyricsUtils.romanizeKorean
 import com.auramusic.app.lyrics.LyricsUtils.romanizeChinese
 import com.auramusic.app.lyrics.LyricsTranslationHelper
-import com.auramusic.app.lyrics.LanguageDetectionHelper
 import com.auramusic.app.ui.component.shimmer.ShimmerHost
 import com.auramusic.app.ui.component.shimmer.TextPlaceholder
 import com.auramusic.app.ui.screens.settings.DarkMode
@@ -457,7 +456,16 @@ fun Lyrics(
                     if (autoTranslateLyricsMismatch) {
                         try {
                             val combinedText = lines.take(5).joinToString(" ") { it.text }
-                            val detectedLang = LanguageDetectionHelper.identifyLanguage(combinedText)
+                            // Skip language detection if ML Kit not available (FOSS builds)
+                            // Default to translating if detection fails
+                            var detectedLang: String? = null
+                            try {
+                                val langHelper = Class.forName("com.auramusic.app.lyrics.LanguageDetectionHelper")
+                                val method = langHelper.getMethod("identifyLanguage", String::class.java)
+                                detectedLang = method.invoke(null, combinedText) as? String
+                            } catch (e: Exception) {
+                                // ML Kit not available in FOSS build, proceed with translation
+                            }
                             val systemLang = java.util.Locale.getDefault().language
                             
                             if (detectedLang != null && detectedLang == systemLang) {
