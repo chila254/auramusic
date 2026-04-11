@@ -83,6 +83,7 @@ import com.auramusic.app.constants.AutoDownloadOnLikeKey
 import com.auramusic.app.constants.AutoLoadMoreKey
 import com.auramusic.app.constants.AutoSkipNextOnErrorKey
 import com.auramusic.app.constants.CrossfadeDurationKey
+import com.auramusic.app.constants.VideoModeEnabledKey
 import com.auramusic.app.constants.VideoQuality
 import com.auramusic.app.constants.VideoQualityKey
 import com.auramusic.app.constants.CrossfadeEnabledKey
@@ -1702,7 +1703,7 @@ class MusicService :
                         
                         val isVideoAvailable = checkVideoAvailability(newMediaId)
                         val isVideoSong = mediaItem.metadata?.isVideoSong == true
-                        val videoModeEnabledPref = dataStore.get(PreferenceKeys.VideoModeEnabledKey, true)
+                        val videoModeEnabledPref = dataStore.get(VideoModeEnabledKey, true)
                         
                         if (videoModeEnabledPref && isVideoSong && isVideoAvailable) {
                             Timber.d("onMediaItemTransition: Auto-enabling video mode for new video song: $newMediaId")
