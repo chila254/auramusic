@@ -1,3 +1,48 @@
+# AuraMusic v1.0.13 (Build 14) Changelog
+
+## Features
+- Implemented native ExoPlayer subtitle rendering using PlayerView
+- Added YouTube caption track fetching with VTT conversion
+- Added CC button to toggle subtitles on/off
+- Added Fastlane metadata for F-Droid submission
+- Added liquid glass effect setting in appearance settings
+- Added video subtitles toggle in player controls
+
+## F-Droid Compatibility
+- Removed Google ML Kit dependency (LanguageDetectionHelper)
+- Fixed workflow YAML indentation
+- Added short_description.txt and full_description.txt
+- Added changelogs for F-Droid submission
+
+## UI/UX Improvements
+- Fixed liquid glass effect in dark mode with pure black theme
+- Updated appearance settings toggle UI for liquid glass
+- Liquid glass now works correctly in all theme modes
+
+## Video Playback Improvements
+- Video songs now start at 0:00 position
+- Regular songs preserve current position when switching to video
+- Parallel fetching of captions and stream URL for faster loading
+- Improved video mode switching performance
+
+## Bug Fixes
+- Fixed numerous build errors and compilation issues
+- Fixed missing imports for MusicService constants
+- Fixed MediaLibrarySessionCallback constant references (ROOT, SONG, ARTIST, ALBUM, PLAYLIST, YOUTUBE_PLAYLIST, SHUFFLE_ACTION, SEARCH)
+- Fixed subtitle track selection method
+- Fixed caption fetching reliability
+- Fixed video autoplay and thumbnail layout issues
+- Fixed caption visibility in fullscreen video mode
+- Fixed resume video playback when player screen is not visible
+
+## Build
+- Bumped versionCode to 14
+- Bumped versionName to 1.0.13
+
+
+**Full Changelog**: https://github.com/TeamAuraMusic/AuraMusic/compare/v1.0.12...v1.0.13
+
+
 # AuraMusic v1.0.12 (Build 13) Changelog
 
 ## Features
