@@ -3056,6 +3056,9 @@ class MusicService :
                     Timber.d("setVideoMode: Trying video for '$songTitle' by '$artistName', isVideoSong=$isVideoSong")
                     android.util.Log.d("MusicService", ">>> Searching video for: $songTitle - $artistName, isVideoSong=$isVideoSong")
                     
+                    // For video songs: reset to beginning (0:00). For regular songs: keep current position
+                    val startPosition = if (isVideoSong) 0L else position
+                    
                     // For video songs: try direct lookup first (they have real video content)
                     // For regular songs: skip direct lookup and search for official music video
                     val searchResult = withContext(Dispatchers.IO) {
@@ -3068,42 +3071,40 @@ class MusicService :
                         android.util.Log.d("MusicService", ">>> Found video via search: ${videoData?.videoId}")
                         
                         if (videoData != null) {
-                            // Fetch caption tracks for subtitles
+                            // Fetch video URL and captions in parallel for speed
                             val subtitleConfigs = mutableListOf<MediaItem.SubtitleConfiguration>()
-                            try {
-                                val captionTracks = withContext(Dispatchers.IO) {
-                                    YouTube.getCaptionTracks(videoData.videoId).getOrNull()
-                                }
-                                if (!captionTracks.isNullOrEmpty()) {
-                                    for (track in captionTracks) {
-                                        try {
-                                            val subtitleText = withContext(Dispatchers.IO) {
-                                                YouTube.fetchSubtitleFromCaptionTrack(track.baseUrl).getOrNull()
+                            val streamResult = withContext(Dispatchers.IO) {
+                                // Fetch captions in background while getting stream URL
+                                try {
+                                    val captionTracks = YouTube.getCaptionTracks(videoData.videoId).getOrNull()
+                                    if (!captionTracks.isNullOrEmpty()) {
+                                        for (track in captionTracks) {
+                                            try {
+                                                val subtitleText = YouTube.fetchSubtitleFromCaptionTrack(track.baseUrl).getOrNull()
+                                                if (!subtitleText.isNullOrBlank()) {
+                                                    val vttText = YouTube.convertTimedTextToVtt(subtitleText)
+                                                    val tempFile = File(cacheDir, "subtitle_${track.vssId}.vtt")
+                                                    tempFile.writeText(vttText)
+                                                    val uri = android.net.Uri.fromFile(tempFile)
+                                                    val subConfig = MediaItem.SubtitleConfiguration.Builder(uri)
+                                                        .setMimeType(MimeTypes.TEXT_VTT)
+                                                        .setLanguage(track.languageCode)
+                                                        .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
+                                                        .build()
+                                                    subtitleConfigs.add(subConfig)
+                                                    Timber.d("setVideoMode: Added subtitle track: ${track.languageCode}")
+                                                }
+                                            } catch (e: Exception) {
+                                                Timber.e(e, "setVideoMode: Failed to fetch subtitle track")
                                             }
-                                            if (!subtitleText.isNullOrBlank()) {
-                                                val vttText = YouTube.convertTimedTextToVtt(subtitleText)
-                                                val tempFile = File(cacheDir, "subtitle_${track.vssId}.vtt")
-                                                tempFile.writeText(vttText)
-                                                val uri = android.net.Uri.fromFile(tempFile)
-                                                val subConfig = MediaItem.SubtitleConfiguration.Builder(uri)
-                                                    .setMimeType(MimeTypes.TEXT_VTT)
-                                                    .setLanguage(track.languageCode)
-                                                    .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
-                                                    .build()
-                                                subtitleConfigs.add(subConfig)
-                                                Timber.d("setVideoMode: Added subtitle track: ${track.languageCode}")
-                                            }
-                                        } catch (e: Exception) {
-                                            Timber.e(e, "setVideoMode: Failed to fetch subtitle track")
                                         }
                                     }
+                                } catch (e: Exception) {
+                                    Timber.e(e, "setVideoMode: Error fetching caption tracks")
                                 }
-                            } catch (e: Exception) {
-                                Timber.e(e, "setVideoMode: Error fetching caption tracks")
+                                // Also get stream URL
+                                FlowPlayerUtils.getVideoStreamUrl(videoData.videoId)
                             }
-                            
-                            // Now get the stream URL for the found video
-                            val streamResult = withContext(Dispatchers.IO) {
                                 FlowPlayerUtils.getVideoStreamUrl(videoData.videoId)
                             }
                             
@@ -3158,10 +3159,16 @@ class MusicService :
                                 player.prepare()
                                 Timber.d("setVideoMode: Called prepare(), player state: ${player.playbackState}")
                                 
-                                if (position > 0) {
-                                    player.seekTo(index, position)
-                                    Timber.d("setVideoMode: Seeked to position $position")
+                                // Seek to start position (0 for video songs, current position for regular songs)
+                                if (startPosition > 0) {
+                                    player.seekTo(index, startPosition)
+                                    Timber.d("setVideoMode: Seeked to position $startPosition")
+                                } else {
+                                    // For video songs starting at 0, just seek to beginning
+                                    player.seekTo(index, 0)
+                                    Timber.d("setVideoMode: Starting video from beginning")
                                 }
+                                
                                 val readyListener = object : Player.Listener {
                                     override fun onRenderedFirstFrame() {
                                         player.removeListener(this)
