@@ -1111,6 +1111,46 @@ object YouTube {
         }.trim()
     }
 
+    fun convertTimedTextToVtt(timedText: String): String {
+        val lines = timedText.lines().filter { it.isNotBlank() }
+        val cues = mutableListOf<String>()
+        for (i in lines.indices) {
+            val line = lines[i]
+            val match = Regex("""\[(\d{2}):(\d{2})\.(\d{3})\](.*)""").find(line) ?: continue
+            val min = match.groupValues[1].toInt()
+            val sec = match.groupValues[2].toInt()
+            val ms = match.groupValues[3].toInt()
+            val text = match.groupValues[4].trim()
+            val startMs = min * 60000 + sec * 1000 + ms
+            val endMs = if (i + 1 < lines.size) {
+                val nextLine = lines[i + 1]
+                val nextMatch = Regex("""\[(\d{2}):(\d{2})\.(\d{3})\].*""").find(nextLine)
+                if (nextMatch != null) {
+                    val nextMin = nextMatch.groupValues[1].toInt()
+                    val nextSec = nextMatch.groupValues[2].toInt()
+                    val nextMs = nextMatch.groupValues[3].toInt()
+                    nextMin * 60000 + nextSec * 1000 + nextMs
+                } else {
+                    startMs + 5000 // default 5s
+                }
+            } else {
+                startMs + 5000
+            }
+            val startTime = formatTime(startMs)
+            val endTime = formatTime(endMs)
+            cues.add("$startTime --> $endTime\n$text")
+        }
+        return "WEBVTT\n\n" + cues.joinToString("\n\n")
+    }
+
+    private fun formatTime(ms: Int): String {
+        val h = ms / 3600000
+        val m = (ms % 3600000) / 60000
+        val s = (ms % 60000) / 1000
+        val mmm = ms % 1000
+        return String.format("%02d:%02d:%02d.%03d", h, m, s, mmm)
+    }
+
     suspend fun visitorData(): Result<String> = runCatching {
         Json.parseToJsonElement(innerTube.getSwJsData().bodyAsText().substring(5))
             .jsonArray[0]

@@ -8,6 +8,8 @@ package com.auramusic.app.ui.player
 import android.provider.Settings
 import android.view.ViewGroup
 import android.view.WindowManager
+import androidx.media3.common.C
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -100,6 +102,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.TextOutput
+import androidx.media3.common.text.Cue
 import androidx.media3.ui.PlayerView
 import androidx.media3.common.Player
 import coil3.compose.AsyncImage
@@ -116,7 +120,6 @@ import com.auramusic.app.constants.PlayerHorizontalPadding
 import com.auramusic.app.constants.SeekExtraSeconds
 import com.auramusic.app.constants.SwipeThumbnailKey
 import com.auramusic.app.constants.ThumbnailCornerRadius
-import com.auramusic.app.constants.VideoLyricsEnabledKey
 import com.auramusic.app.constants.VideoQuality
 import com.auramusic.app.constants.VideoQualityKey
 import com.auramusic.app.listentogether.RoomRole
@@ -755,6 +758,7 @@ private fun ThumbnailImage(
             }
         } else if (videoModeEnabled) {
             // Video player view - fix: use RESIZE_MODE_ZOOM for full fill
+            // Native ExoPlayer subtitle rendering like SmartTube
             AndroidView(
                 factory = { ctx ->
                     PlayerView(ctx).apply {
@@ -768,12 +772,32 @@ private fun ThumbnailImage(
                         )
                         setShutterBackgroundColor(android.graphics.Color.BLACK)
                         keepScreenOn = true
+                        // Show subtitle button to let users toggle captions
+                        setShowSubtitleButton(true)
+                        // Get the SubtitleView and register a TextOutput like SmartTube
+                        val subtitleView = getSubtitleView()
+                        if (subtitleView != null) {
+                            player?.getTextComponent()?.addTextOutput(object : TextOutput {
+                                override fun onCues(cues: List<Cue>) {
+                                    subtitleView.setCues(cues)
+                                }
+                            })
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxSize(),
                 update = { playerView ->
                     playerView.player = player
                     playerView.resizeMode = resizeMode
+                    // Re-register TextOutput for new player instance
+                    val subtitleView = playerView.getSubtitleView()
+                    if (subtitleView != null) {
+                        playerView.player?.getTextComponent()?.addTextOutput(object : TextOutput {
+                            override fun onCues(cues: List<Cue>) {
+                                subtitleView.setCues(cues)
+                            }
+                        })
+                    }
                     playerView.requestLayout()
                 }
             )
@@ -909,17 +933,8 @@ private fun ThumbnailImage(
                 )
             }
             
-            // Always-on captions at bottom (like YouTube)
-            // Positioned absolute at bottom with additional padding for fullscreen
-            VideoLyricsOverlay(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(
-                        start = 16.dp,
-                        end = 16.dp,
-                        bottom = if (videoModeEnabled) 80.dp else 12.dp
-                    )
-            )
+            // Native ExoPlayer subtitles now handled via TextOutput in PlayerView
+            // Old custom VideoLyricsOverlay removed - native rendering like SmartTube
         } else {
             // Album art image
             AsyncImage(
@@ -1003,10 +1018,6 @@ private fun VideoSettingsButton(
         VideoQualityKey,
         defaultValue = VideoQuality.QUALITY_720P
     )
-    val (videoLyricsEnabled, onVideoLyricsEnabledChange) = rememberPreference(
-        VideoLyricsEnabledKey,
-        defaultValue = true
-    )
 
     Box(modifier = modifier) {
         IconButton(
@@ -1062,41 +1073,13 @@ private fun VideoSettingsButton(
                             )
                         }
                     },
-                    onClick = {
+onClick = {
                         showQualityMenu = true
                     }
                 )
                 
-                // Subtitles option
-                DropdownMenuItem(
-                    text = {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_subtitles),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(24.dp).padding(end = 12.dp),
-                                    tint = Color.White
-                                )
-                                Text("Captions CC")
-                            }
-                            Text(
-                                text = if (videoLyricsEnabled) "On" else "Off",
-                                color = Color.Gray,
-                                fontSize = 13.sp
-                            )
-                        }
-                    },
-                    onClick = {
-                        onVideoLyricsEnabledChange(!videoLyricsEnabled)
-                        expanded = false
-                    }
-                )
-
+                // Native ExoPlayer handles subtitles via PlayerView
+                
                 // Video fit option
                 DropdownMenuItem(
                     text = {
