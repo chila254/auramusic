@@ -44,6 +44,13 @@ import com.auramusic.app.db.entities.Song
 import com.auramusic.app.extensions.toMediaItem
 import com.auramusic.app.extensions.toggleRepeatMode
 import com.auramusic.app.models.toMediaMetadata
+import com.auramusic.app.playback.MusicService.Companion.ALBUM
+import com.auramusic.app.playback.MusicService.Companion.ARTIST
+import com.auramusic.app.playback.MusicService.Companion.PLAYLIST
+import com.auramusic.app.playback.MusicService.Companion.ROOT
+import com.auramusic.app.playback.MusicService.Companion.SHUFFLE_ACTION
+import com.auramusic.app.playback.MusicService.Companion.SONG
+import com.auramusic.app.playback.MusicService.Companion.YOUTUBE_PLAYLIST
 import com.auramusic.app.utils.dataStore
 import com.auramusic.app.utils.get
 import com.auramusic.app.utils.reportException
@@ -124,7 +131,7 @@ constructor(
             LibraryResult.ofItem(
                 MediaItem
                     .Builder()
-                    .setMediaId(MusicService.ROOT)
+                    .setMediaId(ROOT)
                     .setMediaMetadata(
                         MediaMetadata
                             .Builder()
@@ -148,31 +155,31 @@ constructor(
         scope.future(Dispatchers.IO) {
             LibraryResult.ofItemList(
                 when (parentId) {
-                    MusicService.ROOT ->
+                    ROOT ->
                         listOf(
                             browsableMediaItem(
-                                MusicService.SONG,
+                                SONG,
                                 context.getString(R.string.songs),
                                 null,
                                 drawableUri(R.drawable.music_note),
                                 MediaMetadata.MEDIA_TYPE_PLAYLIST,
                             ),
                             browsableMediaItem(
-                                MusicService.ARTIST,
+                                ARTIST,
                                 context.getString(R.string.artists),
                                 null,
                                 drawableUri(R.drawable.artist),
                                 MediaMetadata.MEDIA_TYPE_FOLDER_ARTISTS,
                             ),
                             browsableMediaItem(
-                                MusicService.ALBUM,
+                                ALBUM,
                                 context.getString(R.string.albums),
                                 null,
                                 drawableUri(R.drawable.album),
                                 MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS,
                             ),
                             browsableMediaItem(
-                                MusicService.PLAYLIST,
+                                PLAYLIST,
                                 context.getString(R.string.playlists),
                                 null,
                                 drawableUri(R.drawable.queue_music),
@@ -180,13 +187,13 @@ constructor(
                             ),
                         )
 
-                    MusicService.SONG -> database.songsByCreateDateAsc().first()
+                    SONG -> database.songsByCreateDateAsc().first()
                         .map { it.toMediaItem(parentId) }
 
-                    MusicService.ARTIST ->
+                    ARTIST ->
                         database.artistsByCreateDateAsc().first().map { artist ->
                             browsableMediaItem(
-                                "${MusicService.ARTIST}/${artist.id}",
+                                "${ARTIST}/${artist.id}",
                                 artist.artist.name,
                                 context.resources.getQuantityString(
                                     R.plurals.n_song,
@@ -198,10 +205,10 @@ constructor(
                             )
                         }
 
-                    MusicService.ALBUM ->
+                    ALBUM ->
                         database.albumsByCreateDateAsc().first().map { album ->
                             browsableMediaItem(
-                                "${MusicService.ALBUM}/${album.id}",
+                                "${ALBUM}/${album.id}",
                                 album.album.title,
                                 album.artists.joinToString {
                                     it.name
@@ -211,7 +218,7 @@ constructor(
                             )
                         }
 
-                    MusicService.PLAYLIST -> {
+                    PLAYLIST -> {
                         val likedSongCount = database.likedSongsCount().first()
                         val downloadedSongCount = downloadUtil.downloads.value.size
                         val youtubePlaylists = try {
@@ -227,7 +234,7 @@ constructor(
                         
                         listOf(
                             browsableMediaItem(
-                                "${MusicService.PLAYLIST}/${PlaylistEntity.LIKED_PLAYLIST_ID}",
+                                "${PLAYLIST}/${PlaylistEntity.LIKED_PLAYLIST_ID}",
                                 context.getString(R.string.liked_songs),
                                 context.resources.getQuantityString(
                                     R.plurals.n_song,
@@ -238,7 +245,7 @@ constructor(
                                 MediaMetadata.MEDIA_TYPE_PLAYLIST,
                             ),
                             browsableMediaItem(
-                                "${MusicService.PLAYLIST}/${PlaylistEntity.DOWNLOADED_PLAYLIST_ID}",
+                                "${PLAYLIST}/${PlaylistEntity.DOWNLOADED_PLAYLIST_ID}",
                                 context.getString(R.string.downloaded_songs),
                                 context.resources.getQuantityString(
                                     R.plurals.n_song,
@@ -251,7 +258,7 @@ constructor(
                         ) +
                         database.playlistsByCreateDateAsc().first().map { playlist ->
                             browsableMediaItem(
-                                "${MusicService.PLAYLIST}/${playlist.id}",
+                                "${PLAYLIST}/${playlist.id}",
                                 playlist.playlist.name,
                                 context.resources.getQuantityString(
                                     R.plurals.n_song,
@@ -264,7 +271,7 @@ constructor(
                         } +
                         youtubePlaylists.map { ytPlaylist ->
                             browsableMediaItem(
-                                "${MusicService.YOUTUBE_PLAYLIST}/${ytPlaylist.id}",
+                                "${YOUTUBE_PLAYLIST}/${ytPlaylist.id}",
                                 ytPlaylist.title,
                                 ytPlaylist.author?.name ?: "YouTube Music",
                                 ytPlaylist.thumbnail?.toUri(),
@@ -275,20 +282,20 @@ constructor(
 
                     else ->
                         when {
-                            parentId.startsWith("${MusicService.ARTIST}/") ->
-                                database.artistSongsByCreateDateAsc(parentId.removePrefix("${MusicService.ARTIST}/"))
+                            parentId.startsWith("${ARTIST}/") ->
+                                database.artistSongsByCreateDateAsc(parentId.removePrefix("${ARTIST}/"))
                                     .first().map {
                                     it.toMediaItem(parentId)
                                 }
 
-                            parentId.startsWith("${MusicService.ALBUM}/") ->
-                                database.albumSongs(parentId.removePrefix("${MusicService.ALBUM}/"))
+                            parentId.startsWith("${ALBUM}/") ->
+                                database.albumSongs(parentId.removePrefix("${ALBUM}/"))
                                     .first().map {
                                     it.toMediaItem(parentId)
                                 }
 
-                            parentId.startsWith("${MusicService.PLAYLIST}/") -> {
-                                val playlistId = parentId.removePrefix("${MusicService.PLAYLIST}/")
+                            parentId.startsWith("${PLAYLIST}/") -> {
+                                val playlistId = parentId.removePrefix("${PLAYLIST}/")
                                 val songs = when (playlistId) {
                                     PlaylistEntity.LIKED_PLAYLIST_ID -> database.likedSongs(
                                         SongSortType.CREATE_DATE,
@@ -321,7 +328,7 @@ constructor(
                                 // Add shuffle item at the top
                                 listOf(
                                     MediaItem.Builder()
-                                        .setMediaId("$parentId/${MusicService.SHUFFLE_ACTION}")
+                                        .setMediaId("$parentId/${SHUFFLE_ACTION}")
                                         .setMediaMetadata(
                                             MediaMetadata.Builder()
                                                 .setTitle(context.getString(R.string.shuffle))
@@ -334,8 +341,8 @@ constructor(
                                 ) + songs.map { it.toMediaItem(parentId) }
                             }
 
-                            parentId.startsWith("${MusicService.YOUTUBE_PLAYLIST}/") -> {
-                                val playlistId = parentId.removePrefix("${MusicService.YOUTUBE_PLAYLIST}/")
+                            parentId.startsWith("${YOUTUBE_PLAYLIST}/") -> {
+                                val playlistId = parentId.removePrefix("${YOUTUBE_PLAYLIST}/")
                                 try {
                                     val songs = YouTube.playlist(playlistId).getOrNull()?.songs
                                         ?.take(100)
@@ -346,7 +353,7 @@ constructor(
                                     // Add shuffle item at the top
                                     listOf(
                                         MediaItem.Builder()
-                                            .setMediaId("$parentId/${MusicService.SHUFFLE_ACTION}")
+                                            .setMediaId("$parentId/${SHUFFLE_ACTION}")
                                             .setMediaMetadata(
                                                 MediaMetadata.Builder()
                                                     .setTitle(context.getString(R.string.shuffle))
@@ -445,7 +452,7 @@ constructor(
                 
                 allLocalSongs.forEach { song ->
                     searchResults.add(song.toMediaItem(
-                        path = "${MusicService.SEARCH}/$query",
+                        path = "${SEARCH}/$query",
                         isPlayable = true,
                         isBrowsable = true
                     ))
@@ -478,7 +485,7 @@ constructor(
                         
                         searchResults.add(
                             MediaItem.Builder()
-                                .setMediaId("${MusicService.SEARCH}/$query/${songItem.id}")
+                                .setMediaId("${SEARCH}/$query/${songItem.id}")
                                 .setMediaMetadata(
                                     MediaMetadata.Builder()
                                         .setTitle(songItem.title)
@@ -519,7 +526,7 @@ constructor(
                 ?: return@future defaultResult
 
             when (path.firstOrNull()) {
-                MusicService.SONG -> {
+                SONG -> {
                     val songId = path.getOrNull(1) ?: return@future defaultResult
                     val allSongs = database.songsByCreateDateAsc().first()
                     MediaItemsWithStartPosition(
@@ -529,7 +536,7 @@ constructor(
                     )
                 }
 
-                MusicService.ARTIST -> {
+                ARTIST -> {
                     val songId = path.getOrNull(2) ?: return@future defaultResult
                     val artistId = path.getOrNull(1) ?: return@future defaultResult
                     val songs = database.artistSongsByCreateDateAsc(artistId).first()
@@ -540,7 +547,7 @@ constructor(
                     )
                 }
 
-                MusicService.ALBUM -> {
+                ALBUM -> {
                     val songId = path.getOrNull(2) ?: return@future defaultResult
                     val albumId = path.getOrNull(1) ?: return@future defaultResult
                     val albumWithSongs = database.albumWithSongs(albumId).first() ?: return@future defaultResult
@@ -551,7 +558,7 @@ constructor(
                     )
                 }
 
-                MusicService.PLAYLIST -> {
+                PLAYLIST -> {
                     val songId = path.getOrNull(2) ?: return@future defaultResult
                     val playlistId = path.getOrNull(1) ?: return@future defaultResult
                     val songs = when (playlistId) {
@@ -578,7 +585,7 @@ constructor(
                     }.first()
 
                     // Check if this is a shuffle action
-                    if (songId == MusicService.SHUFFLE_ACTION) {
+                    if (songId == SHUFFLE_ACTION) {
                         MediaItemsWithStartPosition(
                             songs.shuffled().map { it.toMediaItem() },
                             0,
@@ -593,7 +600,7 @@ constructor(
                     }
                 }
 
-                MusicService.YOUTUBE_PLAYLIST -> {
+                YOUTUBE_PLAYLIST -> {
                     val songId = path.getOrNull(2) ?: return@future defaultResult
                     val playlistId = path.getOrNull(1) ?: return@future defaultResult
 
@@ -607,7 +614,7 @@ constructor(
                     }
 
                     // Check if this is a shuffle action
-                    if (songId == MusicService.SHUFFLE_ACTION) {
+                    if (songId == SHUFFLE_ACTION) {
                         MediaItemsWithStartPosition(
                             songs.shuffled(),
                             0,
@@ -622,7 +629,7 @@ constructor(
                     }
                 }
 
-                MusicService.SEARCH -> {
+                SEARCH -> {
                     val songId = path.getOrNull(2) ?: return@future defaultResult
                     val searchQuery = path.getOrNull(1) ?: return@future defaultResult
                     
