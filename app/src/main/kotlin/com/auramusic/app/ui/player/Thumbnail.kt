@@ -1296,8 +1296,14 @@ private fun VideoLyricsOverlay(
     var isLoadingCaptions by remember { mutableStateOf(false) }
     var captionError by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(mediaMetadata?.id) {
-        val rawVideoId = mediaMetadata?.id ?: return@LaunchedEffect
+    // Use the actual video ID being played (may differ from song ID when video was found via search)
+    val activeVideoId by playerConnection.currentVideoId.collectAsState()
+    val videoModeEnabled by playerConnection.videoModeEnabled.collectAsState()
+
+    LaunchedEffect(mediaMetadata?.id, activeVideoId) {
+        val rawVideoId = (if (videoModeEnabled) activeVideoId else null)
+            ?: mediaMetadata?.id
+            ?: return@LaunchedEffect
         // Strip any suffixes like "_video" that might be added for video mode
         val videoId = rawVideoId.removeSuffix("_video").ifEmpty { rawVideoId }
         

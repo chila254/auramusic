@@ -50,6 +50,10 @@ fun Modifier.liquidGlass(
                         Modifier
                     }
                 )
+                .background(
+                    Color.White.copy(alpha = 0.1f),
+                    RoundedCornerShape(cornerRadius)
+                )
         } else {
             Modifier
         }
@@ -79,6 +83,10 @@ fun LiquidGlassContainer(
                     } else {
                         Modifier
                     }
+                )
+                .background(
+                    Color.White.copy(alpha = 0.1f),
+                    RoundedCornerShape(cornerRadius)
                 )
         ) {
             content()

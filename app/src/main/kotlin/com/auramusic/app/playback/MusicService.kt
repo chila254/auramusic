@@ -1691,6 +1691,28 @@ class MusicService :
         
         if (isNewSong || !_isVideoSwitching.value) {
             resetVideoMode()
+            
+            // Auto-enable video mode for new video songs in background
+            val newMediaId = mediaItem?.mediaId
+            if (newMediaId != null) {
+                scope.launch {
+                    try {
+                        // Wait for currentMediaMetadata to update from onPlayerEvents
+                        delay(300)
+                        
+                        val isVideoAvailable = checkVideoAvailability(newMediaId)
+                        val isVideoSong = mediaItem.metadata?.isVideoSong == true
+                        val videoModeEnabledPref = dataStore.get(PreferenceKeys.VideoModeEnabledKey, true)
+                        
+                        if (videoModeEnabledPref && isVideoSong && isVideoAvailable) {
+                            Timber.d("onMediaItemTransition: Auto-enabling video mode for new video song: $newMediaId")
+                            setVideoMode(true)
+                        }
+                    } catch (e: Exception) {
+                        Timber.e(e, "onMediaItemTransition: Error auto-enabling video mode")
+                    }
+                }
+            }
         } else {
             Timber.d("onMediaItemTransition: Skipping video mode reset - likely a video mode switch")
         }
@@ -2930,6 +2952,8 @@ class MusicService :
     val videoModeMessage: StateFlow<String?> = _videoModeMessage.asStateFlow()
     private val _isVideoAvailable = MutableStateFlow(false)
     val isVideoAvailable: StateFlow<Boolean> = _isVideoAvailable.asStateFlow()
+    private val _currentVideoId = MutableStateFlow<String?>(null)
+    val currentVideoId: StateFlow<String?> = _currentVideoId.asStateFlow()
 
     private fun resetVideoMode() {
         videoSwitchJob?.cancel()
@@ -2937,6 +2961,7 @@ class MusicService :
         _isVideoSwitching.value = false
         isVideoMode = false
         currentVideoUrl = null
+        _currentVideoId.value = null
         originalAudioMediaItem = null
         _videoFetchError.value = null
         _videoModeMessage.value = null
@@ -2982,7 +3007,9 @@ class MusicService :
             return
         }
 
-        val mediaId = currentMediaMetadata.value?.id ?: run {
+        val mediaId = currentMediaMetadata.value?.id
+            ?: player.currentMediaItem?.mediaId
+            ?: run {
             Timber.d("setVideoMode: No current media, skipping")
             android.util.Log.d("MusicService", ">>> No current media, skipping")
             return
@@ -3008,9 +3035,11 @@ class MusicService :
                     originalAudioMediaItem = player.getMediaItemAt(index)
 
                     // Get song info for video search fallback
-                    val songTitle = currentMediaMetadata.value?.title ?: ""
-                    val artistName = currentMediaMetadata.value?.artists?.firstOrNull()?.name ?: ""
-                    val isVideoSong = currentMediaMetadata.value?.isVideoSong == true
+                    val metadata = currentMediaMetadata.value
+                        ?: player.currentMediaItem?.metadata
+                    val songTitle = metadata?.title ?: ""
+                    val artistName = metadata?.artists?.firstOrNull()?.name ?: ""
+                    val isVideoSong = metadata?.isVideoSong == true
                     
                     Timber.d("setVideoMode: Trying video for '$songTitle' by '$artistName', isVideoSong=$isVideoSong")
                     android.util.Log.d("MusicService", ">>> Searching video for: $songTitle - $artistName, isVideoSong=$isVideoSong")
@@ -3096,6 +3125,7 @@ class MusicService :
                                 player.addListener(readyListener)
                                 isVideoMode = true
                                 _videoModeEnabled.value = true
+                                _currentVideoId.value = videoData.videoId
                                 _videoModeMessage.value = "Video mode enabled: ${videoData.title}"
                                 Timber.d("setVideoMode: SUCCESS - Video stream prepared with mimeType: $mimeType, player state: ${player.playbackState}, playWhenReady: true")
                                 android.util.Log.d("MusicService", ">>> SUCCESS - Video mode enabled for: ${videoData.title}")

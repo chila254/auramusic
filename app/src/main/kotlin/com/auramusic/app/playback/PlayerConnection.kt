@@ -161,6 +161,7 @@ class PlayerConnection(
     val isVideoAvailable = service.isVideoAvailable
     val videoFetchError = service.videoFetchError
     val videoModeMessage = service.videoModeMessage
+    val currentVideoId = service.currentVideoId
 
     fun toggleVideoMode() {
         android.util.Log.d("PlayerConnection", "toggleVideoMode called, current videoModeEnabled: ${videoModeEnabled.value}, isVideoAvailable: ${isVideoAvailable.value}")
