@@ -120,6 +120,7 @@ import com.auramusic.app.constants.ThumbnailCornerRadius
 import com.auramusic.app.constants.VideoLyricsEnabledKey
 import com.auramusic.app.constants.VideoQuality
 import com.auramusic.app.constants.VideoQualityKey
+import com.auramusic.app.ui.player.SubtitleManager
 import com.auramusic.app.listentogether.RoomRole
 import com.auramusic.app.ui.component.CastButton
 import com.auramusic.app.utils.FlowPlayerUtils
@@ -756,7 +757,7 @@ private fun ThumbnailImage(
             }
         } else if (videoModeEnabled) {
             // Video player view - fix: use RESIZE_MODE_ZOOM for full fill
-            // Native ExoPlayer subtitle rendering like SmartTube
+            // Native ExoPlayer subtitle rendering
             AndroidView(
                 factory = { ctx ->
                     PlayerView(ctx).apply {
@@ -772,6 +773,13 @@ private fun ThumbnailImage(
                         keepScreenOn = true
                         // Show subtitle button to let users toggle captions
                         setShowSubtitleButton(true)
+                        
+                        // Get the SubtitleView and register with SubtitleManager
+                        val subView = getSubtitleView()
+                        if (subView != null) {
+                            val subtitleManager = SubtitleManager(subView, ctx)
+                            player?.addListener(subtitleManager)
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxSize(),
