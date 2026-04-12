@@ -741,6 +741,9 @@ private fun ThumbnailImage(
                 playerDuration = player.duration.coerceAtLeast(1L)
                 delay(200)
             }
+        } else {
+            playerPosition = 0L
+            playerDuration = 1L
         }
     }
     
