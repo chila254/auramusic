@@ -25,6 +25,7 @@ import com.auramusic.innertube.models.WatchEndpoint.WatchEndpointMusicSupportedC
 import com.auramusic.innertube.models.YouTubeClient
 import com.auramusic.innertube.models.YouTubeClient.Companion.WEB
 import com.auramusic.innertube.models.YouTubeClient.Companion.WEB_REMIX
+import com.auramusic.innertube.models.YouTubeClient.Companion.MOBILE
 import com.auramusic.innertube.models.YouTubeLocale
 import com.auramusic.innertube.models.getContinuation
 import com.auramusic.innertube.models.getItems
@@ -1074,7 +1075,7 @@ object YouTube {
     /**
      * Get caption tracks from the player response (like SmartTube does).
      * Returns a list of available caption tracks with their URLs.
-     * Tries WEB client first, then falls back to WEB_REMIX for YouTube Music content.
+     * Tries WEB client first, then falls back to ANDROID/MOBILE for YouTube Music content.
      * Also returns video duration in milliseconds for proper subtitle timing.
      */
     suspend fun getCaptionTracksWithDuration(videoId: String): Result<Pair<List<PlayerResponse.Captions.PlayerCaptionsTracklistRenderer.CaptionTrack>, Long?>> = runCatching {
@@ -1087,12 +1088,21 @@ object YouTube {
             return@runCatching webTracks to webDuration
         }
 
-        // Fallback to WEB_REMIX for YouTube Music content
+        // Fallback to ANDROID/MOBILE client which may have more captions available
+        val mobileResponse = innerTube.player(MOBILE, videoId, null, null).body<PlayerResponse>()
+        val mobileTracks = mobileResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks
+        val mobileDuration = mobileResponse.videoDetails?.lengthSeconds?.toLongOrNull()?.times(1000)
+        
+        if (!mobileTracks.isNullOrEmpty()) {
+            return@runCatching mobileTracks to mobileDuration
+        }
+        
+        // Last fallback to WEB_REMIX
         val remixResponse = innerTube.player(WEB_REMIX, videoId, null, null).body<PlayerResponse>()
         val remixTracks = remixResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks
         val remixDuration = remixResponse.videoDetails?.lengthSeconds?.toLongOrNull()?.times(1000)
         
-        (remixTracks ?: emptyList()) to (remixDuration ?: webDuration)
+        (remixTracks ?: emptyList()) to (remixDuration ?: mobileDuration ?: webDuration)
     }
     
     /**
@@ -1108,6 +1118,20 @@ object YouTube {
         // Fallback to WEB_REMIX for YouTube Music content
         val remixResponse = innerTube.player(WEB_REMIX, videoId, null, null).body<PlayerResponse>()
         remixResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks ?: emptyList()
+    }
+    
+    /**
+     * Get caption tracks using ANDROID client as primary (more reliable for captions).
+     */
+    suspend fun getCaptionTracksAndroid(videoId: String): Result<List<PlayerResponse.Captions.PlayerCaptionsTracklistRenderer.CaptionTrack>> = runCatching {
+        // Try ANDROID/MOBILE client first - typically has more captions
+        val mobileResponse = innerTube.player(MOBILE, videoId, null, null).body<PlayerResponse>()
+        val mobileTracks = mobileResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks
+        if (!mobileTracks.isNullOrEmpty()) return@runCatching mobileTracks
+        
+        // Fallback to WEB
+        val webResponse = innerTube.player(WEB, videoId, null, null).body<PlayerResponse>()
+        webResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks ?: emptyList()
     }
 
     /**
