@@ -1330,7 +1330,7 @@ private fun VideoLyricsOverlay(
     val activeVideoId by playerConnection.currentVideoId.collectAsState()
     val videoModeEnabled by playerConnection.videoModeEnabled.collectAsState()
 
-    LaunchedEffect(mediaMetadata?.id, activeVideoId) {
+    LaunchedEffect(mediaMetadata?.id, activeVideoId, subtitleLanguage) {
         val rawVideoId = (if (videoModeEnabled) activeVideoId else null)
             ?: mediaMetadata?.id
             ?: return@LaunchedEffect
