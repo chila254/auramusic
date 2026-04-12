@@ -1301,7 +1301,6 @@ private fun VideoLyricsOverlay(
 
     // Use the actual video ID being played (may differ from song ID when video was found via search)
     val activeVideoId by playerConnection.currentVideoId.collectAsState()
-    val videoModeEnabled by playerConnection.videoModeEnabled.collectAsState()
 
     LaunchedEffect(mediaMetadata?.id, activeVideoId, subtitleLanguage) {
         val rawVideoId = (if (videoModeEnabled) activeVideoId else null)
