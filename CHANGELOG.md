@@ -21,7 +21,7 @@
 
 ## Video Playback Improvements
 - Video songs now start at 0:00 position
-- Regular songs preserve current position when switching to video
+- Video songs preserve current position when switching to video
 - Parallel fetching of captions and stream URL for faster loading
 - Improved video mode switching performance
 
