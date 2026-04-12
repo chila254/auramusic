@@ -1147,7 +1147,9 @@ object YouTube {
         }
         
         val url = if ("fmt=" in fullUrl) fullUrl else "$fullUrl&fmt=json3"
-        val responseText = innerTube.getUrl(url).bodyAsText()
+        
+        // Use method with proper YouTube headers to avoid being redirected to error page
+        val responseText = innerTube.getUrlWithYouTubeHeaders(url).bodyAsText()
         
         // Check if response is an error page (starts with < which indicates HTML)
         if (responseText.trim().startsWith("<")) {
