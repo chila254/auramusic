@@ -1327,7 +1327,7 @@ private fun VideoLyricsOverlay(
             try {
                 // Try caption tracks first (extracted from player response like SmartTube)
                 // Use version that returns video duration for proper VTT conversion
-                val captionResult = YouTube.getCaptionTracks(videoId)
+                val captionResult = YouTube.getCaptionTracksWithDuration(videoId)
                 val captionResultPair = captionResult.getOrNull()
                 val captionTracks = captionResultPair?.first
                 videoDurationMs = captionResultPair?.second ?: 0L

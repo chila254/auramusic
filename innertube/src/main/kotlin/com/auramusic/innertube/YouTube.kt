@@ -1077,7 +1077,7 @@ object YouTube {
      * Tries WEB client first, then falls back to WEB_REMIX for YouTube Music content.
      * Also returns video duration in milliseconds for proper subtitle timing.
      */
-    suspend fun getCaptionTracks(videoId: String): Result<Pair<List<PlayerResponse.Captions.PlayerCaptionsTracklistRenderer.CaptionTrack>, Long?>> = runCatching {
+    suspend fun getCaptionTracksWithDuration(videoId: String): Result<Pair<List<PlayerResponse.Captions.PlayerCaptionsTracklistRenderer.CaptionTrack>, Long?>> = runCatching {
         // Try WEB client first
         val webResponse = innerTube.player(WEB, videoId, null, null).body<PlayerResponse>()
         val webTracks = webResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks
