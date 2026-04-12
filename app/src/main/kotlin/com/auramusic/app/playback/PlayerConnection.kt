@@ -167,7 +167,6 @@ class PlayerConnection(
 
     val availableSubtitles = service.availableSubtitles
     val selectedSubtitleIndex = service.selectedSubtitleIndex
-    val currentSubtitleCues = service.currentSubtitleCues
 
     fun selectSubtitle(index: Int) {
         service.selectSubtitle(index)

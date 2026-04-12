@@ -122,8 +122,6 @@ import com.auramusic.app.constants.VideoLyricsEnabledKey
 import com.auramusic.app.constants.VideoQuality
 import com.auramusic.app.constants.VideoQualityKey
 import com.auramusic.app.listentogether.RoomRole
-import com.auramusic.app.subtitles.SubtitleCue
-import com.auramusic.app.subtitles.SubtitleInfo
 import com.auramusic.app.ui.component.CastButton
 import com.auramusic.app.utils.FlowPlayerUtils
 import com.auramusic.app.utils.rememberEnumPreference
@@ -267,7 +265,6 @@ fun Thumbnail(
     val videoModeEnabled by playerConnection.videoModeEnabled.collectAsState()
     val availableSubtitles by playerConnection.availableSubtitles.collectAsState()
     val selectedSubtitleIndex by playerConnection.selectedSubtitleIndex.collectAsState()
-    val currentSubtitleCues by playerConnection.currentSubtitleCues.collectAsState()
     val subtitlesEnabled by rememberPreference(SubtitlesEnabledKey, true)
 
     // Preferences - computed once
@@ -694,7 +691,6 @@ private fun ThumbnailImage(
     val context = LocalContext.current
     val isVideoSwitching by playerConnection.isVideoSwitching.collectAsState()
     val (subtitlesEnabled, onSubtitlesEnabledChange) = rememberPreference(SubtitlesEnabledKey, true)
-    val currentSubtitleCues by playerConnection.currentSubtitleCues.collectAsState()
     
     // [4] Auto-hide controls state
     var showControls by remember { mutableStateOf(true) }
@@ -927,18 +923,7 @@ private fun ThumbnailImage(
                 )
             }
             
-            // Custom subtitle overlay for fetched caption cues
-            if (subtitlesEnabled && currentSubtitleCues.isNotEmpty()) {
-                SubtitleOverlayFromState(
-                    cues = currentSubtitleCues,
-                    currentPositionMs = playerPosition,
-                    enabled = true,
-                    fontSize = 16f,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 12.dp)
-                )
-            }
+
         } else {
             // Album art image
             AsyncImage(

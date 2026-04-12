@@ -2971,8 +2971,6 @@ class MusicService :
     val availableSubtitles: StateFlow<List<com.auramusic.app.subtitles.SubtitleInfo>> = _availableSubtitles.asStateFlow()
     private val _selectedSubtitleIndex = MutableStateFlow(-1)
     val selectedSubtitleIndex: StateFlow<Int> = _selectedSubtitleIndex.asStateFlow()
-    private val _currentSubtitleCues = MutableStateFlow<List<com.auramusic.app.subtitles.SubtitleCue>>(emptyList())
-    val currentSubtitleCues: StateFlow<List<com.auramusic.app.subtitles.SubtitleCue>> = _currentSubtitleCues.asStateFlow()
 
     private val _currentPositionFlow = MutableStateFlow(0L)
     val currentPositionFlow: StateFlow<Long> = _currentPositionFlow.asStateFlow()
@@ -2981,47 +2979,6 @@ class MusicService :
 
     fun selectSubtitle(index: Int) {
         _selectedSubtitleIndex.value = index
-        if (index >= 0 && index < _availableSubtitles.value.size) {
-            val subtitleInfo = _availableSubtitles.value[index]
-            loadSubtitleCues(subtitleInfo)
-        } else {
-            _currentSubtitleCues.value = emptyList()
-        }
-    }
-
-    private fun loadSubtitleCues(info: SubtitleInfo) {
-        Timber.d("loadSubtitleCues: Starting for URL: ${info.url}")
-        kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            try {
-                val subtitleText = if (!info.cachedContent.isNullOrBlank()) {
-                    Timber.d("loadSubtitleCues: Using cached content (length: ${info.cachedContent.length})")
-                    info.cachedContent
-                } else if (!info.cachedFilePath.isNullOrBlank()) {
-                    val cachedFile = File(info.cachedFilePath)
-                    if (cachedFile.exists()) {
-                        Timber.d("loadSubtitleCues: Reading from cached file: ${cachedFile.absolutePath}")
-                        cachedFile.readText()
-                    } else {
-                        Timber.w("loadSubtitleCues: Cached file not found, trying network")
-                        YouTube.fetchSubtitleFromCaptionTrack(info.url).getOrNull()
-                    }
-                } else {
-                    YouTube.fetchSubtitleFromCaptionTrack(info.url).getOrNull()
-                }
-                Timber.d("loadSubtitleCues: Fetched text length: ${subtitleText?.length ?: 0}")
-                if (!subtitleText.isNullOrBlank()) {
-                    val cues = com.auramusic.app.subtitles.SubtitleHandler.parseContent(subtitleText, "vtt")
-                    Timber.d("loadSubtitleCues: Parsed ${cues.size} cues")
-                    _currentSubtitleCues.value = cues
-                    Timber.d("selectSubtitle: Loaded ${cues.size} cues for ${info.language}")
-                } else {
-                    Timber.w("loadSubtitleCues: subtitleText is null or blank")
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "selectSubtitle: Failed to load subtitle cues")
-                _currentSubtitleCues.value = emptyList()
-            }
-        }
     }
 
     private fun resetVideoMode() {
@@ -3036,7 +2993,6 @@ class MusicService :
         _videoModeMessage.value = null
         _availableSubtitles.value = emptyList()
         _selectedSubtitleIndex.value = -1
-        _currentSubtitleCues.value = emptyList()
     }
 
     /**
