@@ -386,12 +386,12 @@ class InnerTube {
     suspend fun getUrl(url: String) = withRetry { httpClient.get(url) }
 
     /**
-     * Fetch a URL with YouTube-specific headers (for caption URLs etc.)
+     * Fetch a URL with YouTube-specific headers (for caption URLs from youtube.com)
      */
     suspend fun getUrlWithYouTubeHeaders(url: String) = withRetry {
         httpClient.get(url) {
-            header("Origin", YouTubeClient.ORIGIN_YOUTUBE_MUSIC)
-            header("Referer", YouTubeClient.REFERER_YOUTUBE_MUSIC)
+            header("Origin", YouTubeClient.ORIGIN_YOUTUBE)
+            header("Referer", YouTubeClient.REFERER_YOUTUBE)
             header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0")
         }
     }
