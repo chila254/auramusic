@@ -1312,7 +1312,7 @@ private fun VideoLyricsOverlay(
             return@LaunchedEffect
         }
         
-        val videoId = activeVideoId
+        val videoId: String = activeVideoId
         
         // Skip if already attempted for this video ID
         if (videoId in attemptedVideoIds) {
