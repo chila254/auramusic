@@ -5,7 +5,10 @@
 
 package com.auramusic.app.ui.screens.settings
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.height
@@ -17,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -69,6 +73,7 @@ import com.auramusic.app.constants.VideoModeEnabledKey
 import com.auramusic.app.ui.component.DefaultDialog
 import com.auramusic.app.ui.component.EnumDialog
 import com.auramusic.app.ui.component.IconButton
+import com.auramusic.app.ui.component.ListDialog
 import com.auramusic.app.ui.component.Material3SettingsGroup
 import com.auramusic.app.ui.component.Material3SettingsItem
 import com.auramusic.app.ui.utils.backToMain
@@ -174,6 +179,10 @@ fun PlayerSettings(
         SubtitlesEnabledKey,
         defaultValue = true
     )
+    val (subtitleLanguage, onSubtitleLanguageChange) = rememberPreference(
+        SubtitleLanguageKey,
+        defaultValue = "en"
+    )
     val (subtitleFontSize, onSubtitleFontSizeChange) = rememberPreference(
         SubtitleFontSizeKey,
         defaultValue = 16f
@@ -192,6 +201,9 @@ fun PlayerSettings(
     )
 
     var showAudioQualityDialog by remember {
+        mutableStateOf(false)
+    }
+    var showSubtitleLanguageDialog by remember {
         mutableStateOf(false)
     }
 
@@ -490,6 +502,65 @@ fun PlayerSettings(
                     },
                     onClick = { onSubtitlesEnabledChange(!subtitlesEnabled) }
                 ))
+                val subtitleLanguageOptions = listOf(
+                    "en" to "English",
+                    "es" to "Spanish",
+                    "fr" to "French",
+                    "de" to "German",
+                    "it" to "Italian",
+                    "pt" to "Portuguese",
+                    "ru" to "Russian",
+                    "ja" to "Japanese",
+                    "ko" to "Korean",
+                    "zh" to "Chinese",
+                    "auto" to "Auto"
+                )
+                val currentSubtitleLangLabel = subtitleLanguageOptions.find { it.first == subtitleLanguage }?.second ?: "English"
+                add(Material3SettingsItem(
+                    icon = painterResource(R.drawable.language),
+                    title = { Text(stringResource(R.string.subtitle_language)) },
+                    description = { Text(currentSubtitleLangLabel) },
+                    onClick = { showSubtitleLanguageDialog = true }
+                ))
+                if (showSubtitleLanguageDialog) {
+                    ListDialog(
+                        onDismiss = { showSubtitleLanguageDialog = false },
+                        title = { Text(stringResource(R.string.subtitle_language)) }
+                    ) {
+                        items(subtitleLanguageOptions.size) { index ->
+                            val (code, name) = subtitleLanguageOptions[index]
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable(enabled = true) {
+                                        onSubtitleLanguageChange(code)
+                                        showSubtitleLanguageDialog = false
+                                    }
+                                    .background(
+                                        if (subtitleLanguage == code) MaterialTheme.colorScheme.primaryContainer
+                                        else MaterialTheme.colorScheme.surface
+                                    )
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = name,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = if (subtitleLanguage == code) MaterialTheme.colorScheme.onPrimaryContainer
+                                    else MaterialTheme.colorScheme.onSurface
+                                )
+                                if (subtitleLanguage == code) {
+                                    Spacer(Modifier.weight(1f))
+                                    Icon(
+                                        painter = painterResource(R.drawable.check),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
                 // Only show Cast setting in GMS builds (not in F-Droid/FOSS)
                 if (BuildConfig.CAST_AVAILABLE) {
                     add(Material3SettingsItem(
