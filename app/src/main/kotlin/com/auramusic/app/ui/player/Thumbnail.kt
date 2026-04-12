@@ -1278,6 +1278,7 @@ private fun SeekEffectOverlay(
  * [2] Next lyric line preview
  * [3] Glow/shadow effect for readability
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun VideoLyricsOverlay(
     modifier: Modifier = Modifier
