@@ -177,7 +177,7 @@ private fun DrawScope.drawWavyTrack(
     for (i in 0..waveCount) {
         val x = i * waveWidth
         val phase = (i.toFloat() / waveCount) * 2f * Math.PI.toFloat() + waveOffset
-        val waveY = y + height / 2f + sin(phase).toFloat() * amplitude
+        val waveY = y + height / 2f + sin(phase) * amplitude
         inactivePath.lineTo(x, waveY.coerceIn(y, y + height))
     }
 
@@ -199,7 +199,7 @@ private fun DrawScope.drawWavyTrack(
             val x = i * waveWidth
             if (x > actualProgressWidth) break
             val phase = (i.toFloat() / waveCount) * 2f * Math.PI.toFloat() + waveOffset
-            val waveY = y + height / 2f + sin(phase).toFloat() * amplitude
+            val waveY = y + height / 2f + sin(phase) * amplitude
             val clampedX = x.coerceAtMost(actualProgressWidth)
             activePath.lineTo(clampedX, waveY.coerceIn(y, y + height))
         }
