@@ -122,7 +122,7 @@ fun AudioVisualizerView(
             for (i in 0 until waveCount * 10) {
                 val x = i * waveWidth / 10f
                 val phase = (i.toFloat() / (waveCount * 10)) * 2f * Math.PI.toFloat() + waveOffset
-                val y = centerY + sin(phase).toFloat() * amplitude * 0.3f
+                val y = centerY + sin(phase) * amplitude * 0.3f
                 path.lineTo(x, y)
             }
 
@@ -140,7 +140,7 @@ fun AudioVisualizerView(
                 for (i in 0 until (waveCount * 10 * progress).toInt()) {
                     val x = i * waveWidth / 10f
                     val phase = (i.toFloat() / (waveCount * 10)) * 2f * Math.PI.toFloat() + waveOffset
-                    val y = centerY + sin(phase).toFloat() * amplitude * 0.3f
+                    val y = centerY + sin(phase) * amplitude * 0.3f
                     activePath.lineTo(x, y)
                 }
 
@@ -170,7 +170,7 @@ fun AudioVisualizerView(
             val x = i * step
             val phase = (i.toFloat() / normalizedData.size) * 2f * Math.PI.toFloat() + waveOffset
             val sampleValue = normalizedData[i]
-            val y = centerY + sampleValue * amplitude + sin(phase).toFloat() * amplitude * 0.2f
+            val y = centerY + sampleValue * amplitude + sin(phase) * amplitude * 0.2f
             path.lineTo(x, y.coerceIn(centerY - amplitude, centerY + amplitude))
         }
 
@@ -190,7 +190,7 @@ fun AudioVisualizerView(
                 val x = i * step
                 val phase = (i.toFloat() / normalizedData.size) * 2f * Math.PI.toFloat() + waveOffset
                 val sampleValue = normalizedData[i]
-                val y = centerY + sampleValue * amplitude + sin(phase).toFloat() * amplitude * 0.2f
+                val y = centerY + sampleValue * amplitude + sin(phase) * amplitude * 0.2f
                 activePath.lineTo(x, y.coerceIn(centerY - amplitude, centerY + amplitude))
             }
 
@@ -241,7 +241,7 @@ fun AudioVisualizerPreview(
         for (i in 0 until waveCount * 10) {
             val x = i * waveWidth / 10f
             val phase = (i.toFloat() / (waveCount * 10)) * 2f * Math.PI.toFloat() + waveOffset
-            val y = centerY + sin(phase).toFloat() * amplitude * 0.3f
+            val y = centerY + sin(phase) * amplitude * 0.3f
             path.lineTo(x, y)
         }
 
