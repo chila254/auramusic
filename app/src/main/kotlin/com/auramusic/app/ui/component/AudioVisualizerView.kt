@@ -160,7 +160,7 @@ fun AudioVisualizerSlider(
         modifier = interactiveModifier,
         contentAlignment = Alignment.Center
     ) {
-        Canvas(modifier = Modifier.fillMaxWidth().height(24.dp)) {
+        Canvas(modifier = Modifier.fillMaxWidth().height(36.dp)) {
             val width = size.width
             val centerY = size.height / 2
             val barHeight = trackHeight.toPx()
@@ -238,7 +238,7 @@ private fun DrawScope.drawSmoothOceanWaves(
     if (progressWidth <= 0f) return
 
     val waveCount = 2
-    val waveAmplitude = barHeight * 0.4f
+    val waveAmplitude = barHeight * 1.2f
 
     val normalizedData = if (waveformData != null && isPlaying) {
         waveformData.map { sample -> ((sample.toInt() and 0xFF) - 128) / 128f }
@@ -250,7 +250,7 @@ private fun DrawScope.drawSmoothOceanWaves(
     }
 
     val wavePath = Path()
-    val waveTop = centerY - barHeight * 0.6f
+    val waveTop = centerY - barHeight * 1.5f
 
     wavePath.moveTo(0f, waveTop)
 
@@ -262,7 +262,7 @@ private fun DrawScope.drawSmoothOceanWaves(
         val phase = (x / width) * waveCount * 2f * Math.PI.toFloat() + waveOffset
         val smoothWave = sin(phase) * waveAmplitude * 0.3f
 
-        val y = waveTop - sampleValue * waveAmplitude * 0.5f - smoothWave.toFloat()
+        val y = waveTop - sampleValue * waveAmplitude * 0.6f - smoothWave.toFloat()
         wavePath.lineTo(x, y)
     }
 
@@ -303,13 +303,13 @@ fun AudioVisualizerPreview(
     Canvas(
         modifier = modifier
             .fillMaxWidth()
-            .height(40.dp)
+            .height(48.dp)
     ) {
         val width = size.width
         val centerY = size.height / 2
         val barHeight = 6.dp.toPx()
         val waveCount = 2
-        val waveAmplitude = barHeight * 0.4f
+        val waveAmplitude = barHeight * 1.2f
 
         drawRoundRect(
             color = waveColor.copy(alpha = 0.3f),
@@ -328,7 +328,7 @@ fun AudioVisualizerPreview(
         )
 
         val wavePath = Path()
-        val waveTop = centerY - barHeight * 0.6f
+        val waveTop = centerY - barHeight * 1.5f
 
         wavePath.moveTo(0f, waveTop)
 
@@ -338,7 +338,7 @@ fun AudioVisualizerPreview(
             val smoothWave = sin(phase) * waveAmplitude * 0.3f
             val sampleValue = (sin(phase + waveOffset) + 1f) / 2f
 
-            val y = waveTop - sampleValue * waveAmplitude * 0.5f - smoothWave.toFloat()
+            val y = waveTop - sampleValue * waveAmplitude * 0.6f - smoothWave.toFloat()
             wavePath.lineTo(x, y)
         }
 
