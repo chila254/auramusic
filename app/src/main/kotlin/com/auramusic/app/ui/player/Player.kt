@@ -1414,7 +1414,7 @@ fun BottomSheetPlayer(
                     )
                 }
 
-                SliderStyle.SAMSUNG -> {
+                SliderStyle.LIQUID -> {
                     SamsungSlider(
                         value = (sliderPosition ?: effectivePosition).toFloat(),
                         valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
