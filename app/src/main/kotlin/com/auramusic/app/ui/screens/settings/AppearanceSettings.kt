@@ -102,6 +102,7 @@ import com.auramusic.app.ui.component.Material3SettingsGroup
 import com.auramusic.app.ui.component.Material3SettingsItem
 import com.auramusic.app.ui.component.PlayerSliderTrack
 import com.auramusic.app.ui.component.SamsungSlider
+import com.auramusic.app.ui.component.AudioVisualizerPreview
 import com.auramusic.app.ui.component.SquigglySlider
 import com.auramusic.app.ui.component.WavySlider
 import com.auramusic.app.ui.theme.DefaultThemeColor
@@ -813,6 +814,37 @@ fun AppearanceSettings(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .aspectRatio(1f)
+                            .weight(1f)
+                            .clip(RoundedCornerShape(16.dp))
+                            .border(
+                                1.dp,
+                                if (sliderStyle == SliderStyle.VISUALIZER) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                                RoundedCornerShape(16.dp)
+                            )
+                            .clickable {
+                                onSliderStyleChange(SliderStyle.VISUALIZER)
+                                onSquigglySliderChange(false)
+                                showSliderOptionDialog = false
+                            }
+                            .padding(12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AudioVisualizerPreview(
+                            waveColor = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Text(
+                            text = stringResource(R.string.visualizer),
+                            style = MaterialTheme.typography.labelSmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.align(Alignment.BottomCenter)
+                        )
+                    }
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }
@@ -1099,6 +1131,7 @@ fun AppearanceSettings(
                                 SliderStyle.WAVY -> stringResource(R.string.wavy)
                                 SliderStyle.SLIM -> stringResource(R.string.slim)
                                 SliderStyle.LIQUID -> stringResource(R.string.liquid)
+                                SliderStyle.VISUALIZER -> stringResource(R.string.visualizer)
                             }
                         )
                     },
