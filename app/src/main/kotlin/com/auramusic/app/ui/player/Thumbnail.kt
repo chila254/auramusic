@@ -1121,6 +1121,8 @@ onClick = {
                                 text = when (resizeMode) {
                                     AspectRatioFrameLayout.RESIZE_MODE_FIT -> "Fit"
                                     AspectRatioFrameLayout.RESIZE_MODE_FILL -> "Stretch"
+                                    AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH -> "Fixed"
+                                    AspectRatioFrameLayout.RESIZE_MODE_FIXED_HEIGHT -> "Fixed (Height)"
                                     else -> "Fit"
                                 },
                                 color = Color.Gray,
@@ -1129,9 +1131,10 @@ onClick = {
                         }
                     },
                     onClick = {
-                        // Cycle between Fit and Stretch
+                        // Cycle through: Fit -> Fixed -> Stretch -> Fit
                         val nextMode = when (resizeMode) {
-                            AspectRatioFrameLayout.RESIZE_MODE_FIT -> AspectRatioFrameLayout.RESIZE_MODE_FILL
+                            AspectRatioFrameLayout.RESIZE_MODE_FIT -> AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH
+                            AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH -> AspectRatioFrameLayout.RESIZE_MODE_FILL
                             else -> AspectRatioFrameLayout.RESIZE_MODE_FIT
                         }
                         onResizeModeChange(nextMode)
