@@ -687,8 +687,8 @@ private fun ThumbnailImage(
     var lastInteractionTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
     
     // [6] Pinch-to-zoom resize mode
-    // Use FIT to preserve quality, user can pinch to zoom if needed
-    var resizeMode by remember { mutableIntStateOf(AspectRatioFrameLayout.RESIZE_MODE_FIT) }
+    // Use FIXED_WIDTH to fill width like HeroCarousel (crops top/bottom but no black bars)
+    var resizeMode by remember { mutableIntStateOf(AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH) }
     
     // Check if video is in FIT mode (which shows empty space on small screens)
     val isFitMode = resizeMode == AspectRatioFrameLayout.RESIZE_MODE_FIT
