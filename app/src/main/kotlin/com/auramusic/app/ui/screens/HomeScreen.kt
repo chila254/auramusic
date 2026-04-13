@@ -520,12 +520,15 @@ fun HomeScreen(
                                 items = heroItems,
                                 onItemClick = { item ->
                                     when (item) {
-                                        is SongItem -> playerConnection.playQueue(
-                                            YouTubeQueue(
-                                                item.endpoint ?: WatchEndpoint(videoId = item.id),
-                                                item.toMediaMetadata()
+                                        is SongItem -> {
+                                            val metadata = item.toMediaMetadata()
+                                            playerConnection.playQueue(
+                                                YouTubeQueue(
+                                                    item.endpoint ?: WatchEndpoint(videoId = item.id),
+                                                    metadata
+                                                )
                                             )
-                                        )
+                                        }
                                         is AlbumItem -> navController.navigate("album/${item.id}")
                                         is ArtistItem -> navController.navigate("artist/${item.id}")
                                         is PlaylistItem -> navController.navigate("online_playlist/${item.id}")
@@ -537,12 +540,15 @@ fun HomeScreen(
                                 },
                                 onPlayClick = { item ->
                                     when (item) {
-                                        is SongItem -> playerConnection.playQueue(
-                                            YouTubeQueue(
-                                                item.endpoint ?: WatchEndpoint(videoId = item.id),
-                                                item.toMediaMetadata()
+                                        is SongItem -> {
+                                            val metadata = item.toMediaMetadata()
+                                            playerConnection.playQueue(
+                                                YouTubeQueue(
+                                                    item.endpoint ?: WatchEndpoint(videoId = item.id),
+                                                    metadata
+                                                )
                                             )
-                                        )
+                                        }
                                         is AlbumItem -> playerConnection.playQueue(
                                             YouTubeAlbumRadio(item.playlistId)
                                         )
