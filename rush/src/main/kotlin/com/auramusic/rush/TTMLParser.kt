@@ -230,6 +230,30 @@ object TTMLParser {
             }
         }
     }
+
+    data class LyricsQuality(
+        val hasLineSync: Boolean,
+        val hasWordSync: Boolean,
+        val totalLines: Int,
+        val linesWithWords: Int
+    )
+
+    fun analyzeQuality(lines: List<ParsedLine>): LyricsQuality {
+        if (lines.isEmpty()) {
+            return LyricsQuality(false, false, 0, 0)
+        }
+        val linesWithWords = lines.count { it.words.isNotEmpty() }
+        return LyricsQuality(
+            hasLineSync = true,
+            hasWordSync = linesWithWords > 0,
+            totalLines = lines.size,
+            linesWithWords = linesWithWords
+        )
+    }
+
+    fun hasWordLevelTiming(lines: List<ParsedLine>): Boolean {
+        return lines.any { it.words.isNotEmpty() }
+    }
     
     private fun parseTime(timeStr: String): Double {
         return try {
