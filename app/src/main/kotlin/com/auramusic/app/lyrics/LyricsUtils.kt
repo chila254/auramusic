@@ -402,7 +402,7 @@ object LyricsUtils {
             }
         }
         
-        return if (wordTimings.isNotEmpty()) wordTimings else null
+        return if (wordTimings.isNotEmpty() && isValidWordSync(wordTimings)) wordTimings else null
     }
     
     /**
@@ -458,7 +458,7 @@ object LyricsUtils {
     private fun parseWordTimestamps(data: String): List<WordTimestamp>? {
         if (data.isBlank()) return null
         return try {
-            data.split("|").mapNotNull { wordData ->
+            val words = data.split("|").mapNotNull { wordData ->
                 val parts = wordData.split(":")
                 if (parts.size == 3) {
                     WordTimestamp(
@@ -468,9 +468,17 @@ object LyricsUtils {
                     )
                 } else null
             }
+            if (isValidWordSync(words)) words else null
         } catch (e: Exception) {
             null
         }
+    }
+
+    private fun isValidWordSync(words: List<WordTimestamp>): Boolean {
+        if (words.isEmpty()) return false
+        if (words.all { it.startTime == 0.0 && it.endTime == 0.0 }) return false
+        if (words.all { it.endTime <= it.startTime }) return false
+        return true
     }
 
     private fun parseLine(line: String, words: List<WordTimestamp>? = null): List<LyricsEntry>? {

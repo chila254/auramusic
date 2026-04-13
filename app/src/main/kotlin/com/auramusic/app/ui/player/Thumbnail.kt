@@ -73,6 +73,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import com.auramusic.innertube.YouTube
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -1300,13 +1301,13 @@ private fun VideoLyricsOverlay(
     if (!videoLyricsEnabled || !subtitlesEnabled) return
 
     // Fetch YouTube subtitles: try caption tracks first (like SmartTube), fallback to transcript
-    var transcriptText by remember { mutableStateOf<String?>(null) }
-    var isLoadingCaptions by remember { mutableStateOf(false) }
-    var captionError by remember { mutableStateOf<String?>(null) }
-    var videoDurationMs by remember { mutableLongStateOf(0L) }
+    var transcriptText by rememberSaveable { mutableStateOf<String?>(null) }
+    var isLoadingCaptions by rememberSaveable { mutableStateOf(false) }
+    var captionError by rememberSaveable { mutableStateOf<String?>(null) }
+    var videoDurationMs by rememberSaveable { mutableLongStateOf(0L) }
 
     // Track which video IDs we've already attempted to fetch
-    var attemptedVideoIds by remember { mutableStateOf(setOf<String>()) }
+    var attemptedVideoIds by rememberSaveable { mutableStateOf(setOf<String>()) }
 
     // Use the actual video ID being played
     val activeVideoId by playerConnection.currentVideoId.collectAsState()
