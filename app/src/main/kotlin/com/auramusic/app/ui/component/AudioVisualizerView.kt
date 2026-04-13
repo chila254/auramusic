@@ -29,11 +29,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -50,7 +49,7 @@ fun AudioVisualizerSlider(
     enabled: Boolean = true,
     audioSessionId: Int = 0,
     isPlaying: Boolean = true,
-    trackHeight: Dp = 6.dp,
+    trackHeight: Dp = 8.dp,
 ) {
     val normalizedValue = ((value - valueRange.start) / (valueRange.endInclusive - valueRange.start))
         .coerceIn(0f, 1f)
@@ -105,18 +104,17 @@ fun AudioVisualizerSlider(
         initialValue = 0f,
         targetValue = 2f * Math.PI.toFloat(),
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000, easing = LinearEasing),
+            animation = tween(durationMillis = 2500, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "waveOffset"
     )
 
     val activeColor = colors.activeTrackColor
-    val inactiveColor = colors.inactiveTrackColor
 
     val baseModifier = modifier
         .fillMaxWidth()
-        .height(32.dp)
+        .height(36.dp)
 
     val interactiveModifier = if (enabled) {
         baseModifier
@@ -158,116 +156,65 @@ fun AudioVisualizerSlider(
         modifier = interactiveModifier,
         contentAlignment = Alignment.Center
     ) {
-        Canvas(modifier = Modifier.fillMaxWidth().height(trackHeight * 3)) {
+        Canvas(modifier = Modifier.fillMaxWidth().height(28.dp)) {
             val width = size.width
-            val trackHeightPx = trackHeight.toPx()
             val centerY = size.height / 2
+            val trackHeightPx = trackHeight.toPx()
 
             val progressWidth = width * displayValue
 
-            drawOceanWaves(
-                width = width,
-                centerY = centerY,
-                trackHeight = trackHeightPx,
-                progress = displayValue,
-                waveOffset = waveOffset,
-                waveformData = waveformData,
-                isPlaying = isPlaying,
-                activeColor = activeColor,
-                inactiveColor = inactiveColor,
-                progressWidth = progressWidth
+            val waveCount = 3
+            val waveAmplitude = trackHeightPx * 0.6f
+
+            val normalizedData = if (waveformData != null && isPlaying) {
+                waveformData!!.map { sample -> ((sample.toInt() and 0xFF) - 128) / 128f }
+            } else {
+                List(128) { i ->
+                    val phase = (i.toFloat() / 128f) * 2f * Math.PI.toFloat() + waveOffset
+                    sin(phase)
+                }
+            }
+
+            val wavePath = Path()
+            wavePath.moveTo(0f, centerY + trackHeightPx)
+
+            for (i in 0 until width.toInt()) {
+                val x = i.toFloat()
+                val dataIndex = ((x / width) * normalizedData.size).toInt().coerceIn(0, normalizedData.size - 1)
+                val sampleValue = normalizedData[dataIndex]
+
+                val phase = (x / width) * waveCount * 2f * Math.PI.toFloat() + waveOffset
+                val waveY = sin(phase) * waveAmplitude
+
+                val y = centerY + sampleValue * waveAmplitude * 0.7f + waveY
+                wavePath.lineTo(x, y)
+            }
+
+            wavePath.lineTo(progressWidth, centerY + trackHeightPx)
+            wavePath.lineTo(0f, centerY + trackHeightPx)
+            wavePath.close()
+
+            drawPath(
+                path = wavePath,
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        activeColor,
+                        activeColor.copy(alpha = 0.7f),
+                        activeColor.copy(alpha = 0.4f)
+                    ),
+                    startY = centerY - waveAmplitude,
+                    endY = centerY + trackHeightPx
+                )
+            )
+
+            drawLine(
+                color = activeColor,
+                start = Offset(0f, centerY),
+                end = Offset(progressWidth, centerY),
+                strokeWidth = trackHeightPx
             )
         }
     }
-}
-
-private fun DrawScope.drawOceanWaves(
-    width: Float,
-    centerY: Float,
-    trackHeight: Float,
-    progress: Float,
-    waveOffset: Float,
-    waveformData: ByteArray?,
-    isPlaying: Boolean,
-    activeColor: Color,
-    inactiveColor: Color,
-    progressWidth: Float,
-) {
-    val waveCount = 4
-    val amplitude = trackHeight * 1.5f
-
-    val normalizedData = if (waveformData != null && isPlaying) {
-        waveformData.map { sample -> ((sample.toInt() and 0xFF) - 128) / 128f }
-    } else {
-        List(128) { i ->
-            val phase = (i.toFloat() / 128f) * 2f * Math.PI.toFloat() + waveOffset
-            sin(phase)
-        }
-    }
-
-    drawRoundRect(
-        color = inactiveColor,
-        topLeft = Offset(0f, centerY - trackHeight / 2),
-        size = Size(width, trackHeight),
-        cornerRadius = androidx.compose.ui.geometry.CornerRadius(trackHeight / 2, trackHeight / 2)
-    )
-
-    val wavePath = Path()
-    val waveHeight = trackHeight * 2f
-
-    wavePath.moveTo(0f, centerY + waveHeight)
-
-    for (i in 0 until (width / 2).toInt()) {
-        val x = i.toFloat()
-        val dataIndex = ((i.toFloat() / width) * normalizedData.size).toInt().coerceIn(0, normalizedData.size - 1)
-        val sampleValue = normalizedData[dataIndex]
-
-        val phase = (i.toFloat() / width) * waveCount * 2f * Math.PI.toFloat() + waveOffset
-        val waveY = sin(phase) * amplitude * 0.5f
-
-        val y = centerY + sampleValue * amplitude * 0.8f + waveY
-
-        wavePath.lineTo(x, y.coerceIn(centerY - waveHeight, centerY + waveHeight))
-    }
-
-    wavePath.lineTo(progressWidth, centerY)
-    wavePath.lineTo(progressWidth, centerY + waveHeight)
-    wavePath.close()
-
-    drawPath(
-        path = wavePath,
-        brush = Brush.verticalGradient(
-            colors = listOf(
-                activeColor.copy(alpha = 0.8f),
-                activeColor.copy(alpha = 0.4f),
-                activeColor.copy(alpha = 0.1f)
-            ),
-            startY = centerY - waveHeight,
-            endY = centerY + waveHeight
-        )
-    )
-
-    val topWavePath = Path()
-    topWavePath.moveTo(0f, centerY - trackHeight / 2)
-
-    for (i in 0 until (progressWidth / 2).toInt()) {
-        val x = i.toFloat()
-        val dataIndex = ((i.toFloat() / width) * normalizedData.size).toInt().coerceIn(0, normalizedData.size - 1)
-        val sampleValue = normalizedData[dataIndex]
-
-        val phase = (i.toFloat() / width) * waveCount * 2f * Math.PI.toFloat() + waveOffset
-        val waveY = sin(phase) * amplitude * 0.5f
-
-        val y = centerY + sampleValue * amplitude * 0.8f + waveY - trackHeight / 2
-
-        topWavePath.lineTo(x, y.coerceIn(centerY - waveHeight - trackHeight, centerY + waveHeight - trackHeight))
-    }
-
-    drawPath(
-        path = topWavePath,
-        color = activeColor,
-        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx())
-    )
 }
 
 @Composable
@@ -280,7 +227,7 @@ fun AudioVisualizerPreview(
         initialValue = 0f,
         targetValue = 2f * Math.PI.toFloat(),
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000, easing = LinearEasing),
+            animation = tween(durationMillis = 2500, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "waveOffset"
@@ -293,47 +240,38 @@ fun AudioVisualizerPreview(
     ) {
         val width = size.width
         val centerY = size.height / 2
-        val trackHeight = 6.dp.toPx()
-        val amplitude = trackHeight * 1.5f
-        val waveCount = 4
-
-        drawRoundRect(
-            color = waveColor.copy(alpha = 0.3f),
-            topLeft = Offset(0f, centerY - trackHeight / 2),
-            size = Size(width, trackHeight),
-            cornerRadius = androidx.compose.ui.geometry.CornerRadius(trackHeight / 2, trackHeight / 2)
-        )
+        val trackHeight = 8.dp.toPx()
+        val waveCount = 3
+        val waveAmplitude = trackHeight * 0.6f
 
         val wavePath = Path()
-        val waveHeight = trackHeight * 2f
+        wavePath.moveTo(0f, centerY + trackHeight)
 
-        wavePath.moveTo(0f, centerY + waveHeight)
-
-        for (i in 0 until (width / 2).toInt()) {
+        for (i in 0 until width.toInt()) {
             val x = i.toFloat()
-            val phase = (i.toFloat() / width) * waveCount * 2f * Math.PI.toFloat() + waveOffset
-            val waveY = sin(phase) * amplitude * 0.5f
+            val phase = (x / width) * waveCount * 2f * Math.PI.toFloat() + waveOffset
+            val waveY = sin(phase) * waveAmplitude
             val sampleValue = sin(phase) * 0.5f
-            val y = centerY + sampleValue * amplitude * 0.8f + waveY
 
-            wavePath.lineTo(x, y.coerceIn(centerY - waveHeight, centerY + waveHeight))
+            val y = centerY + sampleValue * waveAmplitude * 0.7f + waveY
+            wavePath.lineTo(x, y)
         }
 
         val progressWidth = width * 0.4f
-        wavePath.lineTo(progressWidth, centerY)
-        wavePath.lineTo(progressWidth, centerY + waveHeight)
+        wavePath.lineTo(progressWidth, centerY + trackHeight)
+        wavePath.lineTo(0f, centerY + trackHeight)
         wavePath.close()
 
         drawPath(
             path = wavePath,
             brush = Brush.verticalGradient(
                 colors = listOf(
-                    waveColor.copy(alpha = 0.8f),
-                    waveColor.copy(alpha = 0.4f),
-                    waveColor.copy(alpha = 0.1f)
+                    waveColor,
+                    waveColor.copy(alpha = 0.7f),
+                    waveColor.copy(alpha = 0.4f)
                 ),
-                startY = centerY - waveHeight,
-                endY = centerY + waveHeight
+                startY = centerY - waveAmplitude,
+                endY = centerY + trackHeight
             )
         )
     }
