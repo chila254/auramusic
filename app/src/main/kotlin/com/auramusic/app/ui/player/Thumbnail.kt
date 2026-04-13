@@ -690,8 +690,8 @@ private fun ThumbnailImage(
     // Use FIXED_WIDTH to fill width like HeroCarousel (crops top/bottom but no black bars)
     var resizeMode by remember { mutableIntStateOf(AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH) }
     
-    // Check if video is in FIT mode (which shows empty space on small screens)
-    val isFitMode = resizeMode == AspectRatioFrameLayout.RESIZE_MODE_FIT
+    // Check if video is in Fixed mode (which fills thumbnail without black bars)
+    val isFixedMode = resizeMode == AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH
     
     // [8] Brightness/Volume gesture state
     var showBrightnessOverlay by remember { mutableStateOf(false) }
@@ -918,7 +918,7 @@ private fun ThumbnailImage(
             }
             
             VideoLyricsOverlay(
-                isFitMode = isFitMode,
+                isFixedMode = isFixedMode,
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
@@ -1119,11 +1119,9 @@ onClick = {
                             }
                             Text(
                                 text = when (resizeMode) {
-                                    AspectRatioFrameLayout.RESIZE_MODE_FIT -> "Fit"
                                     AspectRatioFrameLayout.RESIZE_MODE_FILL -> "Stretch"
                                     AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH -> "Fixed"
-                                    AspectRatioFrameLayout.RESIZE_MODE_FIXED_HEIGHT -> "Fixed (Height)"
-                                    else -> "Fit"
+                                    else -> "Fixed"
                                 },
                                 color = Color.Gray,
                                 fontSize = 13.sp
@@ -1131,11 +1129,10 @@ onClick = {
                         }
                     },
                     onClick = {
-                        // Cycle through: Fit -> Fixed -> Stretch -> Fit
+                        // Cycle between Fixed and Stretch only
                         val nextMode = when (resizeMode) {
-                            AspectRatioFrameLayout.RESIZE_MODE_FIT -> AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH
                             AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH -> AspectRatioFrameLayout.RESIZE_MODE_FILL
-                            else -> AspectRatioFrameLayout.RESIZE_MODE_FIT
+                            else -> AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH
                         }
                         onResizeModeChange(nextMode)
                         expanded = false
@@ -1284,7 +1281,7 @@ private fun SeekEffectOverlay(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun VideoLyricsOverlay(
-    isFitMode: Boolean = false,
+    isFixedMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
@@ -1296,8 +1293,8 @@ private fun VideoLyricsOverlay(
     val videoModeEnabled by playerConnection.videoModeEnabled.collectAsState()
     if (!videoModeEnabled) return
 
-    // In FIT mode, position overlay lower to show in empty space
-    val bottomPadding = if (isFitMode) 140.dp else 80.dp
+    // In Fixed mode, position overlay lower to show below video
+    val bottomPadding = if (isFixedMode) 140.dp else 80.dp
 
     // Check if video subtitles are enabled
     val (subtitlesEnabled, _) = rememberPreference(
