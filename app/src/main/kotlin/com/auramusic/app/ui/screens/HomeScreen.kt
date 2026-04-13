@@ -453,7 +453,7 @@ fun HomeScreen(
                 // Listen Together quick access button
                 item(key = "listen_together_button") {
                     val listenTogetherManager = LocalListenTogetherManager.current
-                    val isInRoom by listenTogetherManager?.isInRoom?.collectAsState(initial = false) ?: remember { mutableStateOf(false) }
+                    val isInRoom = listenTogetherManager?.isInRoom == true
 
                     Card(
                         modifier = Modifier
@@ -494,7 +494,7 @@ fun HomeScreen(
                                 )
                             }
                             Icon(
-                                painter = painterResource(R.drawable.chevron_right),
+                                painter = painterResource(R.drawable.arrow_forward),
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer
                             )
