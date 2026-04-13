@@ -685,6 +685,9 @@ private fun ThumbnailImage(
     // [6] Pinch-to-zoom resize mode
     var resizeMode by remember { mutableIntStateOf(AspectRatioFrameLayout.RESIZE_MODE_FIT) }
     
+    // Check if video is in FIT mode (which shows empty space on small screens)
+    val isFitMode = resizeMode == AspectRatioFrameLayout.RESIZE_MODE_FIT
+    
     // [8] Brightness/Volume gesture state
     var showBrightnessOverlay by remember { mutableStateOf(false) }
     var showVolumeOverlay by remember { mutableStateOf(false) }
@@ -910,10 +913,10 @@ private fun ThumbnailImage(
             }
             
             VideoLyricsOverlay(
+                isFitMode = isFitMode,
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 80.dp)
             )
             
 
@@ -1273,6 +1276,7 @@ private fun SeekEffectOverlay(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun VideoLyricsOverlay(
+    isFitMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
@@ -1283,6 +1287,9 @@ private fun VideoLyricsOverlay(
     // Check if video mode is enabled
     val videoModeEnabled by playerConnection.videoModeEnabled.collectAsState()
     if (!videoModeEnabled) return
+
+    // In FIT mode, position overlay lower to show in empty space
+    val bottomPadding = if (isFitMode) 140.dp else 80.dp
 
     // Check if video subtitles are enabled
     val (subtitlesEnabled, _) = rememberPreference(
@@ -1498,7 +1505,8 @@ private fun VideoLyricsOverlay(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .padding(bottom = bottomPadding)
         ) {
             // [1] Current line with animated fade transition
             AnimatedVisibility(
