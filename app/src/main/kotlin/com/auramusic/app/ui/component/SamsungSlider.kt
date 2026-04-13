@@ -5,7 +5,7 @@
 
 package com.auramusic.app.ui.component
 
-import androidx.compose.animation.core.LinearRepeatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -61,7 +61,7 @@ fun SamsungSlider(
         initialValue = 0f,
         targetValue = 2f * Math.PI.toFloat(),
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1500, easing = LinearRepeatable.Easing.Linear),
+            animation = tween(durationMillis = 1500, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "waveOffset"
