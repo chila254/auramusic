@@ -162,7 +162,7 @@ import com.auramusic.app.ui.component.ResizableIconButton
 import com.auramusic.app.ui.component.SamsungSlider
 import com.auramusic.app.ui.component.SquigglySlider
 import com.auramusic.app.ui.component.WavySlider
-import com.auramusic.app.ui.component.AudioVisualizerView
+import com.auramusic.app.ui.component.AudioVisualizerSlider
 import com.auramusic.app.ui.component.rememberBottomSheetState
 import com.auramusic.app.ui.menu.PlayerMenu
 import com.auramusic.app.ui.screens.settings.DarkMode
@@ -1450,40 +1450,34 @@ fun BottomSheetPlayer(
                     } catch (e: Exception) {
                         0
                     }
-                    Column(modifier = Modifier.padding(horizontal = PlayerHorizontalPadding)) {
-                        AudioVisualizerView(
-                            audioSessionId = audioSessionId,
-                            isPlaying = effectiveIsPlaying,
-                            waveColor = textButtonColor,
-                            progress = if (duration > 0) (sliderPosition ?: effectivePosition).toFloat() / duration.toFloat() else 0f,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Slider(
-                            value = (sliderPosition ?: effectivePosition).toFloat(),
-                            valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
-                            onValueChange = {
-                                if (!isListenTogetherGuest) {
-                                    sliderPosition = it.toLong()
-                                }
-                            },
-                            onValueChangeFinished = {
-                                if (!isListenTogetherGuest) {
-                                    sliderPosition?.let {
-                                        if (isCasting) {
-                                            castHandler?.seekTo(it)
-                                            lastManualSeekTime = System.currentTimeMillis()
-                                        } else {
-                                            playerConnection.player.seekTo(it)
-                                        }
-                                        position = it
+                    AudioVisualizerSlider(
+                        value = (sliderPosition ?: effectivePosition).toFloat(),
+                        valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
+                        onValueChange = {
+                            if (!isListenTogetherGuest) {
+                                sliderPosition = it.toLong()
+                            }
+                        },
+                        onValueChangeFinished = {
+                            if (!isListenTogetherGuest) {
+                                sliderPosition?.let {
+                                    if (isCasting) {
+                                        castHandler?.seekTo(it)
+                                        lastManualSeekTime = System.currentTimeMillis()
+                                    } else {
+                                        playerConnection.player.seekTo(it)
                                     }
-                                    sliderPosition = null
+                                    position = it
                                 }
-                            },
-                            enabled = !isListenTogetherGuest,
-                            colors = PlayerSliderColors.getSliderColors(textButtonColor, playerBackground, useDarkTheme),
-                        )
-                    }
+                                sliderPosition = null
+                            }
+                        },
+                        enabled = !isListenTogetherGuest,
+                        colors = PlayerSliderColors.getSliderColors(textButtonColor, playerBackground, useDarkTheme),
+                        audioSessionId = audioSessionId,
+                        isPlaying = effectiveIsPlaying,
+                        modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
+                    )
                 }
             }
 
