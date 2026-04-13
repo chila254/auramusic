@@ -1098,6 +1098,7 @@ fun AppearanceSettings(
                                 SliderStyle.DEFAULT -> stringResource(R.string.default_)
                                 SliderStyle.WAVY -> stringResource(R.string.wavy)
                                 SliderStyle.SLIM -> stringResource(R.string.slim)
+                                SliderStyle.SAMSUNG -> stringResource(R.string.samsung)
                             }
                         )
                     },
