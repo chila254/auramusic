@@ -149,11 +149,9 @@ object RushLyrics {
         // Try LRC first (faster and more direct)
         val lrc = fetchLRC(title, artist)
         if (lrc != null && lrc.isNotBlank()) {
-            // Validate LRC has proper line-level timing
-            if (!hasValidLineTiming(lrc)) {
-                throw IllegalStateException("Lyrics have invalid timestamps")
-            }
-            return@runCatching lrc
+            // Fix malformed timestamps if needed
+            val fixedLrc = fixMalformedLrc(lrc, duration)
+            return@runCatching fixedLrc
         }
 
         // Fall back to TTML and convert to LRC
@@ -165,36 +163,73 @@ object RushLyrics {
             throw IllegalStateException("Failed to parse lyrics")
         }
         
-        // Check if TTML has any valid line timing (at least some lines with non-zero times)
-        val hasValidLineTime = parsedLines.any { it.startTime > 0 }
-        if (!hasValidLineTime) {
-            throw IllegalStateException("Lyrics have invalid timestamps")
-        }
-        
-        // Check if TTML has word-level timing, if not warn but still return
+        // If no word-level timing, try to generate line-level sync
         if (!TTMLParser.hasWordLevelTiming(parsedLines)) {
-            // Log or handle as needed - line-level sync will still work
+            val linesWithTiming = generateLineTiming(parsedLines, duration)
+            if (linesWithTiming != null) {
+                return@runCatching TTMLParser.toLRC(linesWithTiming)
+            }
         }
         
         TTMLParser.toLRC(parsedLines)
     }
 
     /**
-     * Check if LRC has valid line-level timing (not all zeros or same time)
+     * Fix malformed LRC by distributing timestamps evenly if all are at 0
      */
-    private fun hasValidLineTiming(lrc: String): Boolean {
-        val linePattern = Regex("\\[(\\d{1,2}):(\\d{2})\\.(\\d{2,3})\\]")
-        val times = linePattern.findAll(lrc).map { match ->
-            val min = match.groupValues[1].toLongOrNull() ?: 0L
-            val sec = match.groupValues[2].toLongOrNull() ?: 0L
-            val ms = match.groupValues[3].let { 
-                if (it.length == 3) it.toLongOrNull() ?: 0L else (it.toLongOrNull() ?: 0L) * 10 
-            }
-            min * 60000 + sec * 1000 + ms
-        }.toList()
+    private fun fixMalformedLrc(lrc: String, duration: Int): String {
+        val lines = lrc.lines().filter { it.isNotBlank() }
+        val linePattern = Regex("\\[(\\d{1,2}):(\\d{2})\\.(\\d{2,3})\\](.*)")
         
-        // Must have at least some lines and at least one non-zero time
-        return times.isNotEmpty() && times.any { it > 0 }
+        val timestamps = lines.mapNotNull { line ->
+            val match = linePattern.matchEntire(line.trim())
+            match?.let {
+                val min = it.groupValues[1].toLongOrNull() ?: 0L
+                val sec = it.groupValues[2].toLongOrNull() ?: 0L
+                val ms = it.groupValues[3].let { ms -> 
+                    if (ms.length == 3) ms.toLongOrNull() ?: 0L else (ms.toLongOrNull() ?: 0L) * 10 
+                }
+                min * 60000 + sec * 1000 + ms
+            }
+        }
+        
+        // Check if all timestamps are 0 or very small (malformed)
+        val maxTimestamp = timestamps.maxOrNull() ?: 0L
+        if (maxTimestamp < 1000 && timestamps.isNotEmpty()) {
+            // All timestamps are near 0 - need to distribute evenly
+            val validLines = lines.filter { linePattern.matches(it.trim()) }
+            if (validLines.isNotEmpty() && duration > 0) {
+                val estimatedDuration = duration.toLong() * 1000
+                val interval = estimatedDuration / validLines.size
+                
+                return buildString {
+                    validLines.forEachIndexed { index, line ->
+                        val text = linePattern.matchEntire(line.trim())?.groupValues?.get(4) ?: ""
+                        val timeMs = index * interval
+                        val minutes = timeMs / 60000
+                        val seconds = (timeMs % 60000) / 1000
+                        val centiseconds = (timeMs % 1000) / 10
+                        appendLine(String.format("[%02d:%02d.%02d]%s", minutes, seconds, centiseconds, text))
+                    }
+                }
+            }
+        }
+        
+        return lrc
+    }
+
+    /**
+     * Generate line-level timing for TTML parsed lines that lack word timing
+     */
+    private fun generateLineTiming(lines: List<TTMLParser.ParsedLine>, duration: Int): List<TTMLParser.ParsedLine>? {
+        if (lines.isEmpty() || duration <= 0) return null
+        
+        val totalDuration = duration.toDouble() * 1000
+        val interval = totalDuration / lines.size
+        
+        return lines.mapIndexed { index, line ->
+            line.copy(startTime = index * interval / 1000)
+        }
     }
 
     /**
