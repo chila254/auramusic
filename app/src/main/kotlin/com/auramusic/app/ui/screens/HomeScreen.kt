@@ -54,6 +54,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
 import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -68,6 +69,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -684,7 +686,7 @@ fun HomeScreen(
                                                 val itemIndex = row * columns + col
                                                 if (itemIndex < pageItems.size) {
                                                     val item = pageItems[itemIndex]
-                                                    val isPinned by database.speedDialDao.isPinned(item.id).collectAsState(initialValue = false)
+                                                    val isPinned by database.speedDialDao.isPinned(item.id).collectAsState(initial = false)
 
                                                     Box(
                                                         modifier = Modifier
@@ -1426,6 +1428,7 @@ fun CommunityPlaylistCard(
     val database = LocalDatabase.current
     val playerConnection = LocalPlayerConnection.current
     val scope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
     val containerColor = if (isDark) {
@@ -1434,7 +1437,7 @@ fun CommunityPlaylistCard(
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     }
 
-    val dbPlaylist by database.playlistByBrowseId(item.playlist.id).collectAsState(initialValue = null)
+    val dbPlaylist by database.playlistByBrowseId(item.playlist.id).collectAsState(initial = null)
     val isBookmarked = dbPlaylist?.playlist?.bookmarkedAt != null
 
     Card(
