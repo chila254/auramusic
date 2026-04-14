@@ -218,16 +218,6 @@ fun AppearanceSettings(
     var hasRecordPermission by remember {
         mutableStateOf(context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
     }
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        hasRecordPermission = isGranted
-        if (isGranted) {
-            onSliderStyleChange(SliderStyle.VISUALIZER)
-            onSquigglySliderChange(false)
-            showSliderOptionDialog = false
-        }
-    }
 
     val (swipeThumbnail, onSwipeThumbnailChange) = rememberPreference(
         SwipeThumbnailKey,
@@ -298,7 +288,16 @@ fun AppearanceSettings(
         mutableStateOf(false)
     }
 
-
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasRecordPermission = isGranted
+        if (isGranted) {
+            onSliderStyleChange(SliderStyle.VISUALIZER)
+            onSquigglySliderChange(false)
+            showSliderOptionDialog = false
+        }
+    }
 
     var showPlayerBackgroundDialog by rememberSaveable {
         mutableStateOf(false)
