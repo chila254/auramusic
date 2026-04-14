@@ -61,6 +61,7 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -192,7 +193,9 @@ fun HomeScreen(
     val selectedChip by viewModel.selectedChip.collectAsState()
 
     val isLoading: Boolean by viewModel.isLoading.collectAsState()
-    val isMoodAndGenresLoading = isLoading && explorePage?.moodAndGenres == null
+    val isMoodAndGenresLoading by remember(isLoading, explorePage) {
+        derivedStateOf { isLoading && explorePage?.moodAndGenres == null }
+    }
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val pullRefreshState = rememberPullToRefreshState()
 
@@ -866,7 +869,7 @@ fun HomeScreen(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                             modifier = Modifier.animateItem(),
                         ) {
-                            items(playlists) { item ->
+                            items(playlists, key = { it.playlist.id }) { item ->
                                 CommunityPlaylistCard(
                                     item = item,
                                     onClick = {
@@ -909,7 +912,7 @@ fun HomeScreen(
                                 }) * rows)
                                 .animateItem()
                         ) {
-                            items(keepListening) {
+                            items(keepListening, key = { it.id }) {
                                 localGridItem(it)
                             }
                         }
@@ -1105,7 +1108,7 @@ fun HomeScreen(
                                 .asPaddingValues(),
                             modifier = Modifier.animateItem()
                         ) {
-                            items(recommendation.items) { item ->
+                            items(recommendation.items, key = { it.id }) { item ->
                                 ytGridItem(item)
                             }
                         }
@@ -1243,7 +1246,7 @@ fun HomeScreen(
                                 .asPaddingValues(),
                             modifier = Modifier.animateItem()
                         ) {
-                            items(section.items) { item ->
+                            items(section.items, key = { it.id }) { item ->
                                 ytGridItem(item)
                             }
                         }
@@ -1342,7 +1345,7 @@ fun HomeScreen(
                                 .height((MoodAndGenresButtonHeight + 12.dp) * 4 + 12.dp)
                                 .animateItem()
                         ) {
-                            items(moodAndGenres) {
+                            items(moodAndGenres, key = { it.endpoint.browseId }) {
                                 MoodAndGenresButton(
                                     title = it.title,
                                     onClick = {
