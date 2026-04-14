@@ -1552,7 +1552,7 @@ fun CommunityPlaylistCard(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         AsyncImage(
-                            model = song.thumbnail?.replace(Regex("w\\d+-h\\d+"), "w60-h60"),
+                            model = song.thumbnail.replace(Regex("w\\d+-h\\d+"), "w60-h60"),
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier

@@ -75,15 +75,7 @@ fun SpeedDialGridItem(
             contentAlignment = Alignment.Center
         ) {
             AsyncImage(
-                model = when (item) {
-                    is SongItem -> item.thumbnail
-                    is AlbumItem -> item.thumbnail
-                    is ArtistItem -> item.thumbnail
-                    is PlaylistItem -> item.thumbnail
-                    is PodcastItem -> item.thumbnail
-                    is EpisodeItem -> item.thumbnail
-                    else -> null
-                },
+                model = item.thumbnail,
                 contentDescription = item.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
