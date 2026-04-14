@@ -145,7 +145,7 @@ class MusicDatabase(
         AutoMigration(from = 28, to = 29),
         AutoMigration(from = 29, to = 30, spec = Migration29To30::class),
         AutoMigration(from = 30, to = 31),
-        AutoMigration(from = 31, to = 32),
+        AutoMigration(from = 31, to = 32, spec = Migration31To32::class),
     ],
 )
 @TypeConverters(Converters::class)
@@ -681,14 +681,58 @@ class Migration29To30 : AutoMigrationSpec {
     override fun onPostMigrate(db: SupportSQLiteDatabase) {
         // Ensure isVideo column exists (safeguard)
         var hasIsVideo = false
-        db.query("PRAGMA table_info('song')").use { cursor ->
-            val nameIndex = cursor.getColumnIndex("name")
+        db.query('PRAGMA table_info(\"song\")').use { cursor ->
+            val nameIndex = cursor.getColumnIndex('name')
             while (cursor.moveToNext()) {
                 val colName = if (nameIndex >= 0) cursor.getString(nameIndex) else null
-                if (colName == "isVideo") {
+                if (colName == 'isVideo') {
                     hasIsVideo = true
                     break
                 }
+            }
+        }
+        if (!hasIsVideo) {
+            db.execSQL('ALTER TABLE song ADD COLUMN isVideo INTEGER NOT NULL DEFAULT 0')
+        }
+
+        // Ensure provider column exists in lyrics table
+        var hasProvider = false
+        db.query('PRAGMA table_info(\"lyrics\")').use { cursor ->
+            val nameIndex = cursor.getColumnIndex('name')
+            while (cursor.moveToNext()) {
+                val colName = if (nameIndex >= 0) cursor.getString(nameIndex) else null
+                if (colName == 'provider') {
+                    hasProvider = true
+                    break
+                }
+            }
+        }
+        if (!hasProvider) {
+            db.execSQL('ALTER TABLE lyrics ADD COLUMN provider TEXT NOT NULL DEFAULT \"Unknown\"')
+        }
+    }
+}
+
+class Migration31To32 : AutoMigrationSpec {
+    override fun onPostMigrate(db: SupportSQLiteDatabase) {
+        db.execSQL('''
+            CREATE TABLE IF NOT EXISTS `speed_dial_item` (
+                `id` TEXT NOT NULL,
+                `title` TEXT NOT NULL,
+                `thumbnailUrl` TEXT,
+                `type` TEXT NOT NULL,
+                `subtype` TEXT,
+                `artistName` TEXT,
+                `artistId` TEXT,
+                `playlistId` TEXT,
+                `shuffleEndpoint` TEXT,
+                `radioEndpoint` TEXT,
+                `playEndpoint` TEXT,
+                PRIMARY KEY(`id`)
+            )
+        '''.trimIndent())
+    }
+}
             }
         }
         if (!hasIsVideo) {
