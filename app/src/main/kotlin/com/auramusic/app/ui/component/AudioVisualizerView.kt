@@ -5,6 +5,9 @@
 
 package com.auramusic.app.ui.component
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.media.audiofx.Visualizer
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -36,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.sin
@@ -52,7 +56,9 @@ fun AudioVisualizerSlider(
     audioSessionId: Int = 0,
     isPlaying: Boolean = true,
     trackHeight: Dp = 6.dp,
+    onPermissionRequired: (() -> Unit)? = null,
 ) {
+    val context = LocalContext.current
     val normalizedValue = ((value - valueRange.start) / (valueRange.endInclusive - valueRange.start))
         .coerceIn(0f, 1f)
 
@@ -68,7 +74,18 @@ fun AudioVisualizerSlider(
             return@DisposableEffect onDispose { }
         }
 
-        val visualizerInstance = Visualizer(audioSessionId)
+        val hasPermission = context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        if (!hasPermission) {
+            onPermissionRequired?.invoke()
+            return@DisposableEffect onDispose { }
+        }
+
+        val visualizerInstance = try {
+            Visualizer(audioSessionId)
+        } catch (e: Exception) {
+            onPermissionRequired?.invoke()
+            return@DisposableEffect onDispose { }
+        }
         visualizer = visualizerInstance
 
         visualizerInstance.setDataCaptureListener(

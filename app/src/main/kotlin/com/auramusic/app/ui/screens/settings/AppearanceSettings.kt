@@ -5,8 +5,12 @@
 
 package com.auramusic.app.ui.screens.settings
 
+import android.Manifest
 import android.app.Activity
+import android.content.pm.PackageManager
 import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -49,6 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -209,6 +214,21 @@ fun AppearanceSettings(
         SquigglySliderKey,
         defaultValue = false
     )
+    val context = LocalContext.current
+    var hasRecordPermission by remember {
+        mutableStateOf(context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasRecordPermission = isGranted
+        if (isGranted) {
+            onSliderStyleChange(SliderStyle.VISUALIZER)
+            onSquigglySliderChange(false)
+            showSliderOptionDialog = false
+        }
+    }
+
     val (swipeThumbnail, onSwipeThumbnailChange) = rememberPreference(
         SwipeThumbnailKey,
         defaultValue = true
@@ -821,9 +841,13 @@ fun AppearanceSettings(
                                 RoundedCornerShape(16.dp)
                             )
                             .clickable {
-                                onSliderStyleChange(SliderStyle.VISUALIZER)
-                                onSquigglySliderChange(false)
-                                showSliderOptionDialog = false
+                                if (hasRecordPermission) {
+                                    onSliderStyleChange(SliderStyle.VISUALIZER)
+                                    onSquigglySliderChange(false)
+                                    showSliderOptionDialog = false
+                                } else {
+                                    permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                }
                             }
                             .padding(12.dp)
                     ) {
