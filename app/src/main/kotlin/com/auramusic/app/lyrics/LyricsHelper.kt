@@ -43,18 +43,26 @@ constructor(
     @Volatile
     private var providersLoaded = false
 
-    init {
-        // Collect the flow to update lyricsProviders when preferences change
+init {
+        // Collect the flow to update lyrics providers when preferences change
         CoroutineScope(SupervisorJob()).launch {
             context.dataStore.data
                 .map { preferences ->
-                    val providerOrder = preferences[LyricsProviderOrderKey] ?: ""
+                    val defaultOrder = LyricsProviderRegistry.serializeProviderOrder(
+                        LyricsProviderRegistry.getDefaultProviderOrder()
+                    )
+                    val providerOrder = preferences[LyricsProviderOrderKey] ?: defaultOrder
                     Timber.tag("LyricsHelper").d("Provider order from prefs: '$providerOrder'")
-                    if (providerOrder.isNotBlank()) {
-                        // Use the new provider order if available
+
+                    // Check if user has customized the order (compared to default)
+                    val isCustomized = providerOrder != defaultOrder
+
+                    if (isCustomized) {
+                        // Use the custom provider order if user has set one
                         LyricsProviderRegistry.getOrderedProviders(providerOrder)
                     } else {
                         // Fall back to preferred provider logic for backward compatibility
+                        // This respects user's preferred provider selection
                         Timber.tag("LyricsHelper").d("Using fallback provider logic")
                         val preferredProvider = preferences[PreferredLyricsProviderKey]
                             .toEnum(PreferredLyricsProvider.LRCLIB)
