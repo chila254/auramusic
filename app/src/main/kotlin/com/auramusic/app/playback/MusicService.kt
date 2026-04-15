@@ -3239,7 +3239,6 @@ class MusicService :
                                 isVideoMode = true
                                 _videoModeEnabled.value = true
                                 _currentVideoId.value = videoId
-                                _videoModeMessage.value = "Video mode enabled: ${videoData.title}"
                                 Timber.d("setVideoMode: SUCCESS - Video stream prepared with mimeType: $mimeType, player state: ${player.playbackState}, playWhenReady: true")
                                 android.util.Log.d("MusicService", ">>> SUCCESS - Video mode enabled for: ${videoData.title}")
                             } else {
