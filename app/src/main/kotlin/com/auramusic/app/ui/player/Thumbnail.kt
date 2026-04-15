@@ -122,6 +122,7 @@ import com.auramusic.app.constants.SubtitleLanguageKey
 import com.auramusic.app.constants.SwipeThumbnailKey
 import com.auramusic.app.constants.ThumbnailCornerRadius
 import com.auramusic.app.constants.VideoLyricsEnabledKey
+import com.auramusic.app.constants.VideoFitModeKey
 import com.auramusic.app.constants.VideoQuality
 import com.auramusic.app.constants.VideoQualityKey
 import com.auramusic.app.listentogether.RoomRole
@@ -688,7 +689,7 @@ private fun ThumbnailImage(
     
     // [6] Pinch-to-zoom resize mode
     // Use FIXED_WIDTH to fill width like HeroCarousel (crops top/bottom but no black bars)
-    var resizeMode by remember { mutableIntStateOf(AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH) }
+    val (resizeMode, onResizeModeChange) = rememberPreference(VideoFitModeKey, AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH)
     
     // Check if video is in Fixed mode (which fills thumbnail without black bars)
     val isFixedMode = resizeMode == AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH
@@ -908,9 +909,9 @@ private fun ThumbnailImage(
                     .align(Alignment.TopEnd)
                     .padding(top = 8.dp, end = 8.dp)
             ) {
-                VideoSettingsButton(
-                    resizeMode = resizeMode,
-                    onResizeModeChange = { resizeMode = it },
+            VideoSettingsButton(
+                resizeMode = resizeMode,
+                onResizeModeChange = onResizeModeChange,
                     onInteraction = { lastInteractionTime = System.currentTimeMillis() },
                     subtitlesEnabled = subtitlesEnabled,
                     onSubtitlesToggle = { onSubtitlesEnabledChange(!subtitlesEnabled) }

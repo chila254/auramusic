@@ -91,6 +91,7 @@ enum class VideoQuality {
 }
 
 val VideoQualityKey = stringPreferencesKey("videoQuality")
+val VideoFitModeKey = intPreferencesKey("videoFitMode")
 
 val SubtitlesEnabledKey = booleanPreferencesKey("subtitlesEnabled")
 val SubtitleLanguageKey = stringPreferencesKey("subtitleLanguage")

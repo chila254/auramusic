@@ -666,59 +666,70 @@ fun HomeScreen(
                                 .height(itemSize * 2 + 16.dp)
                                 .animateItem()
                         ) {
-                            item(key = "speed_dial_shuffle") {
-                                Box(
-                                    modifier = Modifier
-                                        .size(itemSize)
-                                        .padding(4.dp),
-                                ) {
-                                    Card(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .combinedClickable(
-                                                onClick = {
-                                                    val playableItems = speedDialItemsList.filterIsInstance<SongItem>()
-                                                    if (playableItems.isNotEmpty()) {
-                                                        val randomItem = playableItems.random()
-                                                        playerConnection.playQueue(
-                                                            YouTubeQueue(
-                                                                randomItem.endpoint ?: WatchEndpoint(videoId = randomItem.id),
-                                                                randomItem.toMediaMetadata()
-                                                            )
-                                                        )
-                                                    }
-                                                }
-                                            ),
-                                        shape = RoundedCornerShape(16.dp),
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                                        ),
-                                    ) {
-                                        Box(
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Column(
-                                                horizontalAlignment = Alignment.CenterHorizontally,
-                                                verticalArrangement = Arrangement.Center,
-                                            ) {
-                                                Icon(
-                                                    painter = painterResource(R.drawable.shuffle),
-                                                    contentDescription = stringResource(R.string.shuffle),
-                                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                    modifier = Modifier.size(32.dp)
-                                                )
-                                                Spacer(modifier = Modifier.height(4.dp))
-                                                Text(
-                                                    text = stringResource(R.string.shuffle),
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                             item(key = "speed_dial_shuffle") {
+                                 var isLoading by remember { mutableStateOf(false) }
+                                 Box(
+                                     modifier = Modifier
+                                         .size(itemSize)
+                                         .padding(4.dp),
+                                 ) {
+                                     Card(
+                                         modifier = Modifier
+                                             .fillMaxSize()
+                                             .combinedClickable(
+                                                 onClick = {
+                                                     isLoading = true
+                                                     val playableItems = speedDialItemsList.filterIsInstance<SongItem>()
+                                                     if (playableItems.isNotEmpty()) {
+                                                         val randomItem = playableItems.random()
+                                                         playerConnection.playQueue(
+                                                             YouTubeQueue(
+                                                                 randomItem.endpoint ?: WatchEndpoint(videoId = randomItem.id),
+                                                                 randomItem.toMediaMetadata()
+                                                             )
+                                                         )
+                                                     }
+                                                     // Reset loading after a short delay to show the animation
+                                                     kotlinx.coroutines.GlobalScope.launch {
+                                                         kotlinx.coroutines.delay(1500)
+                                                         isLoading = false
+                                                     }
+                                                 }
+                                             ),
+                                         shape = RoundedCornerShape(16.dp),
+                                         colors = CardDefaults.cardColors(
+                                             containerColor = MaterialTheme.colorScheme.primaryContainer
+                                         ),
+) {
+                                         Box(
+                                             modifier = Modifier.fillMaxSize(),
+                                             contentAlignment = Alignment.Center
+                                          ) {
+                                              if (isLoading) {
+                                                  ContainedLoadingIndicator(
+                                                      modifier = Modifier.size(24.dp)
+                                                  )
+                                              } else {
+                                                 Row(
+                                                     horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                                     verticalAlignment = Alignment.CenterVertically
+                                                 ) {
+                                                     repeat(3) {
+                                                         Box(
+                                                             modifier = Modifier
+                                                                 .size(6.dp)
+                                                                 .background(
+                                                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                                     shape = CircleShape
+                                                                 )
+                                                         )
+                                                     }
+                                                 }
+                                             }
+                                         }
+                                     }
+                                 }
+                             }
                             items(
                                 items = speedDialItemsList,
                                 key = { it.id }
