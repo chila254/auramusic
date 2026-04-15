@@ -54,18 +54,32 @@ init {
                     val providerOrder = preferences[LyricsProviderOrderKey] ?: defaultOrder
                     Timber.tag("LyricsHelper").d("Provider order from prefs: '$providerOrder'")
 
+                    // Always respect user's preferred provider selection first
+                    val preferredProvider = preferences[PreferredLyricsProviderKey]
+                        .toEnum(PreferredLyricsProvider.BETTER_LYRICS)
+                    Timber.tag("LyricsHelper").d("User preferred provider: $preferredProvider")
+
                     // Check if user has customized the order (compared to default)
                     val isCustomized = providerOrder != defaultOrder
 
                     if (isCustomized) {
                         // Use the custom provider order if user has set one
-                        LyricsProviderRegistry.getOrderedProviders(providerOrder)
+                        // but ensure preferred provider is first
+                        val customOrder = LyricsProviderRegistry.getOrderedProviders(providerOrder)
+                        val preferredProviderInstance = when (preferredProvider) {
+                            PreferredLyricsProvider.LRCLIB -> LrcLibLyricsProvider
+                            PreferredLyricsProvider.KUGOU -> KuGouLyricsProvider
+                            PreferredLyricsProvider.BETTER_LYRICS -> BetterLyricsProvider
+                            PreferredLyricsProvider.SIMPMUSIC -> SimpMusicLyricsProvider
+                            PreferredLyricsProvider.RUSH_LYRICS -> RushLyricsProvider
+                        }
+                        // Move preferred provider to front if enabled
+                        val filteredCustom = customOrder.filter { it.isEnabled(context) }
+                        val preferredFirst = filteredCustom.filter { it.name == preferredProviderInstance.name } + 
+                            filteredCustom.filter { it.name != preferredProviderInstance.name }
+                        preferredFirst
                     } else {
-                        // Fall back to preferred provider logic for backward compatibility
-                        // This respects user's preferred provider selection
-                        Timber.tag("LyricsHelper").d("Using fallback provider logic")
-                        val preferredProvider = preferences[PreferredLyricsProviderKey]
-                            .toEnum(PreferredLyricsProvider.BETTER_LYRICS)
+                        // Use preferred provider logic - put selected provider first
                         when (preferredProvider) {
                             PreferredLyricsProvider.LRCLIB -> listOf(
                                 LrcLibLyricsProvider,
@@ -167,7 +181,7 @@ init {
                             mediaMetadata.id,
                             cleanedTitle,
                             mediaMetadata.artists.joinToString { it.name },
-                            mediaMetadata.duration,
+                            if (mediaMetadata.duration > 0) mediaMetadata.duration / 1000 else mediaMetadata.duration,
                             mediaMetadata.album?.title,
                         )
                         result.onSuccess { lyrics ->
