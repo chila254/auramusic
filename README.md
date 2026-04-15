@@ -21,6 +21,10 @@
 [![GitHub license](https://img.shields.io/github/license/TeamAuraMusic/AuraMusic?style=for-the-badge)](https://github.com/TeamAuraMusic/AuraMusic/blob/main/LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/TeamAuraMusic/AuraMusic/total?style=for-the-badge)](https://github.com/TeamAuraMusic/AuraMusic/releases)
 
+### Socials
+
+[![Telegram](https://img.shields.io/badge/Telegram-AuraMusicUpdates?logo=telegram&style=for-the-badge&color=2CA5E0)](https://t.me/AuraMusicUpdates)
+
 </div>
 
 <div align="center">
