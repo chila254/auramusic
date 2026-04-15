@@ -673,7 +673,6 @@ fun HomeScreen(
 item(key = "speed_dial_shuffle") {
                                   var isLoading by remember { mutableStateOf(false) }
                                   var shuffledPositions by remember { mutableStateOf(listOf(0, 1, 2, 3)) }
-                                  val currentPlayingId by playerConnection.currentMediaItemIndex.collectAsState()
 
                                   val animatedPos0 by animateFloatAsState(
                                       targetValue = shuffledPositions.indexOf(0).toFloat(),
@@ -733,15 +732,15 @@ item(key = "speed_dial_shuffle") {
                                           ) {
                                                if (isLoading) {
                                                    ContainedLoadingIndicator(
-                                                       modifier = Modifier.size(24.dp)
+                                                       modifier = Modifier.size(48.dp)
                                                    )
                                                } else {
                                                    Column(
                                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                                       verticalArrangement = Arrangement.spacedBy(12.dp)
+                                                       verticalArrangement = Arrangement.spacedBy(16.dp)
                                                    ) {
                                                        Row(
-                                                           horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                                           horizontalArrangement = Arrangement.spacedBy(24.dp)
                                                        ) {
                                                            listOf(0, 1).forEach { dot ->
                                                                val animatedPos = when (dot) {
@@ -763,7 +762,7 @@ item(key = "speed_dial_shuffle") {
                                                            }
                                                        }
                                                        Row(
-                                                           horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                                           horizontalArrangement = Arrangement.spacedBy(24.dp)
                                                        ) {
                                                            listOf(2, 3).forEach { dot ->
                                                                val animatedPos = when (dot) {
@@ -789,8 +788,8 @@ item(key = "speed_dial_shuffle") {
                                           }
                                       }
                                   }
-                                  LaunchedEffect(currentPlayingId) {
-                                      if (currentPlayingId >= 0 && isLoading) {
+                                  LaunchedEffect(isPlaying) {
+                                      if (isPlaying && isLoading) {
                                           isLoading = false
                                       }
                                   }
