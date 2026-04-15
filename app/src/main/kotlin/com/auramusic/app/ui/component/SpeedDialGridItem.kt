@@ -5,14 +5,9 @@
 
 package com.auramusic.app.ui.component
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -91,11 +86,7 @@ fun SpeedDialGridItem(
             )
 
             // Active indicator - shows playing animation or pause icon
-            AnimatedVisibility(
-                visible = isActive,
-                enter = fadeIn(tween(500)),
-                exit = fadeOut(tween(500))
-            ) {
+            if (isActive) {
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
