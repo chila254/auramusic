@@ -8,6 +8,8 @@ import com.auramusic.app.ui.screens.wrapped.WrappedConstants
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -72,6 +74,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
@@ -667,70 +670,131 @@ fun HomeScreen(
                                 .height(itemSize * 2 + 16.dp)
                                 .animateItem()
                         ) {
-                             item(key = "speed_dial_shuffle") {
-                                 var isLoading by remember { mutableStateOf(false) }
-                                 Box(
-                                     modifier = Modifier
-                                         .size(itemSize)
-                                         .padding(4.dp),
-                                 ) {
-                                     Card(
-                                         modifier = Modifier
-                                             .fillMaxSize()
-                                             .combinedClickable(
-                                                 onClick = {
-                                                     isLoading = true
-                                                     val playableItems = speedDialItemsList.filterIsInstance<SongItem>()
-                                                     if (playableItems.isNotEmpty()) {
-                                                         val randomItem = playableItems.random()
-                                                         playerConnection.playQueue(
-                                                             YouTubeQueue(
-                                                                 randomItem.endpoint ?: WatchEndpoint(videoId = randomItem.id),
-                                                                 randomItem.toMediaMetadata()
-                                                             )
-                                                         )
-                                                     }
-                                                     // Reset loading after a short delay to show the animation
-                                                     kotlinx.coroutines.GlobalScope.launch {
-                                                         kotlinx.coroutines.delay(1500)
-                                                         isLoading = false
-                                                     }
-                                                 }
-                                             ),
-                                         shape = RoundedCornerShape(16.dp),
-                                         colors = CardDefaults.cardColors(
-                                             containerColor = MaterialTheme.colorScheme.primaryContainer
-                                         ),
-) {
-                                         Box(
-                                             modifier = Modifier.fillMaxSize(),
-                                             contentAlignment = Alignment.Center
+item(key = "speed_dial_shuffle") {
+                                  var isLoading by remember { mutableStateOf(false) }
+                                  var shuffledPositions by remember { mutableStateOf(listOf(0, 1, 2, 3)) }
+                                  val currentPlayingId by playerConnection.currentMediaItemIndex.collectAsState()
+
+                                  val animatedPos0 by animateFloatAsState(
+                                      targetValue = shuffledPositions.indexOf(0).toFloat(),
+                                      animationSpec = tween(300),
+                                      label = "pos0"
+                                  )
+                                  val animatedPos1 by animateFloatAsState(
+                                      targetValue = shuffledPositions.indexOf(1).toFloat(),
+                                      animationSpec = tween(300),
+                                      label = "pos1"
+                                  )
+                                  val animatedPos2 by animateFloatAsState(
+                                      targetValue = shuffledPositions.indexOf(2).toFloat(),
+                                      animationSpec = tween(300),
+                                      label = "pos2"
+                                  )
+                                  val animatedPos3 by animateFloatAsState(
+                                      targetValue = shuffledPositions.indexOf(3).toFloat(),
+                                      animationSpec = tween(300),
+                                      label = "pos3"
+                                  )
+
+                                  Box(
+                                      modifier = Modifier
+                                          .size(itemSize)
+                                          .padding(4.dp),
+                                  ) {
+                                      Card(
+                                          modifier = Modifier
+                                              .fillMaxSize()
+                                              .combinedClickable(
+                                                  onClick = {
+                                                      isLoading = true
+                                                      val playableItems = speedDialItemsList.filterIsInstance<SongItem>()
+                                                      if (playableItems.isNotEmpty()) {
+                                                          val randomItem = playableItems.random()
+                                                          playerConnection.playQueue(
+                                                              YouTubeQueue(
+                                                                  randomItem.endpoint ?: WatchEndpoint(videoId = randomItem.id),
+                                                                  randomItem.toMediaMetadata()
+                                                              )
+                                                          )
+                                                      }
+                                                  },
+                                                  onLongClick = {
+                                                      shuffledPositions = shuffledPositions.shuffled()
+                                                  }
+                                              ),
+                                          shape = RoundedCornerShape(16.dp),
+                                          colors = CardDefaults.cardColors(
+                                              containerColor = MaterialTheme.colorScheme.primaryContainer
+                                          ),
+                                      ) {
+                                          Box(
+                                              modifier = Modifier.fillMaxSize(),
+                                              contentAlignment = Alignment.Center
                                           ) {
-                                              if (isLoading) {
-                                                  ContainedLoadingIndicator(
-                                                      modifier = Modifier.size(24.dp)
-                                                  )
-                                              } else {
-                                                 Row(
-                                                     horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                                     verticalAlignment = Alignment.CenterVertically
-                                                 ) {
-                                                     repeat(3) {
-                                                         Box(
-                                                             modifier = Modifier
-                                                                 .size(6.dp)
-                                                                 .background(
-                                                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                                     shape = CircleShape
-                                                                 )
-                                                         )
-                                                     }
-                                                 }
-                                             }
-                                         }
-                                     }
-                                 }
-                             }
+                                               if (isLoading) {
+                                                   ContainedLoadingIndicator(
+                                                       modifier = Modifier.size(24.dp)
+                                                   )
+                                               } else {
+                                                   Column(
+                                                       horizontalAlignment = Alignment.CenterHorizontally,
+                                                       verticalArrangement = Arrangement.spacedBy(12.dp)
+                                                   ) {
+                                                       Row(
+                                                           horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                                       ) {
+                                                           listOf(0, 1).forEach { dot ->
+                                                               val animatedPos = when (dot) {
+                                                                   0 -> animatedPos0
+                                                                   1 -> animatedPos1
+                                                                   else -> 0f
+                                                               }
+                                                               val targetCol = (animatedPos % 2).toInt()
+                                                               val xOffset = (targetCol - dot) * 24
+                                                               Box(
+                                                                   modifier = Modifier
+                                                                       .graphicsLayer { translationX = xOffset.toDp().toPx() }
+                                                                       .size(14.dp)
+                                                                       .background(
+                                                                           color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                                           shape = CircleShape
+                                                                       )
+                                                               )
+                                                           }
+                                                       }
+                                                       Row(
+                                                           horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                                       ) {
+                                                           listOf(2, 3).forEach { dot ->
+                                                               val animatedPos = when (dot) {
+                                                                   2 -> animatedPos2
+                                                                   3 -> animatedPos3
+                                                                   else -> 0f
+                                                               }
+                                                               val targetCol = (animatedPos % 2).toInt()
+                                                               val xOffset = (targetCol - (dot - 2)) * 24
+                                                               Box(
+                                                                   modifier = Modifier
+                                                                       .graphicsLayer { translationX = xOffset.toDp().toPx() }
+                                                                       .size(14.dp)
+                                                                       .background(
+                                                                           color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                                           shape = CircleShape
+                                                                       )
+                                                               )
+                                                           }
+                                                       }
+                                                   }
+                                               }
+                                          }
+                                      }
+                                  }
+                                  LaunchedEffect(currentPlayingId) {
+                                      if (currentPlayingId >= 0 && isLoading) {
+                                          isLoading = false
+                                      }
+                                  }
+                              }
                             items(
                                 items = speedDialItemsList,
                                 key = { it.id }
