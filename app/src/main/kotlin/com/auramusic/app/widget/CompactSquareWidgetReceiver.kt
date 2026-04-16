@@ -39,23 +39,35 @@ class CompactSquareWidgetReceiver : AppWidgetProvider() {
 
         when (intent.action) {
             ACTION_COMPACT_SQUARE_PLAY_PAUSE -> {
-                val serviceIntent = Intent(context, MusicService::class.java).apply {
-                    action = MusicWidgetReceiver.ACTION_PLAY_PAUSE
-                }
-                try {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        context.startForegroundService(serviceIntent)
-                    } else {
-                        context.startService(serviceIntent)
-                    }
-                } catch (e: Exception) {
-                }
+                sendAction(context, MusicWidgetReceiver.ACTION_PLAY_PAUSE)
             }
+            ACTION_COMPACT_SQUARE_PREVIOUS -> {
+                sendAction(context, MusicWidgetReceiver.ACTION_PREVIOUS)
+            }
+            ACTION_COMPACT_SQUARE_NEXT -> {
+                sendAction(context, MusicWidgetReceiver.ACTION_NEXT)
+            }
+        }
+    }
+
+    private fun sendAction(context: Context, action: String) {
+        val serviceIntent = Intent(context, MusicService::class.java).apply {
+            this.action = action
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(serviceIntent)
+            } else {
+                context.startService(serviceIntent)
+            }
+        } catch (e: Exception) {
         }
     }
 
     companion object {
         const val ACTION_COMPACT_SQUARE_PLAY_PAUSE = "com.auramusic.app.widget.COMPACT_SQUARE_PLAY_PAUSE"
         const val ACTION_COMPACT_SQUARE_UPDATE = "com.auramusic.app.widget.COMPACT_SQUARE_UPDATE"
+        const val ACTION_COMPACT_SQUARE_PREVIOUS = "com.auramusic.app.widget.COMPACT_SQUARE_PREVIOUS"
+        const val ACTION_COMPACT_SQUARE_NEXT = "com.auramusic.app.widget.COMPACT_SQUARE_NEXT"
     }
 }

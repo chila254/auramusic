@@ -205,6 +205,8 @@ class AuraMusicWidgetManager @Inject constructor(
         // Set click intents
         views.setOnClickPendingIntent(R.id.widget_album_art, getOpenAppIntent())
         views.setOnClickPendingIntent(R.id.widget_play_pause, getPlayPauseIntent())
+        views.setOnClickPendingIntent(R.id.widget_previous, getPreviousIntent())
+        views.setOnClickPendingIntent(R.id.widget_next, getNextIntent())
         views.setOnClickPendingIntent(R.id.widget_like_button, getLikeIntent())
 
         return views
@@ -296,7 +298,9 @@ class AuraMusicWidgetManager @Inject constructor(
 
         // Set click intents
         views.setOnClickPendingIntent(R.id.widget_compact_album_art, getOpenAppIntent())
-        views.setOnClickPendingIntent(R.id.widget_compact_play_container, getPlayPauseIntent())
+        views.setOnClickPendingIntent(R.id.widget_compact_play_container, getCompactSquarePlayPauseIntent())
+        views.setOnClickPendingIntent(R.id.widget_compact_previous, getCompactSquarePreviousIntent())
+        views.setOnClickPendingIntent(R.id.widget_compact_next, getCompactSquareNextIntent())
 
         return views
     }
@@ -423,6 +427,30 @@ class AuraMusicWidgetManager @Inject constructor(
         )
     }
 
+    private fun getPreviousIntent(): PendingIntent {
+        val intent = Intent(context, MusicWidgetReceiver::class.java).apply {
+            action = MusicWidgetReceiver.ACTION_PREVIOUS
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            9,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private fun getNextIntent(): PendingIntent {
+        val intent = Intent(context, MusicWidgetReceiver::class.java).apply {
+            action = MusicWidgetReceiver.ACTION_NEXT
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            10,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
     private fun getTurntablePlayPauseIntent(): PendingIntent {
         val intent = Intent(context, TurntableWidgetReceiver::class.java).apply {
             action = TurntableWidgetReceiver.ACTION_TURNTABLE_PLAY_PAUSE
@@ -490,6 +518,42 @@ class AuraMusicWidgetManager @Inject constructor(
         return PendingIntent.getBroadcast(
             context,
             8,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private fun getCompactSquarePlayPauseIntent(): PendingIntent {
+        val intent = Intent(context, CompactSquareWidgetReceiver::class.java).apply {
+            action = CompactSquareWidgetReceiver.ACTION_COMPACT_SQUARE_PLAY_PAUSE
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            11,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private fun getCompactSquarePreviousIntent(): PendingIntent {
+        val intent = Intent(context, CompactSquareWidgetReceiver::class.java).apply {
+            action = CompactSquareWidgetReceiver.ACTION_COMPACT_SQUARE_PREVIOUS
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            12,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private fun getCompactSquareNextIntent(): PendingIntent {
+        val intent = Intent(context, CompactSquareWidgetReceiver::class.java).apply {
+            action = CompactSquareWidgetReceiver.ACTION_COMPACT_SQUARE_NEXT
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            13,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

@@ -3,7 +3,7 @@
     android:layout_width="110dp"
     android:layout_height="110dp"
     android:background="@color/widget_primary_container"
-    android:padding="8dp">
+    android:padding="4dp">
 
     <ImageView
         android:id="@+id/widget_compact_album_art"
@@ -12,14 +12,42 @@
         android:scaleType="centerCrop"
         android:src="@drawable/ic_widget_music_placeholder" />
 
-    <ImageView
-        android:id="@+id/widget_compact_play_pause"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
-        android:layout_centerInParent="true"
-        android:background="@drawable/widget_play_button_bg"
-        android:padding="8dp"
-        android:src="@drawable/ic_widget_play_low" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="#80000000"
+        android:padding="4dp">
+
+        <ImageView
+            android:id="@+id/widget_compact_previous"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="4dp"
+            android:src="@drawable/ic_widget_skip_previous" />
+
+        <ImageView
+            android:id="@+id/widget_compact_play_pause"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="4dp"
+            android:src="@drawable/ic_widget_play_low" />
+
+        <ImageView
+            android:id="@+id/widget_compact_next"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="4dp"
+            android:src="@drawable/ic_widget_skip_next" />
+
+    </LinearLayout>
 
     <FrameLayout
         android:id="@+id/widget_compact_play_container"

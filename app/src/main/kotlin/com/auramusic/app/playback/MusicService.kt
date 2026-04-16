@@ -2887,6 +2887,14 @@ class MusicService :
                 if (player.isPlaying) player.pause() else player.play()
                 updateWidgetUI(player.isPlaying)
             }
+            CompactSquareWidgetReceiver.ACTION_COMPACT_SQUARE_PREVIOUS -> {
+                player.seekToPrevious()
+                updateWidgetUI(player.isPlaying)
+            }
+            CompactSquareWidgetReceiver.ACTION_COMPACT_SQUARE_NEXT -> {
+                player.seekToNext()
+                updateWidgetUI(player.isPlaying)
+            }
             // Compact Wide Widget
             CompactWideWidgetReceiver.ACTION_COMPACT_WIDE_UPDATE -> {
                 updateWidgetUI(player.isPlaying)
