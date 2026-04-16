@@ -52,6 +52,14 @@ object AppModule {
         @ApplicationContext context: Context,
     ): InternalDatabase = Room
         .databaseBuilder(context, InternalDatabase::class.java, InternalDatabase.DB_NAME)
+        .addMigrations(
+            com.auramusic.app.db.MIGRATION_1_2,
+            com.auramusic.app.db.MIGRATION_21_24,
+            com.auramusic.app.db.MIGRATION_22_24,
+            com.auramusic.app.db.MIGRATION_24_25,
+            com.auramusic.app.db.MIGRATION_32_33,
+        )
+        .fallbackToDestructiveMigration(dropAllTables = true)
         .build()
 
     @Singleton

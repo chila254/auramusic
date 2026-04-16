@@ -145,6 +145,7 @@ class MusicDatabase(
         AutoMigration(from = 28, to = 29),
         AutoMigration(from = 29, to = 30, spec = Migration29To30::class),
         AutoMigration(from = 30, to = 31),
+        AutoMigration(from = 31, to = 32, spec = Migration31To32::class),
     ],
 )
 @TypeConverters(Converters::class)
@@ -165,7 +166,6 @@ abstract class InternalDatabase : RoomDatabase() {
                         MIGRATION_21_24,
                         MIGRATION_22_24,
                         MIGRATION_24_25,
-                        MIGRATION_31_32,
                         MIGRATION_32_33,
                     )
                     .fallbackToDestructiveMigration(dropAllTables = true)
@@ -712,27 +712,26 @@ class Migration29To30 : AutoMigrationSpec {
     }
 }
 
-val MIGRATION_31_32 =
-    object : Migration(31, 32) {
-        override fun migrate(db: SupportSQLiteDatabase) {
-            db.execSQL("""
-                CREATE TABLE IF NOT EXISTS `speed_dial_item` (
-                    `id` TEXT NOT NULL,
-                    `title` TEXT NOT NULL,
-                    `thumbnailUrl` TEXT,
-                    `type` TEXT NOT NULL,
-                    `subtype` TEXT,
-                    `artistName` TEXT,
-                    `artistId` TEXT,
-                    `playlistId` TEXT,
-                    `shuffleEndpoint` TEXT,
-                    `radioEndpoint` TEXT,
-                    `playEndpoint` TEXT,
-                    PRIMARY KEY(`id`)
-                )
-            """.trimIndent())
-        }
+class Migration31To32 : AutoMigrationSpec {
+    override fun onPostMigrate(db: SupportSQLiteDatabase) {
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS `speed_dial_item` (
+                `id` TEXT NOT NULL,
+                `title` TEXT NOT NULL,
+                `thumbnailUrl` TEXT,
+                `type` TEXT NOT NULL,
+                `subtype` TEXT,
+                `artistName` TEXT,
+                `artistId` TEXT,
+                `playlistId` TEXT,
+                `shuffleEndpoint` TEXT,
+                `radioEndpoint` TEXT,
+                `playEndpoint` TEXT,
+                PRIMARY KEY(`id`)
+            )
+        """.trimIndent())
     }
+}
 
 val MIGRATION_32_33 =
     object : Migration(32, 33) {
