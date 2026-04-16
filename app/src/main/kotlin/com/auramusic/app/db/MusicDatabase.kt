@@ -735,6 +735,17 @@ class Migration31To32 : AutoMigrationSpec {
 
 class Migration32To33 : AutoMigrationSpec {
     override fun onPostMigrate(db: SupportSQLiteDatabase) {
-        db.execSQL("ALTER TABLE speed_dial_item ADD COLUMN IF NOT EXISTS musicVideoType TEXT DEFAULT NULL")
+        val cursor = db.query("PRAGMA table_info(speed_dial_item)")
+        var hasColumn = false
+        while (cursor.moveToNext()) {
+            if (cursor.getString(1) == "musicVideoType") {
+                hasColumn = true
+                break
+            }
+        }
+        cursor.close()
+        if (!hasColumn) {
+            db.execSQL("ALTER TABLE speed_dial_item ADD COLUMN musicVideoType TEXT DEFAULT NULL")
+        }
     }
 }
