@@ -146,7 +146,7 @@ class MusicDatabase(
         AutoMigration(from = 29, to = 30, spec = Migration29To30::class),
         AutoMigration(from = 30, to = 31),
         AutoMigration(from = 31, to = 32, spec = Migration31To32::class),
-        AutoMigration(from = 32, to = 33),
+        AutoMigration(from = 32, to = 33, spec = Migration32To33::class),
     ],
 )
 @TypeConverters(Converters::class)
@@ -730,5 +730,11 @@ class Migration31To32 : AutoMigrationSpec {
                 PRIMARY KEY(`id`)
             )
         """.trimIndent())
+    }
+}
+
+class Migration32To33 : AutoMigrationSpec {
+    override fun onPostMigrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE speed_dial_item ADD COLUMN musicVideoType TEXT DEFAULT NULL")
     }
 }
