@@ -283,7 +283,7 @@ fun AboutScreen(
                         }
                     }
 
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(8.dp))
 
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(32.dp),
@@ -337,6 +337,23 @@ fun AboutScreen(
                                     contentDescription = "Instagram",
                                     tint = MaterialTheme.colorScheme.onTertiaryContainer,
                                     modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
+                        // PayPal
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clickable { uriHandler.openUri("https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=franklinfinyange%40gmail.com") }
+                        ) {
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                Image(
+                                    painter = painterResource(R.drawable.paypal),
+                                    contentDescription = "PayPal",
+                                    modifier = Modifier
+                                        .size(22.dp)
                                 )
                             }
                         }
@@ -519,12 +536,14 @@ fun AboutScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // PayPal Link Card
+            // License Info (clickable)
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .then(if (maxWidth < 600.dp) Modifier else Modifier.fillMaxWidth(0.8f))
-                    .clip(RoundedCornerShape(16.dp)),
+                    .clickable {
+                        uriHandler.openUri("https://github.com/TeamAuraMusic/AuraMusic/blob/main/LICENSE")
+                    },
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 ),
@@ -535,77 +554,38 @@ fun AboutScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(20.dp)
-                        .clickable {
-                            uriHandler.openUri("https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=franklinfinyange%40gmail.com")
-                        }
                 ) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
                         modifier = Modifier.size(52.dp)
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            Image(
-                                painter = painterResource(R.drawable.paypal),
-                                contentDescription = "PayPal",
-                                modifier = Modifier
-                                    .size(40.dp)
+                            Icon(
+                                painter = painterResource(R.drawable.info),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                     }
                     Spacer(Modifier.width(16.dp))
                     Column {
                         Text(
-                            text = "Support with PayPal",
+                            text = "License",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Support the developer",
+                            text = "GNU General Public License v3.0",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            // License Info (clickable)
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        uriHandler.openUri("https://github.com/TeamAuraMusic/AuraMusic/blob/main/LICENSE")
-                    },
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                ),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "License",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "GNU General Public License v3.0",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
                 }
             }
 

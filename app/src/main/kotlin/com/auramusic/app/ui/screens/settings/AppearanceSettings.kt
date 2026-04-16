@@ -719,10 +719,6 @@ fun AppearanceSettings(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -766,6 +762,10 @@ fun AppearanceSettings(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
+                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -802,10 +802,6 @@ fun AppearanceSettings(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -841,7 +837,6 @@ fun AppearanceSettings(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -878,7 +873,6 @@ fun AppearanceSettings(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                    Spacer(modifier = Modifier.weight(1f))
                 }
             }
         }
