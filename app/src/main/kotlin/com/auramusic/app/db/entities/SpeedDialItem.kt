@@ -31,6 +31,7 @@ data class SpeedDialItem(
     val shuffleEndpoint: String?,
     val radioEndpoint: String?,
     val playEndpoint: String?,
+    val musicVideoType: String? = null,
 ) {
     fun toYTItem(): YTItem {
         return when (type) {
@@ -41,7 +42,8 @@ data class SpeedDialItem(
                 album = null,
                 duration = null,
                 thumbnail = thumbnailUrl ?: "",
-                explicit = false
+                explicit = false,
+                musicVideoType = musicVideoType
             )
             "ALBUM" -> AlbumItem(
                 browseId = id,
@@ -93,7 +95,8 @@ data class SpeedDialItem(
                 album = null,
                 duration = null,
                 thumbnail = thumbnailUrl ?: "",
-                explicit = false
+                explicit = false,
+                musicVideoType = musicVideoType
             )
         }
     }
@@ -112,7 +115,8 @@ data class SpeedDialItem(
                     playlistId = null,
                     shuffleEndpoint = null,
                     radioEndpoint = null,
-                    playEndpoint = item.endpoint?.videoId
+                    playEndpoint = item.endpoint?.videoId,
+                    musicVideoType = item.musicVideoType
                 )
                 is AlbumItem -> SpeedDialItem(
                     id = item.browseId,

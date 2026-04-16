@@ -579,14 +579,18 @@ class MusicService :
                     .first() == null
             ) {
                 val lyricsWithProvider = lyricsHelper.getLyrics(mediaMetadata)
-                database.query {
-                    upsert(
-                        LyricsEntity(
-                            id = mediaMetadata.id,
-                            lyrics = lyricsWithProvider.lyrics,
-                            provider = lyricsWithProvider.provider,
-                        ),
-                    )
+                // Only upsert if no lyrics were written while we were fetching (avoid race with Player.kt)
+                val existingLyrics = database.lyrics(mediaMetadata.id).first()
+                if (existingLyrics == null) {
+                    database.query {
+                        upsert(
+                            LyricsEntity(
+                                id = mediaMetadata.id,
+                                lyrics = lyricsWithProvider.lyrics,
+                                provider = lyricsWithProvider.provider,
+                            ),
+                        )
+                    }
                 }
             }
         }
@@ -1228,6 +1232,12 @@ class MusicService :
                         initialStatus.items.size
                     )
                 )
+                // Replace preloaded item with API response item to get correct metadata
+                // (e.g., musicVideoType for video songs that may not have isVideo set in DB)
+                if (initialStatus.mediaItemIndex in initialStatus.items.indices) {
+                    val currentIndex = initialStatus.mediaItemIndex
+                    player.replaceMediaItem(currentIndex, initialStatus.items[currentIndex])
+                }
             } else {
                 player.setMediaItems(
                     initialStatus.items,
