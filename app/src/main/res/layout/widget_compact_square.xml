@@ -25,7 +25,7 @@
             android:id="@+id/widget_compact_previous"
             android:layout_width="28dp"
             android:layout_height="28dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="@drawable/widget_button_bg"
             android:padding="4dp"
             android:src="@drawable/ic_widget_skip_previous" />
 
@@ -35,7 +35,7 @@
             android:layout_height="32dp"
             android:layout_marginStart="8dp"
             android:layout_marginEnd="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="@drawable/widget_button_bg"
             android:padding="4dp"
             android:src="@drawable/ic_widget_play_low" />
 
@@ -43,7 +43,7 @@
             android:id="@+id/widget_compact_next"
             android:layout_width="28dp"
             android:layout_height="28dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="@drawable/widget_button_bg"
             android:padding="4dp"
             android:src="@drawable/ic_widget_skip_next" />
 

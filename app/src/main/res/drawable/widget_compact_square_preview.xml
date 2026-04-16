@@ -11,12 +11,24 @@
     <!-- Album art -->
     <path
         android:fillColor="#E8DEF8"
-        android:pathData="M30,30h50v50h-50z"/>
+        android:pathData="M5,5h100v80h-100z"/>
+    <!-- Controls bar background -->
+    <path
+        android:fillColor="#80000000"
+        android:pathData="M0,85h110v25h-110z"/>
+    <!-- Previous button -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M20,97l6,3l-6,3z"/>
     <!-- Play button -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M55,55m-12,0a12,12 0,1 1,24 0a12,12 0,1 1,-24 0"/>
+        android:pathData="M50,90m-10,0a10,10 0,1 1,20 0a10,10 0,1 1,-20 0"/>
     <path
         android:fillColor="#FFB4AB"
-        android:pathData="M52,50l6,5l-6,5z"/>
+        android:pathData="M48,87l5,3l-5,3z"/>
+    <!-- Next button -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M84,97l6,3l-6,3z"/>
 </vector>

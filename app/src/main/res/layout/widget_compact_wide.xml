@@ -58,7 +58,7 @@
             android:id="@+id/widget_wide_play_pause"
             android:layout_width="36dp"
             android:layout_height="36dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="@drawable/widget_button_bg"
             android:padding="6dp"
             android:src="@drawable/ic_widget_play_low" />
 
@@ -70,7 +70,7 @@
         android:layout_height="36dp"
         android:layout_alignParentEnd="true"
         android:layout_centerVertical="true"
-        android:background="?attr/selectableItemBackgroundBorderless"
+        android:background="@drawable/widget_button_bg"
         android:padding="6dp"
         android:src="@drawable/ic_widget_heart_outline_nav" />
 

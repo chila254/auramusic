@@ -27,7 +27,7 @@
             android:id="@+id/widget_turntable_prev_button"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="@drawable/widget_button_bg"
             android:padding="8dp"
             android:src="@drawable/ic_widget_skip_previous"
             android:contentDescription="@string/widget_turntable_prev_button" />
@@ -53,7 +53,7 @@
             android:id="@+id/widget_turntable_next_button"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="@drawable/widget_button_bg"
             android:padding="8dp"
             android:src="@drawable/ic_widget_skip_next"
             android:contentDescription="@string/widget_turntable_next_button" />

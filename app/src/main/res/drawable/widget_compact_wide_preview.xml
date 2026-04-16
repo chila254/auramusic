@@ -15,16 +15,20 @@
     <!-- Song title -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M55,15h120h10v5h-130z"/>
+        android:pathData="M55,12h100v10h-100z"/>
     <!-- Artist -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M55,30h100h10v5h-110z"/>
+        android:pathData="M55,28h80v8h-80z"/>
     <!-- Play button -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M220,15m-10,0a10,10 0,1 1,20 0a10,10 0,1 1,-20 0"/>
+        android:pathData="M185,20m-10,0a10,10 0,1 1,20 0a10,10 0,1 1,-20 0"/>
     <path
         android:fillColor="#FFB4AB"
-        android:pathData="M218,12l5,3l-5,3z"/>
+        android:pathData="M183,17l5,3l-5,3z"/>
+    <!-- Like button -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M215,25m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0"/>
 </vector>
