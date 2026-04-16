@@ -735,6 +735,6 @@ class Migration31To32 : AutoMigrationSpec {
 
 class Migration32To33 : AutoMigrationSpec {
     override fun onPostMigrate(db: SupportSQLiteDatabase) {
-        db.execSQL("ALTER TABLE speed_dial_item ADD COLUMN musicVideoType TEXT DEFAULT NULL")
+        db.execSQL("ALTER TABLE speed_dial_item ADD COLUMN IF NOT EXISTS musicVideoType TEXT DEFAULT NULL")
     }
 }
