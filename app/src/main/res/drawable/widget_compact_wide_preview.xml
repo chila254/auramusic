@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="250dp"
+    android:height="50dp"
+    android:viewportWidth="250"
+    android:viewportHeight="50">
+    <!-- Background -->
+    <path
+        android:fillColor="#FFB4AB"
+        android:pathData="M0,0h250v50h-250z"/>
+    <!-- Album art -->
+    <path
+        android:fillColor="#E8DEF8"
+        android:pathData="M5,5h40v40h-40z"/>
+    <!-- Song title -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M55,15h120h10v5h-130z"/>
+    <!-- Artist -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M55,30h100h10v5h-110z"/>
+    <!-- Play button -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M220,15m-10,0a10,10 0,1 1,20 0a10,10 0,1 1,-20 0"/>
+    <path
+        android:fillColor="#FFB4AB"
+        android:pathData="M218,12l5,3l-5,3z"/>
+</vector>

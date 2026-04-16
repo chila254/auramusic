@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="250dp"
+    android:height="250dp"
+    android:viewportWidth="250"
+    android:viewportHeight="250">
+    <!-- Background -->
+    <path
+        android:fillColor="#E8DEF8"
+        android:pathData="M0,0h250v250h-250z"/>
+    <!-- Turntable base circle -->
+    <path
+        android:fillColor="#FFB4AB"
+        android:pathData="M125,125m-80,0a80,80 0,1 1,160 0a80,80 0,1 1,-160 0"/>
+    <!-- Album art circle -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M125,125m-50,0a50,50 0,1 1,100 0a50,50 0,1 1,-100 0"/>
+    <!-- Center hole -->
+    <path
+        android:fillColor="#E8DEF8"
+        android:pathData="M125,125m-15,0a15,15 0,1 1,30 0a15,15 0,1 1,-30 0"/>
+    <!-- Play button -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M210,210m-20,0a20,20 0,1 1,40 0a20,20 0,1 1,-40 0"/>
+    <path
+        android:fillColor="#FFB4AB"
+        android:pathData="M205,205l8,5l-8,5z"/>
+</vector>

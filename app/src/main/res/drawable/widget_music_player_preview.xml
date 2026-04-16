@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="250dp"
+    android:height="110dp"
+    android:viewportWidth="250"
+    android:viewportHeight="110">
+    <!-- Background -->
+    <path
+        android:fillColor="#FFB4AB"
+        android:pathData="M0,0h250v110h-250z"/>
+    <!-- Album art placeholder -->
+    <path
+        android:fillColor="#E8DEF8"
+        android:pathData="M12,27h56v56h-56z"/>
+    <!-- Play button circle -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M175,45m-18,0a18,18 0,1 1,36 0a18,18 0,1 1,-36 0"/>
+    <!-- Play icon -->
+    <path
+        android:fillColor="#FFB4AB"
+        android:pathData="M172,40l10,5l-10,5z"/>
+    <!-- Like icon -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M225,35m-10,0a10,10 0,1 1,20 0a10,10 0,1 1,-20 0"/>
+    <!-- Progress bar -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,105h180v3h-180z"/>
+</vector>

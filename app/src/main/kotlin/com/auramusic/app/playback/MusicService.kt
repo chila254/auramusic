@@ -163,6 +163,9 @@ import com.auramusic.app.utils.get
 import com.auramusic.app.utils.reportException
 import com.auramusic.app.widget.AuraMusicWidgetManager
 import com.auramusic.app.widget.MusicWidgetReceiver
+import com.auramusic.app.widget.CompactSquareWidgetReceiver
+import com.auramusic.app.widget.CompactWideWidgetReceiver
+import com.auramusic.app.widget.TurntableWidgetReceiver
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -2874,6 +2877,41 @@ class MusicService :
                 updateWidgetUI(player.isPlaying)
             }
             MusicWidgetReceiver.ACTION_UPDATE_WIDGET -> {
+                updateWidgetUI(player.isPlaying)
+            }
+            // Compact Square Widget
+            CompactSquareWidgetReceiver.ACTION_COMPACT_SQUARE_UPDATE -> {
+                updateWidgetUI(player.isPlaying)
+            }
+            CompactSquareWidgetReceiver.ACTION_COMPACT_SQUARE_PLAY_PAUSE -> {
+                if (player.isPlaying) player.pause() else player.play()
+                updateWidgetUI(player.isPlaying)
+            }
+            // Compact Wide Widget
+            CompactWideWidgetReceiver.ACTION_COMPACT_WIDE_UPDATE -> {
+                updateWidgetUI(player.isPlaying)
+            }
+            CompactWideWidgetReceiver.ACTION_COMPACT_WIDE_PLAY_PAUSE -> {
+                if (player.isPlaying) player.pause() else player.play()
+                updateWidgetUI(player.isPlaying)
+            }
+            CompactWideWidgetReceiver.ACTION_COMPACT_WIDE_LIKE -> {
+                toggleLike()
+            }
+            // Turntable Widget
+            TurntableWidgetReceiver.ACTION_UPDATE_TURNTABLE_WIDGET -> {
+                updateWidgetUI(player.isPlaying)
+            }
+            TurntableWidgetReceiver.ACTION_TURNTABLE_PLAY_PAUSE -> {
+                if (player.isPlaying) player.pause() else player.play()
+                updateWidgetUI(player.isPlaying)
+            }
+            TurntableWidgetReceiver.ACTION_TURNTABLE_NEXT -> {
+                player.seekToNext()
+                updateWidgetUI(player.isPlaying)
+            }
+            TurntableWidgetReceiver.ACTION_TURNTABLE_PREVIOUS -> {
+                player.seekToPrevious()
                 updateWidgetUI(player.isPlaying)
             }
         }

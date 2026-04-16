@@ -108,6 +108,26 @@ class AuraMusicWidgetManager @Inject constructor(
                 appWidgetManager.updateAppWidget(widgetId, turntableViews)
             }
         }
+
+        // Update compact square widgets
+        val compactSquareComponentName = ComponentName(context, CompactSquareWidgetReceiver::class.java)
+        val compactSquareWidgetIds = appWidgetManager.getAppWidgetIds(compactSquareComponentName)
+        if (compactSquareWidgetIds.isNotEmpty()) {
+            val compactSquareViews = createCompactSquareRemoteViews(albumArt, isPlaying)
+            compactSquareWidgetIds.forEach { widgetId ->
+                appWidgetManager.updateAppWidget(widgetId, compactSquareViews)
+            }
+        }
+
+        // Update compact wide widgets
+        val compactWideComponentName = ComponentName(context, CompactWideWidgetReceiver::class.java)
+        val compactWideWidgetIds = appWidgetManager.getAppWidgetIds(compactWideComponentName)
+        if (compactWideWidgetIds.isNotEmpty()) {
+            val compactWideViews = createCompactWideRemoteViews(title, artist, albumArt, isPlaying, isLiked)
+            compactWideWidgetIds.forEach { widgetId ->
+                appWidgetManager.updateAppWidget(widgetId, compactWideViews)
+            }
+        }
     }
 
     private fun createRemoteViewsForSize(
@@ -434,6 +454,42 @@ class AuraMusicWidgetManager @Inject constructor(
         return PendingIntent.getBroadcast(
             context,
             5,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private fun getCompactSquarePlayPauseIntent(): PendingIntent {
+        val intent = Intent(context, CompactSquareWidgetReceiver::class.java).apply {
+            action = CompactSquareWidgetReceiver.ACTION_COMPACT_SQUARE_PLAY_PAUSE
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            6,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private fun getCompactWidePlayPauseIntent(): PendingIntent {
+        val intent = Intent(context, CompactWideWidgetReceiver::class.java).apply {
+            action = CompactWideWidgetReceiver.ACTION_COMPACT_WIDE_PLAY_PAUSE
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            7,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private fun getCompactWideLikeIntent(): PendingIntent {
+        val intent = Intent(context, CompactWideWidgetReceiver::class.java).apply {
+            action = CompactWideWidgetReceiver.ACTION_COMPACT_WIDE_LIKE
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            8,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

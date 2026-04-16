@@ -348,6 +348,10 @@
     <string name="widget_turntable_play_container">Play</string>
     <string name="widget_turntable_prev_button">Previous</string>
     <string name="widget_turntable_next_button">Next</string>
+    <string name="widget_music_player_desc">Control your music with play/pause, skip, and like buttons</string>
+    <string name="widget_turntable_desc">A stylish turntable widget with album art display</string>
+    <string name="widget_compact_square_desc">Compact square widget for quick playback control</string>
+    <string name="widget_compact_wide_desc">Compact wide widget showing song info and controls</string>
 
     <!-- Settings -->
     <string name="settings">Settings</string>
