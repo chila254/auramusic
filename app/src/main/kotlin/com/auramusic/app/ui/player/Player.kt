@@ -14,6 +14,7 @@ import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -132,6 +133,7 @@ import com.auramusic.app.LocalDownloadUtil
 import com.auramusic.app.LocalListenTogetherManager
 import com.auramusic.app.LocalPlayerConnection
 import com.auramusic.app.R
+import com.auramusic.app.voice.VoiceCommand
 import com.auramusic.app.constants.CropAlbumArtKey
 import com.auramusic.app.constants.DarkModeKey
 import com.auramusic.app.constants.HidePlayerThumbnailKey
@@ -1295,6 +1297,20 @@ fun BottomSheetPlayer(
                                 iconButtonColor = iconButtonColor,
                             )
                         }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        VoiceCommandButton(
+                            onSearch = { query ->
+                                navController.navigate("search/$query")
+                            },
+                            onPlaybackCommand = { command ->
+                                handleVoicePlaybackCommand(command)
+                            },
+                            onSettingsCommand = { command ->
+                                handleVoiceSettingsCommand(command)
+                            }
+                        )
                     }
 
 
@@ -2120,5 +2136,54 @@ private fun PlayerMoreMenuButton(
             contentDescription = null,
             colorFilter = ColorFilter.tint(iconButtonColor),
         )
+    }
+
+    private fun handleVoicePlaybackCommand(command: VoiceCommand) {
+        when (command) {
+            is VoiceCommand.Play -> playerConnection.player.play()
+            is VoiceCommand.Pause -> playerConnection.player.pause()
+            is VoiceCommand.TogglePlayPause -> {
+                if (playerConnection.player.isPlaying) playerConnection.player.pause()
+                else playerConnection.player.play()
+            }
+            is VoiceCommand.Next -> playerConnection.player.seekToNext()
+            is VoiceCommand.Previous -> playerConnection.player.seekToPrevious()
+            is VoiceCommand.Shuffle -> playerConnection.player.shuffleModeEnabled = !playerConnection.player.shuffleModeEnabled
+            is VoiceCommand.Repeat -> playerConnection.player.repeatMode = when (playerConnection.player.repeatMode) {
+                ExoPlayer.REPEAT_MODE_OFF -> ExoPlayer.REPEAT_MODE_ALL
+                ExoPlayer.REPEAT_MODE_ALL -> ExoPlayer.REPEAT_MODE_ONE
+                else -> ExoPlayer.REPEAT_MODE_OFF
+            }
+            is VoiceCommand.VolumeUp -> playerConnection.player.volume = (playerConnection.player.volume + 0.1f).coerceAtMost(1f)
+            is VoiceCommand.VolumeDown -> playerConnection.player.volume = (playerConnection.player.volume - 0.1f).coerceAtLeast(0f)
+            is VoiceCommand.Mute -> playerConnection.player.volume = 0f
+            is VoiceCommand.Unmute -> playerConnection.player.volume = 1f
+            is VoiceCommand.ToggleLike -> playerConnection.toggleLike()
+            else -> {}
+        }
+    }
+
+    private fun handleVoiceSettingsCommand(command: VoiceCommand) {
+        when (command) {
+            is VoiceCommand.SetDarkMode -> {
+                // Update dark mode setting via DataStore
+            }
+            is VoiceCommand.ToggleTheme -> {
+                // Toggle theme
+            }
+            is VoiceCommand.ShowLyrics -> {
+                // Show lyrics
+            }
+            is VoiceCommand.HideLyrics -> {
+                // Hide lyrics
+            }
+            is VoiceCommand.EnableVideo -> {
+                playerConnection.toggleVideoMode(enabled = true)
+            }
+            is VoiceCommand.DisableVideo -> {
+                playerConnection.toggleVideoMode(enabled = false)
+            }
+            else -> {}
+        }
     }
 }
