@@ -10,7 +10,6 @@ import com.auramusic.app.playback.PlayerConnection
 import com.auramusic.app.playback.queues.YouTubeQueue
 import com.auramusic.app.utils.dataStore
 import com.auramusic.app.models.toMediaMetadata
-import com.auramusic.innertube.SearchFilter
 import com.auramusic.innertube.YouTube
 import com.auramusic.innertube.models.SongItem
 import kotlinx.coroutines.Dispatchers
@@ -36,7 +35,7 @@ object VoiceCommandActionExecutor {
             is VoiceCommand.PlaySearch -> {
                 val conn = playerConnection ?: return@withContext "No player connected"
                 val result = withContext(Dispatchers.IO) {
-                    YouTube.search(command.query, SearchFilter.FILTER_SONG).getOrNull()
+                    YouTube.search(command.query, YouTube.SearchFilter.FILTER_SONG).getOrNull()
                 }
                 val firstSong = result?.items?.filterIsInstance<SongItem>()?.firstOrNull()
                 if (firstSong != null) {
