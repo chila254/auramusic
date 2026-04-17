@@ -62,8 +62,19 @@ class VoiceCommandViewModel @Inject constructor(
 
     fun onAppForeground() {
         isAppInForeground = true
-        consecutiveErrors = 0
-        maybeStartWakeWordListening()
+        // Do NOT auto-start mic on app open — user must activate manually or via wake word activation
+    }
+
+    fun onAppBackground() {
+        isAppInForeground = false
+        stopEverything()
+        _uiState.update { VoiceUiState() }
+    }
+
+    fun onAppBackground() {
+        isAppInForeground = false
+        stopEverything()
+        _uiState.update { VoiceUiState() }
     }
 
     fun onAppBackground() {
@@ -74,7 +85,7 @@ class VoiceCommandViewModel @Inject constructor(
 
     fun onMicPermissionChanged(granted: Boolean) {
         hasMicPermission = granted
-        if (granted) maybeStartWakeWordListening()
+        // Do NOT auto-start mic on permission grant
     }
 
     fun startManualSession() {
@@ -96,7 +107,7 @@ class VoiceCommandViewModel @Inject constructor(
         stopEverything()
         _uiState.update { VoiceUiState() }
         consecutiveErrors = 0
-        maybeStartWakeWordListening()
+        // No auto-restart — user must re-activate manually
     }
 
     private fun stopEverything() {
@@ -122,9 +133,9 @@ class VoiceCommandViewModel @Inject constructor(
                     voiceEnabled = enabled
                     wakeWordEnabled = wakeWord
                     customWakeWord = customWake
-                    if (enabled && wakeWord && isAppInForeground && hasMicPermission) {
-                        maybeStartWakeWordListening()
-                    } else if (!enabled || !wakeWord) {
+                    // Do NOT auto-start wake word on app foreground
+                    // Wake word only starts when user manually activates mic or says wake word during manual session
+                    if (!enabled || !wakeWord) {
                         if (_uiState.value.mode == VoiceMode.WAKE_WORD) {
                             voiceCommandManager.stopListening()
                             restartJob?.cancel()

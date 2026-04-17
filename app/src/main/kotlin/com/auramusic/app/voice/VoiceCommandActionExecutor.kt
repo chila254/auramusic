@@ -209,11 +209,10 @@ object VoiceCommandActionExecutor {
                     "No song is currently playing"
                 } else {
                     val songId = mediaMetadata.id
-                    // Check if already downloaded
                     if (service.downloadCache.isCached(songId)) {
                         "This song is already downloaded"
                     } else {
-                        val downloadRequest = DownloadRequest.Builder(songId, mediaMetadata.id.toUri())
+                        val downloadRequest = DownloadRequest.Builder(songId, songId.toUri())
                             .setCustomCacheKey(songId)
                             .setData(mediaMetadata.title.toByteArray())
                             .build()
@@ -229,24 +228,20 @@ object VoiceCommandActionExecutor {
             }
             is VoiceCommand.DownloadCurrentPlaylist -> {
                 val service = conn.service
-                val queue = service.currentMediaItemCount
-                if (queue <= 1) {
-                    return@withContext "The queue is empty or has only one song"
-                }
                 val player = service.player
                 val mediaItems = mutableListOf<androidx.media3.common.MediaItem>()
                 for (i in 0 until player.mediaItemCount) {
                     player.getMediaItemAt(i)?.let { mediaItems.add(it) }
                 }
-                if (mediaItems.isEmpty()) {
-                    return@withContext "No songs in queue"
+                if (mediaItems.size <= 1) {
+                    return@withContext "The queue is empty or has only one song"
                 }
                 var downloadCount = 0
-                val toSkip = mutableListOf<String>()
+                val skippedList = mutableListOf<String>()
                 mediaItems.forEach { item ->
                     val songId = item.mediaId
                     if (!service.downloadCache.isCached(songId)) {
-                        val downloadRequest = DownloadRequest.Builder(songId, item.mediaId.toUri())
+                        val downloadRequest = DownloadRequest.Builder(songId, songId.toUri())
                             .setCustomCacheKey(songId)
                             .setData(item.mediaMetadata?.title?.toByteArray() ?: "download".toByteArray())
                             .build()
@@ -258,16 +253,14 @@ object VoiceCommandActionExecutor {
                         )
                         downloadCount++
                     } else {
-                        toSkip.add(item.mediaMetadata?.title ?: "Unknown")
+                        item.mediaMetadata?.title?.toString()?.let { skippedList.add(it) }
                     }
                 }
-                if (downloadCount > 0) {
-                    val skipped = toSkip.size
-                    "Downloading $downloadCount songs to queue" + if (skipped > 0) " ($skipped already downloaded)" else ""
-                } else if (skipped == mediaItems.size) {
-                    "All songs already downloaded"
-                } else {
-                    "No songs to download"
+                val skipped = skippedList.size
+                when {
+                    downloadCount > 0 -> "Downloading $downloadCount songs to queue" + if (skipped > 0) " ($skipped already downloaded)" else ""
+                    skipped == mediaItems.size -> "All songs already downloaded"
+                    else -> "No songs to download"
                 }
             }
             is VoiceCommand.DownloadCurrentAlbum -> {
@@ -286,7 +279,7 @@ object VoiceCommandActionExecutor {
                 albumSongs.forEach { song ->
                     val songId = song.song.id
                     if (!service.downloadCache.isCached(songId)) {
-                        val downloadRequest = DownloadRequest.Builder(songId, song.id.toUri())
+                        val downloadRequest = DownloadRequest.Builder(songId, songId.toUri())
                             .setCustomCacheKey(songId)
                             .setData(song.title.toByteArray())
                             .build()
@@ -301,10 +294,9 @@ object VoiceCommandActionExecutor {
                 }
                 val total = albumSongs.size
                 val already = total - downloadCount
-                if (downloadCount > 0) {
-                    "Downloading album \"${mediaMetadata.album.title}\": $downloadCount songs" + if (already > 0) " ($already already downloaded)" else ""
-                } else {
-                    "All songs in this album already downloaded"
+                when {
+                    downloadCount > 0 -> "Downloading album \"${mediaMetadata.album.title}\": $downloadCount songs" + if (already > 0) " ($already already downloaded)" else ""
+                    else -> "All songs in this album already downloaded"
                 }
             }
 
