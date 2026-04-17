@@ -297,7 +297,7 @@ dependencies {
     implementation(libs.ktor.serialization.json)
 
     // VOSK offline speech recognition (wake word detection)
-    implementation("org.vosk:vosk-android:0.3.45")
+    implementation("com.alphacephei:vosk-android:0.3.75")
 
     implementation(project(":innertube"))
     implementation(project(":flow"))
@@ -309,11 +309,6 @@ dependencies {
     implementation(project(":simpmusic"))
     implementation(project(":shazamkit"))
     implementation(project(":rush"))
-
-    implementation(libs.ktor.client.core)
-    implementation(libs.ktor.client.cio)
-    implementation(libs.ktor.client.content.negotiation)
-    implementation(libs.ktor.serialization.json)
 
     // Protobuf for message serialization (lite version for Android)
     implementation(libs.protobuf.javalite)
