@@ -216,16 +216,6 @@ private fun handlePlaybackCommand(command: VoiceCommand, playerConnection: Playe
         }
     }
 }
-                playerConnection.player.setPlaybackSpeed(1.0f)
-            }
-            is VoiceCommand.ToggleLike -> playerConnection.toggleLike()
-            is VoiceCommand.ClearQueue -> {
-                playerConnection.player.clearMediaItems()
-            }
-            else -> {}
-        }
-    }
-}
 
 private fun handleSettingsCommand(command: VoiceCommand, playerConnection: PlayerConnection, onNavigate: (String) -> Unit) {
     val context = playerConnection.service as? Context ?: return

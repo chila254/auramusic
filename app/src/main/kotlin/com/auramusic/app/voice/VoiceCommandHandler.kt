@@ -104,6 +104,8 @@ class VoiceCommandHandler @Inject constructor(
             
             is VoiceCommand.Search -> CommandResult.Search(command.query)
             
+            is VoiceCommand.WakeWordDetected -> CommandResult.Playback("Wake word detected")
+            
             is VoiceCommand.Unknown -> CommandResult.Error("Didn't understand: ${command.text}")
         }
     }

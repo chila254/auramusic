@@ -210,16 +210,6 @@ fun VoiceMicIconWithWaves(state: VoiceUiState) {
         label = "scale"
     )
     
-    val wavePhase by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 2f * Math.PI.toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(1500),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "wave"
-    )
-    
     val isListening = state is VoiceUiState.Listening
     
     val backgroundColor = when (state) {
@@ -227,7 +217,31 @@ fun VoiceMicIconWithWaves(state: VoiceUiState) {
         is VoiceUiState.Processing -> MaterialTheme.colorScheme.secondary
         is VoiceUiState.Error -> MaterialTheme.colorScheme.error
         else -> MaterialTheme.colorScheme.primaryContainer
-    }
+
+    Box(
+        modifier = Modifier.size(140.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        // Wave circles (only visible when listening)
+        if (isListening) {
+            // Simple static circles that scale with the main animation
+            for (i in 0..2) {
+                val waveScale = 1f + (i * 0.25f) + (scale - 1f) * 0.5f
+                val alpha = 0.4f - (i * 0.12f)
+                
+                Canvas(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .scale(waveScale)
+                ) {
+                    drawCircle(
+                        color = backgroundColor.copy(alpha = alpha.coerceAtLeast(0f)),
+                        radius = size.minDimension / 2,
+                        style = Stroke(width = 3.dp.toPx())
+                    )
+                }
+            }
+        }
 
     Box(
         modifier = Modifier.size(140.dp),
