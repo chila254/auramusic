@@ -7,7 +7,12 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.media3.exoplayer.ExoPlayer
 import com.auramusic.app.playback.PlayerConnection
+import com.auramusic.app.playback.queues.YouTubeQueue
 import com.auramusic.app.utils.dataStore
+import com.auramusic.app.models.toMediaMetadata
+import com.auramusic.innertube.YouTube
+import com.auramusic.innertube.models.SearchFilter
+import com.auramusic.innertube.models.SongItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -28,7 +33,21 @@ object VoiceCommandActionExecutor {
             }
             is VoiceCommand.WakeWordDetected -> "Listening..."
             is VoiceCommand.Unknown -> "I didn't understand that"
-            
+            is VoiceCommand.PlaySearch -> {
+                val conn = playerConnection ?: return@withContext "No player connected"
+                val result = withContext(Dispatchers.IO) {
+                    YouTube.search(command.query, YouTube.SearchFilter.FILTER_SONG).getOrNull()
+                }
+                val firstSong = result?.items?.filterIsInstance<SongItem>()?.firstOrNull()
+                if (firstSong != null) {
+                    val metadata = firstSong.toMediaMetadata()
+                    conn.playQueue(YouTubeQueue.radio(metadata))
+                    "Playing ${firstSong.title}"
+                } else {
+                    "No results found for \"${command.query}\""
+                }
+            }
+
             // Navigation
             is VoiceCommand.ShowQueue -> { onNavigate("queue"); "Opening queue" }
             is VoiceCommand.OpenHome -> { onNavigate("home"); "Opening home" }
@@ -151,7 +170,11 @@ object VoiceCommandActionExecutor {
             is VoiceCommand.ToggleTheme -> {
                 val darkModeKey = stringPreferencesKey("darkMode")
                 val current = context.dataStore.data.map { prefs -> prefs[darkModeKey] ?: "AUTO" }.first()
-                val newMode = when (current) { "ON" -> "OFF"; "OFF" -> "ON"; else -> "ON" }
+                val newMode = when (current) {
+                    "AUTO" -> "ON"
+                    "ON" -> "OFF"
+                    "OFF" -> "AUTO"
+                }
                 context.dataStore.edit { prefs -> prefs[darkModeKey] = newMode }
                 "Theme toggled"
             }

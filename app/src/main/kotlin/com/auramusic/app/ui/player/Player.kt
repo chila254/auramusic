@@ -150,6 +150,7 @@ import com.auramusic.app.constants.SquigglySliderKey
 import com.auramusic.app.constants.ThumbnailCornerRadius
 import com.auramusic.app.constants.UseNewPlayerDesignKey
 import com.auramusic.app.constants.VideoModeEnabledKey
+import com.auramusic.app.constants.ShowLyricsKey
 import com.auramusic.app.db.entities.LyricsEntity
 import com.auramusic.app.ui.player.Thumbnail
 import com.auramusic.app.extensions.togglePlayPause
@@ -612,9 +613,7 @@ fun BottomSheetPlayer(
         mutableStateOf(false)
     }
 
-    var showInlineLyrics by rememberSaveable {
-        mutableStateOf(false)
-    }
+    val (showInlineLyrics, onShowInlineLyricsChange) = rememberPreference(ShowLyricsKey, false)
 
     var isFullScreen by rememberSaveable {
         mutableStateOf(false)
@@ -642,7 +641,7 @@ fun BottomSheetPlayer(
     // Track user manual toggle
     fun onLyricsToggle() {
         hasUserToggledLyrics = true
-        showInlineLyrics = !showInlineLyrics
+        onShowInlineLyricsChange(!showInlineLyrics)
     }
 
     // Position update - only for local playback

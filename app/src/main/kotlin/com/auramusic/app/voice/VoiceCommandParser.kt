@@ -47,15 +47,20 @@ object VoiceCommandParser {
             lowerText
         }
         
-        // Search commands
-        if (commandText.contains("search") || commandText.contains("find") || commandText.contains("play")) {
+        // PlaySearch: "play" followed by something
+        if (commandText.startsWith("play ")) {
+            val query = commandText.removePrefix("play").trim()
+            if (query.isNotEmpty()) {
+                return VoiceCommand.PlaySearch(query)
+            }
+        }
+
+        // Search commands (search/find)
+        if (commandText.contains("search") || commandText.contains("find")) {
             val query = commandText
                 .replace("search for", "")
                 .replace("search", "")
                 .replace("find", "")
-                .replace("play", "")
-                .replace("play song", "")
-                .replace("play music", "")
                 .trim()
             if (query.isNotEmpty()) {
                 return VoiceCommand.Search(query)
@@ -268,6 +273,7 @@ sealed class VoiceCommand {
     
     // Search
     data class Search(val query: String) : VoiceCommand()
+    data class PlaySearch(val query: String) : VoiceCommand()
     
     // Settings
     data class SetDarkMode(val enabled: Boolean) : VoiceCommand()
