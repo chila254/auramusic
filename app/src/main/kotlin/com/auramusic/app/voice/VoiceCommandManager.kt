@@ -2,6 +2,8 @@ package com.auramusic.app.voice
 
 import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -56,6 +58,9 @@ class VoiceCommandManager @Inject constructor(
         
         mainHandler.post {
             try {
+                // Disable system sound effects (like Google mic click sounds)
+                disableSystemSoundEffects()
+
                 // Destroy previous recognizer to avoid stale state
                 speechRecognizer?.destroy()
                 speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
@@ -88,6 +93,37 @@ class VoiceCommandManager @Inject constructor(
         }
     }
 
+    private fun disableSystemSoundEffects() {
+        try {
+            val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            // Save current state and mute system sound effects (including mic sounds)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                audioManager.adjustStreamVolume(
+                    AudioManager.STREAM_SYSTEM,
+                    AudioManager.ADJUST_MUTE,
+                    0
+                )
+            }
+        } catch (e: Exception) {
+            // Silently ignore; if it fails we'll just have sound effects
+        }
+    }
+
+    fun enableSystemSoundEffects() {
+        try {
+            val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                audioManager.adjustStreamVolume(
+                    AudioManager.STREAM_SYSTEM,
+                    AudioManager.ADJUST_UNMUTE,
+                    0
+                )
+            }
+        } catch (e: Exception) {
+            // Silently ignore
+        }
+    }
+
     fun stopListening() {
         mainHandler.post {
             try {
@@ -96,6 +132,7 @@ class VoiceCommandManager @Inject constructor(
                 speechRecognizer = null
             } catch (_: Exception) {}
             _isListening.value = false
+            enableSystemSoundEffects()
         }
     }
 
@@ -106,6 +143,7 @@ class VoiceCommandManager @Inject constructor(
             } catch (_: Exception) {}
             speechRecognizer = null
             _isListening.value = false
+            enableSystemSoundEffects()
         }
     }
 

@@ -6,6 +6,9 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.offline.DownloadRequest
+import androidx.media3.exoplayer.offline.DownloadService
+import com.auramusic.app.playback.ExoDownloadService
 import com.auramusic.app.playback.PlayerConnection
 import com.auramusic.app.playback.queues.YouTubeQueue
 import com.auramusic.app.utils.dataStore
@@ -197,7 +200,114 @@ object VoiceCommandActionExecutor {
             is VoiceCommand.EnableVideo -> { conn.toggleVideoMode(); "Video on" }
             is VoiceCommand.DisableVideo -> { conn.toggleVideoMode(); "Video off" }
             is VoiceCommand.ToggleVideo -> { conn.toggleVideoMode(); "Video toggled" }
-            
+
+            // Download commands
+            is VoiceCommand.DownloadCurrentSong -> {
+                val service = conn.service
+                val mediaMetadata = service.currentMediaMetadata.value
+                if (mediaMetadata == null) {
+                    "No song is currently playing"
+                } else {
+                    val songId = mediaMetadata.id
+                    // Check if already downloaded
+                    if (service.downloadCache.isCached(songId)) {
+                        "This song is already downloaded"
+                    } else {
+                        val downloadRequest = DownloadRequest.Builder(songId, mediaMetadata.id.toUri())
+                            .setCustomCacheKey(songId)
+                            .setData(mediaMetadata.title.toByteArray())
+                            .build()
+                        DownloadService.sendAddDownload(
+                            service,
+                            ExoDownloadService::class.java,
+                            downloadRequest,
+                            false,
+                        )
+                        "Downloading \"${mediaMetadata.title}\""
+                    }
+                }
+            }
+            is VoiceCommand.DownloadCurrentPlaylist -> {
+                val service = conn.service
+                val queue = service.currentMediaItemCount
+                if (queue <= 1) {
+                    return@withContext "The queue is empty or has only one song"
+                }
+                val player = service.player
+                val mediaItems = mutableListOf<androidx.media3.common.MediaItem>()
+                for (i in 0 until player.mediaItemCount) {
+                    player.getMediaItemAt(i)?.let { mediaItems.add(it) }
+                }
+                if (mediaItems.isEmpty()) {
+                    return@withContext "No songs in queue"
+                }
+                var downloadCount = 0
+                val toSkip = mutableListOf<String>()
+                mediaItems.forEach { item ->
+                    val songId = item.mediaId
+                    if (!service.downloadCache.isCached(songId)) {
+                        val downloadRequest = DownloadRequest.Builder(songId, item.mediaId.toUri())
+                            .setCustomCacheKey(songId)
+                            .setData(item.mediaMetadata?.title?.toByteArray() ?: "download".toByteArray())
+                            .build()
+                        DownloadService.sendAddDownload(
+                            service,
+                            ExoDownloadService::class.java,
+                            downloadRequest,
+                            false,
+                        )
+                        downloadCount++
+                    } else {
+                        toSkip.add(item.mediaMetadata?.title ?: "Unknown")
+                    }
+                }
+                if (downloadCount > 0) {
+                    val skipped = toSkip.size
+                    "Downloading $downloadCount songs to queue" + if (skipped > 0) " ($skipped already downloaded)" else ""
+                } else if (skipped == mediaItems.size) {
+                    "All songs already downloaded"
+                } else {
+                    "No songs to download"
+                }
+            }
+            is VoiceCommand.DownloadCurrentAlbum -> {
+                val service = conn.service
+                val mediaMetadata = service.currentMediaMetadata.value
+                if (mediaMetadata?.album == null) {
+                    return@withContext "Current song has no album information"
+                }
+                val albumId = mediaMetadata.album.id
+                val albumSongsFlow = service.database.albumSongs(albumId)
+                val albumSongs = albumSongsFlow.first()
+                if (albumSongs.isEmpty()) {
+                    return@withContext "No songs found in album"
+                }
+                var downloadCount = 0
+                albumSongs.forEach { song ->
+                    val songId = song.song.id
+                    if (!service.downloadCache.isCached(songId)) {
+                        val downloadRequest = DownloadRequest.Builder(songId, song.id.toUri())
+                            .setCustomCacheKey(songId)
+                            .setData(song.title.toByteArray())
+                            .build()
+                        DownloadService.sendAddDownload(
+                            service,
+                            ExoDownloadService::class.java,
+                            downloadRequest,
+                            false,
+                        )
+                        downloadCount++
+                    }
+                }
+                val total = albumSongs.size
+                val already = total - downloadCount
+                if (downloadCount > 0) {
+                    "Downloading album \"${mediaMetadata.album.title}\": $downloadCount songs" + if (already > 0) " ($already already downloaded)" else ""
+                } else {
+                    "All songs in this album already downloaded"
+                }
+            }
+
             else -> "Done"
         }
     }

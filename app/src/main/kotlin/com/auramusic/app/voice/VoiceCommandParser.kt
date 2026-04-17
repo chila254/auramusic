@@ -221,6 +221,17 @@ object VoiceCommandParser {
                 VoiceCommand.AddToQueue
             }
             
+            // Download commands
+            commandText.contains("download this song") || commandText.contains("download song") || commandText.contains("download track") -> {
+                VoiceCommand.DownloadCurrentSong
+            }
+            commandText.contains("download playlist") -> {
+                VoiceCommand.DownloadCurrentPlaylist
+            }
+            commandText.contains("download album") -> {
+                VoiceCommand.DownloadCurrentAlbum
+            }
+            
             // Open commands
             commandText.contains("go home") || commandText.contains("open home") -> {
                 VoiceCommand.OpenHome
@@ -278,6 +289,11 @@ sealed class VoiceCommand {
     // Settings
     data class SetDarkMode(val enabled: Boolean) : VoiceCommand()
     data object ToggleTheme : VoiceCommand()
+    
+    // Download commands
+    data object DownloadCurrentSong : VoiceCommand()
+    data object DownloadCurrentPlaylist : VoiceCommand()
+    data object DownloadCurrentAlbum : VoiceCommand()
     
     // Lyrics
     data object ShowLyrics : VoiceCommand()
