@@ -252,7 +252,7 @@ private fun VoiceWaveVisualizer(
             var firstPoint = true
             for (px in 0..width.toInt() step 3) {
                 val xf = px.toFloat()
-                val t = Math.toRadians((time * 2 + xf * 0.5).toDouble())
+                val t = Math.toRadians(time * 2 + xf * 0.5)
                 val waveH = if (isActive) {
                     (sin(t) * 4f * (1f + normalizedAmplitude * 0.5f)).toFloat()
                 } else {

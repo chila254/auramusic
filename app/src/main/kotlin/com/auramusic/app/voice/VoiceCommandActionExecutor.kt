@@ -235,7 +235,8 @@ object VoiceCommandActionExecutor {
                 val player = service.player
                 val mediaItems = mutableListOf<androidx.media3.common.MediaItem>()
                 for (i in 0 until player.mediaItemCount) {
-                    player.getMediaItemAt(i)?.let { mediaItems.add(it) }
+                    val item = player.getMediaItemAt(i)
+                    if (item != null) mediaItems.add(item)
                 }
                 if (mediaItems.size <= 1) {
                     return "The queue is empty or has only one song"
@@ -250,7 +251,7 @@ object VoiceCommandActionExecutor {
                     if (!isDownloaded) {
                         val downloadRequest = DownloadRequest.Builder(songId, songId.toUri())
                             .setCustomCacheKey(songId)
-                            .setData(item.mediaMetadata?.title?.toString()?.toByteArray() ?: "download".toByteArray())
+                            .setData(item.mediaMetadata?.title?.toByteArray() ?: "download".toByteArray())
                             .build()
                         DownloadService.sendAddDownload(
                             service,
@@ -260,7 +261,7 @@ object VoiceCommandActionExecutor {
                         )
                         downloadCount++
                     } else {
-                        item.mediaMetadata?.title?.toString()?.let { skippedList.add(it) }
+                        item.mediaMetadata?.title?.let { skippedList.add(it) }
                     }
                 }
                 val skipped = skippedList.size
