@@ -67,6 +67,7 @@ import com.auramusic.app.constants.DefaultOpenTabKey
 import com.auramusic.app.constants.DynamicThemeKey
 import com.auramusic.app.constants.EnableDynamicIconKey
 import com.auramusic.app.constants.EnableHighRefreshRateKey
+import com.auramusic.app.constants.EnableVoiceCommandsKey
 import com.auramusic.app.constants.GridItemSize
 import com.auramusic.app.constants.GridItemsSizeKey
 import com.auramusic.app.constants.HidePlayerThumbnailKey
