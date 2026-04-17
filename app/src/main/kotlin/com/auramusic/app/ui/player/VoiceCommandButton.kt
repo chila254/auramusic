@@ -24,6 +24,7 @@ import androidx.core.content.ContextCompat
 import androidx.media3.exoplayer.ExoPlayer
 import com.auramusic.app.LocalPlayerConnection
 import com.auramusic.app.R
+import com.auramusic.app.playback.PlayerConnection
 import com.auramusic.app.voice.VoiceCommand
 import com.auramusic.app.voice.VoiceCommandDialog
 import kotlinx.coroutines.CoroutineScope
@@ -103,7 +104,7 @@ fun VoiceCommandButton(
     }
 }
 
-private fun handlePlaybackCommand(command: VoiceCommand, playerConnection: com.auramusic.app.PlayerConnection) {
+private fun handlePlaybackCommand(command: VoiceCommand, playerConnection: PlayerConnection) {
     val player = playerConnection.player
     CoroutineScope(Dispatchers.Main).launch {
         when (command) {
@@ -130,15 +131,15 @@ private fun handlePlaybackCommand(command: VoiceCommand, playerConnection: com.a
     }
 }
 
-private fun handleSettingsCommand(command: VoiceCommand, playerConnection: com.auramusic.app.PlayerConnection) {
+private fun handleSettingsCommand(command: VoiceCommand, playerConnection: PlayerConnection) {
     CoroutineScope(Dispatchers.Main).launch {
         when (command) {
             is VoiceCommand.SetDarkMode -> {}
             is VoiceCommand.ToggleTheme -> {}
             is VoiceCommand.ShowLyrics -> {}
             is VoiceCommand.HideLyrics -> {}
-            is VoiceCommand.EnableVideo -> playerConnection.toggleVideoMode(enabled = true)
-            is VoiceCommand.DisableVideo -> playerConnection.toggleVideoMode(enabled = false)
+            is VoiceCommand.EnableVideo -> playerConnection.toggleVideoMode()
+            is VoiceCommand.DisableVideo -> playerConnection.toggleVideoMode()
             else -> {}
         }
     }
