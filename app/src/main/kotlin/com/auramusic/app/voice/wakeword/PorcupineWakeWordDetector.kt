@@ -43,8 +43,15 @@ class PorcupineWakeWordDetector @Inject constructor(
         if (isRunning.getAndSet(true)) return
 
         try {
+            // Get AccessKey from BuildConfig
+            val accessKey = com.auramusic.app.BuildConfig.PICO_VOICE_ACCESS_KEY
+            if (accessKey.isBlank()) {
+                throw PorcupineException("PICO_VOICE_ACCESS_KEY not set. Add it to local.properties or environment.")
+            }
+
             // Initialize Porcupine with the keyword model from assets
             porcupine = Porcupine.Builder()
+                .setAccessKey(accessKey)
                 .setKeywordPath(KEYWORD_PATH)
                 .setSensitivity(0.5f)
                 .build(context.assets)
