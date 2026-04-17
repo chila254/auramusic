@@ -455,11 +455,11 @@
     <string name="enable_dynamic_icon">Enable dynamic icon</string>
     <string name="enable_high_refresh_rate">High refresh rate</string>
     <string name="enable_high_refresh_rate_desc">Enable 90Hz/120Hz display support</string>
-    <string name="voice_commands">Voice Commands (Experimental)</string>
+    <string name="voice_commands">Voice Commands</string>
     <string name="enable_voice_commands">Enable voice commands</string>
-    <string name="enable_voice_commands_desc">Show voice command button in player. Experimental feature.</string>
-    <string name="enable_voice_wake_word">Voice wake word</string>
-    <string name="enable_voice_wake_word_desc">Activate voice assistant with wake words like \"Hey Aura\"</string>
+    <string name="enable_voice_commands_desc">Enable interactive voice control with animated overlay. Say commands like \"Play\", \"Next\", or \"Search songs\".</string>
+    <string name="enable_voice_wake_word">Hands-free wake word</string>
+    <string name="enable_voice_wake_word_desc">Continuously listen for \"Hey Aura\" to activate voice commands without touching the screen. Works while the app is open.</string>
     <string name="voice_wake_word">Custom wake word</string>
     <string name="voice_wake_word_desc">Set your custom wake word (default: Aura)</string>
     <string name="font">Font</string>

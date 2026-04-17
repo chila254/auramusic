@@ -3,89 +3,137 @@ package com.auramusic.app.voice
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
+
+sealed interface VoiceRecognitionEvent {
+    data object Ready : VoiceRecognitionEvent
+    data class Rms(val value: Float) : VoiceRecognitionEvent
+    data class PartialText(val text: String) : VoiceRecognitionEvent
+    data class FinalText(val text: String) : VoiceRecognitionEvent
+    data class Error(val code: Int, val message: String, val recoverable: Boolean) : VoiceRecognitionEvent
+    data object EndOfSpeech : VoiceRecognitionEvent
+}
+
+enum class RecognitionMode { WAKE_WORD, COMMAND }
 
 @Singleton
 class VoiceCommandManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     private var speechRecognizer: SpeechRecognizer? = null
-    private var isListening = false
+    private val mainHandler = Handler(Looper.getMainLooper())
 
-    private val _voiceState = MutableStateFlow<VoiceState>(VoiceState.Idle)
-    val voiceState: StateFlow<VoiceState> = _voiceState.asStateFlow()
+    private val _events = MutableSharedFlow<VoiceRecognitionEvent>(extraBufferCapacity = 64)
+    val events: SharedFlow<VoiceRecognitionEvent> = _events.asSharedFlow()
 
-    private val _recognizedText = MutableStateFlow("")
-    val recognizedText: StateFlow<String> = _recognizedText.asStateFlow()
+    private val _isListening = MutableStateFlow(false)
+    val isListening: StateFlow<Boolean> = _isListening.asStateFlow()
 
-    private var onCommandRecognized: ((VoiceCommand) -> Unit)? = null
+    private var currentMode: RecognitionMode = RecognitionMode.WAKE_WORD
 
-    fun startListening(onCommand: (VoiceCommand) -> Unit) {
-        if (!SpeechRecognizer.isRecognitionAvailable(context)) {
-            _voiceState.value = VoiceState.Error("Speech recognition not available")
+    fun isAvailable(): Boolean = SpeechRecognizer.isRecognitionAvailable(context)
+
+    fun startListening(mode: RecognitionMode) {
+        if (!isAvailable()) {
+            _events.tryEmit(VoiceRecognitionEvent.Error(-1, "Speech recognition not available", false))
             return
         }
 
-        onCommandRecognized = onCommand
-        _recognizedText.value = ""
-        _voiceState.value = VoiceState.Listening(0f)
+        currentMode = mode
+        
+        mainHandler.post {
+            try {
+                // Destroy previous recognizer to avoid stale state
+                speechRecognizer?.destroy()
+                speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
+                    setRecognitionListener(createRecognitionListener())
+                }
 
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
-            setRecognitionListener(createRecognitionListener())
+                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                    putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                    putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
+                    when (mode) {
+                        RecognitionMode.WAKE_WORD -> {
+                            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 1500L)
+                            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1000L)
+                        }
+                        RecognitionMode.COMMAND -> {
+                            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
+                            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1800L)
+                        }
+                    }
+                }
+
+                speechRecognizer?.startListening(intent)
+                _isListening.value = true
+            } catch (e: Exception) {
+                _events.tryEmit(VoiceRecognitionEvent.Error(-1, "Failed to start: ${e.message}", true))
+                _isListening.value = false
+            }
         }
-
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 10)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
-        }
-
-        speechRecognizer?.startListening(intent)
-        isListening = true
     }
 
     fun stopListening() {
-        isListening = false
-        speechRecognizer?.stopListening()
-        _voiceState.value = VoiceState.Idle
+        mainHandler.post {
+            try {
+                speechRecognizer?.stopListening()
+            } catch (_: Exception) {}
+            _isListening.value = false
+        }
     }
 
     fun destroy() {
-        speechRecognizer?.destroy()
-        speechRecognizer = null
-        isListening = false
+        mainHandler.post {
+            try {
+                speechRecognizer?.destroy()
+            } catch (_: Exception) {}
+            speechRecognizer = null
+            _isListening.value = false
+        }
     }
 
     private fun createRecognitionListener() = object : RecognitionListener {
         override fun onReadyForSpeech(params: Bundle?) {
-            _voiceState.value = VoiceState.Listening(0f)
+            _events.tryEmit(VoiceRecognitionEvent.Ready)
         }
 
         override fun onBeginningOfSpeech() {}
 
         override fun onRmsChanged(rmsdB: Float) {
-            _voiceState.value = VoiceState.Listening(rmsdB)
+            _events.tryEmit(VoiceRecognitionEvent.Rms(rmsdB))
         }
 
         override fun onBufferReceived(buffer: ByteArray?) {}
 
         override fun onEndOfSpeech() {
-            _voiceState.value = VoiceState.Processing
+            _events.tryEmit(VoiceRecognitionEvent.EndOfSpeech)
         }
 
         override fun onError(error: Int) {
-            val errorMessage = when (error) {
+            _isListening.value = false
+            val recoverable = error in listOf(
+                SpeechRecognizer.ERROR_NO_MATCH,
+                SpeechRecognizer.ERROR_SPEECH_TIMEOUT,
+                SpeechRecognizer.ERROR_RECOGNIZER_BUSY,
+                SpeechRecognizer.ERROR_CLIENT
+            )
+            val message = when (error) {
                 SpeechRecognizer.ERROR_AUDIO -> "Audio recording error"
-                SpeechRecognizer.ERROR_CLIENT -> "Client side error"
+                SpeechRecognizer.ERROR_CLIENT -> "Client error"
                 SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Insufficient permissions"
                 SpeechRecognizer.ERROR_NETWORK -> "Network error"
                 SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network timeout"
@@ -95,43 +143,24 @@ class VoiceCommandManager @Inject constructor(
                 SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "No speech input"
                 else -> "Unknown error"
             }
-            _voiceState.value = VoiceState.Error(errorMessage)
-            isListening = false
+            _events.tryEmit(VoiceRecognitionEvent.Error(error, message, recoverable))
         }
 
         override fun onResults(results: Bundle?) {
+            _isListening.value = false
             val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
             val text = matches?.firstOrNull() ?: ""
-            _recognizedText.value = text
-
-            if (text.isNotEmpty()) {
-                val command = VoiceCommandParser.parseCommand(text)
-                _voiceState.value = VoiceState.CommandRecognized(command)
-                onCommandRecognized?.invoke(command)
-            } else {
-                _voiceState.value = VoiceState.Error("No speech recognized")
-            }
-            isListening = false
+            _events.tryEmit(VoiceRecognitionEvent.FinalText(text))
         }
 
         override fun onPartialResults(partialResults: Bundle?) {
             val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
             val text = matches?.firstOrNull() ?: ""
             if (text.isNotEmpty()) {
-                _recognizedText.value = text
-                _voiceState.value = VoiceState.PartialResult(text)
+                _events.tryEmit(VoiceRecognitionEvent.PartialText(text))
             }
         }
 
         override fun onEvent(eventType: Int, params: Bundle?) {}
     }
-}
-
-sealed class VoiceState {
-    data object Idle : VoiceState()
-    data class Listening(val amplitude: Float = 0f) : VoiceState()
-    data object Processing : VoiceState()
-    data class PartialResult(val text: String) : VoiceState()
-    data class CommandRecognized(val command: VoiceCommand) : VoiceState()
-    data class Error(val message: String) : VoiceState()
 }

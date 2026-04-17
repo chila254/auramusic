@@ -2,29 +2,49 @@ package com.auramusic.app.voice
 
 object VoiceCommandParser {
 
-    private val defaultWakeWords = listOf("hey aura", "hello aura", "aura", "ok aura", "hey aura music", "aura play")
+    private val defaultWakeWords = listOf("hey aura", "hello aura", "ok aura", "hey aura music", "aura")
+
+    data class WakeWordMatch(
+        val detected: Boolean,
+        val remainingText: String
+    )
+
+    fun extractWakeWord(text: String, customWakeWord: String = "aura"): WakeWordMatch {
+        val lowerText = text.lowercase().trim()
+
+        // Check custom wake word first (if longer than defaults)
+        val customWake = customWakeWord.lowercase().trim()
+        if (customWake.isNotEmpty() && lowerText.startsWith(customWake)) {
+            return WakeWordMatch(true, lowerText.removePrefix(customWake).trim())
+        }
+
+        // Check default wake words (longer phrases first)
+        for (wake in defaultWakeWords) {
+            if (lowerText.startsWith(wake)) {
+                return WakeWordMatch(true, lowerText.removePrefix(wake).trim())
+            }
+        }
+
+        return WakeWordMatch(false, lowerText)
+    }
+
+    fun containsWakeWord(text: String, customWakeWord: String = "aura"): Boolean {
+        val lowerText = text.lowercase().trim()
+        val customWake = customWakeWord.lowercase().trim()
+        if (customWake.isNotEmpty() && lowerText.contains(customWake)) return true
+        return defaultWakeWords.any { lowerText.contains(it) }
+    }
 
     fun parseCommand(text: String, wakeWord: String = "aura"): VoiceCommand {
         val lowerText = text.lowercase().trim()
         
         // Check for wake word and extract command after it
-        var commandText = lowerText
-        for (wake in defaultWakeWords) {
-            if (lowerText.startsWith(wake)) {
-                commandText = lowerText.removePrefix(wake).trim()
-                break
-            }
-        }
-        
-        // Also check custom wake word
-        val customWake = wakeWord.lowercase()
-        if (customWake.isNotEmpty() && lowerText.startsWith(customWake)) {
-            commandText = lowerText.removePrefix(customWake).trim()
-        }
-        
-        // If nothing left after wake word, return Unknown
-        if (commandText.isEmpty()) {
-            return VoiceCommand.WakeWordDetected
+        val match = extractWakeWord(lowerText, wakeWord)
+        val commandText = if (match.detected) {
+            if (match.remainingText.isEmpty()) return VoiceCommand.WakeWordDetected
+            match.remainingText
+        } else {
+            lowerText
         }
         
         // Search commands

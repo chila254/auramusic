@@ -187,6 +187,13 @@ import com.auramusic.app.utils.rememberPreference
 import com.auramusic.app.utils.reportException
 import com.auramusic.app.utils.setAppLocale
 import com.auramusic.app.viewmodels.HomeViewModel
+import com.auramusic.app.voice.LocalVoiceCommandController
+import com.auramusic.app.voice.VoiceCommandController
+import com.auramusic.app.voice.VoiceCommandOverlay
+import com.auramusic.app.voice.VoiceCommandViewModel
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.DisposableEffect
 import com.valentinilk.shimmer.LocalShimmerTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -563,6 +570,64 @@ class MainActivity : ComponentActivity() {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val (previousTab, setPreviousTab) = rememberSaveable { mutableStateOf("home") }
 
+                // Voice command system
+                val voiceCommandViewModel: VoiceCommandViewModel = hiltViewModel()
+                val voiceUiState by voiceCommandViewModel.uiState.collectAsState()
+
+                val micPermissionLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.RequestPermission()
+                ) { granted ->
+                    voiceCommandViewModel.onMicPermissionChanged(granted)
+                    if (granted) {
+                        voiceCommandViewModel.startManualSession()
+                    }
+                }
+
+                val hasMicPermission = remember {
+                    ContextCompat.checkSelfPermission(
+                        this@MainActivity,
+                        Manifest.permission.RECORD_AUDIO
+                    ) == PackageManager.PERMISSION_GRANTED
+                }
+
+                LaunchedEffect(hasMicPermission) {
+                    voiceCommandViewModel.onMicPermissionChanged(hasMicPermission)
+                }
+
+                LaunchedEffect(Unit) {
+                    voiceCommandViewModel.onAppForeground()
+                }
+
+                DisposableEffect(Unit) {
+                    onDispose {
+                        voiceCommandViewModel.onAppBackground()
+                    }
+                }
+
+                LaunchedEffect(playerConnection) {
+                    voiceCommandViewModel.bindHandlers(
+                        playerConnectionProvider = { playerConnection },
+                        onSearch = { query ->
+                            navController.navigate("search/$query")
+                        },
+                        onNavigate = { route ->
+                            navController.navigate(route)
+                        }
+                    )
+                }
+
+                val voiceCommandController = remember(voiceCommandViewModel) {
+                    object : VoiceCommandController {
+                        override fun requestManualActivation() {
+                            if (hasMicPermission) {
+                                voiceCommandViewModel.startManualSession()
+                            } else {
+                                micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                            }
+                        }
+                    }
+                }
+
                 val (listenTogetherAtTop) = rememberPreference(ListenTogetherAtTopKey, defaultValue = true)
                 val (slimNav) = rememberPreference(SlimNavBarKey, defaultValue = false)
                 
@@ -815,6 +880,7 @@ class MainActivity : ComponentActivity() {
                     LocalSyncUtils provides syncUtils,
                     LocalListenTogetherManager provides listenTogetherManager,
                     LocalChangelogState provides remember { mutableStateOf(false) },
+                    LocalVoiceCommandController provides voiceCommandController,
                 ) {
 
                     Scaffold(
@@ -1175,6 +1241,12 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
+
+                    // Global voice command overlay (Siri/Gemini-like)
+                    VoiceCommandOverlay(
+                        state = voiceUiState,
+                        onDismiss = { voiceCommandViewModel.dismissOverlay() },
+                    )
                 }
             }
         }
