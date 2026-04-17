@@ -209,7 +209,10 @@ object VoiceCommandActionExecutor {
                     "No song is currently playing"
                 } else {
                     val songId = mediaMetadata.id
-                    if (service.downloadCache.isCached(songId)) {
+                    val isDownloaded = withContext(Dispatchers.IO) {
+                        service.database.song(songId).first()?.isDownloaded ?: false
+                    }
+                    if (isDownloaded) {
                         "This song is already downloaded"
                     } else {
                         val downloadRequest = DownloadRequest.Builder(songId, songId.toUri())
@@ -240,10 +243,13 @@ object VoiceCommandActionExecutor {
                 val skippedList = mutableListOf<String>()
                 mediaItems.forEach { item ->
                     val songId = item.mediaId
-                    if (!service.downloadCache.isCached(songId)) {
+                    val isDownloaded = withContext(Dispatchers.IO) {
+                        service.database.song(songId).first()?.isDownloaded ?: false
+                    }
+                    if (!isDownloaded) {
                         val downloadRequest = DownloadRequest.Builder(songId, songId.toUri())
                             .setCustomCacheKey(songId)
-                            .setData(item.mediaMetadata?.title?.toByteArray() ?: "download".toByteArray())
+                            .setData(item.mediaMetadata?.title?.toString()?.toByteArray() ?: "download".toByteArray())
                             .build()
                         DownloadService.sendAddDownload(
                             service,
@@ -278,10 +284,13 @@ object VoiceCommandActionExecutor {
                 var downloadCount = 0
                 albumSongs.forEach { song ->
                     val songId = song.song.id
-                    if (!service.downloadCache.isCached(songId)) {
+                    val isDownloaded = withContext(Dispatchers.IO) {
+                        service.database.song(songId).first()?.isDownloaded ?: false
+                    }
+                    if (!isDownloaded) {
                         val downloadRequest = DownloadRequest.Builder(songId, songId.toUri())
                             .setCustomCacheKey(songId)
-                            .setData(song.title.toByteArray())
+                            .setData(song.song.title.toByteArray())
                             .build()
                         DownloadService.sendAddDownload(
                             service,
