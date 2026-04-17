@@ -54,6 +54,8 @@ class WakeWordService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground(NOTIFICATION_ID, buildNotification())
+        // Restart detector if it was stopped (e.g. after wake word detection + command processing)
+        wakeWordDetector.start()
         return START_STICKY
     }
 

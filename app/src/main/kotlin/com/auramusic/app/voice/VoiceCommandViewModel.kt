@@ -107,11 +107,17 @@ class VoiceCommandViewModel @Inject constructor(
         stopEverything()
         _uiState.update { VoiceUiState() }
         consecutiveErrors = 0
-        // Restart VOSK wake word detector after overlay dismissed
+        // Restart VOSK wake word service after overlay dismissed
         if (voiceEnabled && wakeWordEnabled && hasMicPermission && isAppInForeground) {
-            try {
-                wakeWordDetector.start()
-            } catch (e: Exception) { e.printStackTrace() }
+            restartWakeWordService()
+        }
+    }
+
+    private fun restartWakeWordService() {
+        try {
+            WakeWordService.start(context)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -373,11 +379,9 @@ class VoiceCommandViewModel @Inject constructor(
             delay(1500)
             stopEverything()
             _uiState.update { VoiceUiState() }
-            // Restart VOSK detector after command completes (only if enabled and in foreground)
+            // Restart VOSK wake word service after command completes (only if enabled and in foreground)
             if (voiceEnabled && wakeWordEnabled && hasMicPermission && isAppInForeground) {
-                try {
-                    wakeWordDetector.start()
-                } catch (e: Exception) { e.printStackTrace() }
+                restartWakeWordService()
             }
         }
     }
