@@ -220,6 +220,7 @@ fun AppearanceSettings(
     val (lyricsTextSize, onLyricsTextSizeChange) = rememberPreference(LyricsTextSizeKey, defaultValue = 24f)
     val (lyricsLineSpacing, onLyricsLineSpacingChange) = rememberPreference(LyricsLineSpacingKey, defaultValue = 1.3f)
     val (lyricsGlowEffect, onLyricsGlowEffectChange) = rememberPreference(LyricsGlowEffectKey, defaultValue = false)
+    val (enableVoiceCommands, onEnableVoiceCommandsChange) = rememberPreference(EnableVoiceCommandsKey, defaultValue = true)
 
     val (sliderStyle, onSliderStyleChange) = rememberEnumPreference(
         SliderStyleKey,
@@ -1454,6 +1455,35 @@ fun AppearanceSettings(
                         )
                     },
                     onClick = { onLyricsScrollChange(!lyricsScroll) }
+                )
+            )
+        )
+
+        Spacer(modifier = Modifier.height(27.dp))
+
+        Material3SettingsGroup(
+            title = stringResource(R.string.voice_commands),
+            items = listOf(
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.mic),
+                    title = { Text(stringResource(R.string.enable_voice_commands)) },
+                    description = { Text(stringResource(R.string.enable_voice_commands_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = enableVoiceCommands,
+                            onCheckedChange = onEnableVoiceCommandsChange,
+                            thumbContent = {
+                                Icon(
+                                    painter = painterResource(
+                                        id = if (enableVoiceCommands) R.drawable.check else R.drawable.close
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    },
+                    onClick = { onEnableVoiceCommandsChange(!enableVoiceCommands) }
                 )
             )
         )

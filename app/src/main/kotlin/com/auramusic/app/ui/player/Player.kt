@@ -206,6 +206,7 @@ fun BottomSheetPlayer(
         defaultValue = true
     )
     val (hidePlayerThumbnail, onHidePlayerThumbnailChange) = rememberPreference(HidePlayerThumbnailKey, false)
+    val (enableVoiceCommands, onEnableVoiceCommandsChange) = rememberPreference(EnableVoiceCommandsKey, defaultValue = true)
     val cropAlbumArt by rememberPreference(CropAlbumArtKey, false)
     val playerBackground by rememberEnumPreference(
         key = PlayerBackgroundStyleKey,
@@ -1299,14 +1300,16 @@ fun BottomSheetPlayer(
 
                         Spacer(modifier = Modifier.width(8.dp))
 
-                        VoiceCommandButton(
-                            onSearch = { query ->
-                                navController.navigate("search/$query")
-                            },
-                            onNavigate = { route ->
-                                navController.navigate(route)
-                            }
-                        )
+                        if (enableVoiceCommands) {
+                            VoiceCommandButton(
+                                onSearch = { query ->
+                                    navController.navigate("search/$query")
+                                },
+                                onNavigate = { route ->
+                                    navController.navigate(route)
+                                }
+                            )
+                        }
                     }
                 }
             }
