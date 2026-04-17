@@ -8,7 +8,7 @@ import com.auramusic.app.constants.EnableVoiceWakeWordKey
 import com.auramusic.app.constants.VoiceWakeWordKey
 import com.auramusic.app.playback.PlayerConnection
 import com.auramusic.app.utils.dataStore
-import com.auramusic.app.voice.wakeword.WakeWordService
+import com.auramusic.app.voice.wakeword.VoskWakeWordDetector
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
@@ -26,6 +26,7 @@ import javax.inject.Inject
 class VoiceCommandViewModel @Inject constructor(
     private val voiceCommandManager: VoiceCommandManager,
     @ApplicationContext private val context: Context,
+    private val wakeWordDetector: VoskWakeWordDetector,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(VoiceUiState())
@@ -103,7 +104,12 @@ class VoiceCommandViewModel @Inject constructor(
         stopEverything()
         _uiState.update { VoiceUiState() }
         consecutiveErrors = 0
-        // No auto-restart — user must re-activate manually
+        // Restart VOSK wake word detector after overlay dismissed
+        if (voiceEnabled && wakeWordEnabled && hasMicPermission && isAppInForeground) {
+            try {
+                wakeWordDetector.start()
+            } catch (e: Exception) { e.printStackTrace() }
+        }
     }
 
     private fun stopEverything() {
@@ -190,7 +196,10 @@ class VoiceCommandViewModel @Inject constructor(
                     }
 
                     VoiceRecognitionEvent.WakeWordDetected -> {
-                        // Wake word detected by Porcupine; start COMMAND mode
+                        // Wake word detected by VOSK; pause VOSK and start COMMAND mode
+                        try {
+                            wakeWordDetector.stop()
+                        } catch (e: Exception) { e.printStackTrace() }
                         stopEverything()
                         consecutiveErrors = 0
                         _uiState.update {
@@ -352,15 +361,19 @@ class VoiceCommandViewModel @Inject constructor(
 
     /**
      * After showing feedback/error, dismiss the overlay and go back to idle.
-     * Wake word detection is handled continuously by VOSK service,
-     * so no manual restart is needed here.
+     * Then restart VOSK wake word detection.
      */
     private fun scheduleOverlayDismiss() {
         feedbackJob?.cancel()
         feedbackJob = viewModelScope.launch {
             delay(1500)
             _uiState.update { VoiceUiState() }
-            // No restart — VOSK service handles continuous listening
+            // Restart VOSK detector after command completes (only if enabled and in foreground)
+            if (voiceEnabled && wakeWordEnabled && hasMicPermission && isAppInForeground) {
+                try {
+                    wakeWordDetector.start()
+                } catch (e: Exception) { e.printStackTrace() }
+            }
         }
     }
 

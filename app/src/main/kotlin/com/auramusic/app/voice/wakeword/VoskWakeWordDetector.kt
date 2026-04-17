@@ -22,7 +22,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class VoskWakeWordDetector @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @ApplicationContext val context: Context,
 ) : WakeWordDetector {
 
     private var audioRecord: AudioRecord? = null
@@ -51,13 +51,15 @@ class VoskWakeWordDetector @Inject constructor(
             try {
                 // Download model if not present
                 val modelPath = ensureModel()
+                android.util.Log.d("VoskWakeWordDetector", "Loading VOSK model from: $modelPath")
                 model = Model(modelPath)
                 recognizer = Recognizer(model, SAMPLE_RATE.toFloat())
+                android.util.Log.d("VoskWakeWordDetector", "VOSK model loaded, starting audio")
 
                 // Start audio loop
                 startAudioRecording()
             } catch (e: Exception) {
-                e.printStackTrace()
+                android.util.Log.e("VoskWakeWordDetector", "Failed to start detector", e)
                 isRunning.set(false)
             }
         }
@@ -144,7 +146,12 @@ class VoskWakeWordDetector @Inject constructor(
 
                     // Check partial result (real-time)
                     val partialJson = recognizer?.partialResult ?: ""
+                    if (partialJson.isNotEmpty()) {
+                        // Debug: log partial results
+                        android.util.Log.d("VoskWakeWordDetector", "Partial: $partialJson")
+                    }
                     if (WAKE_WORD in partialJson.lowercase()) {
+                        android.util.Log.d("VoskWakeWordDetector", "WAKE WORD DETECTED!")
                         triggerWakeWord()
                         continue
                     }
