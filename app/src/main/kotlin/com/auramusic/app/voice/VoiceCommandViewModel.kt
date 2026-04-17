@@ -78,6 +78,8 @@ class VoiceCommandViewModel @Inject constructor(
     }
 
     fun startManualSession() {
+        // Prevent spamming the mic button rapidly
+        if (_uiState.value.isVisible) return
         stopEverything()
         consecutiveErrors = 0
         _uiState.update {
