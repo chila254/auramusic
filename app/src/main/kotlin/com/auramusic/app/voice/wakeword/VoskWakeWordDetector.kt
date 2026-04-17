@@ -97,7 +97,7 @@ class VoskWakeWordDetector @Inject constructor(
     }
 
     override fun stop() {
-        if (isRunning.getAndSet(false).not()) return
+        isRunning.set(false)
 
         detectionJob?.cancel()
         detectionJob = null
@@ -106,12 +106,17 @@ class VoskWakeWordDetector @Inject constructor(
             audioRecord?.stop()
             audioRecord?.release()
             audioRecord = null
+        } catch (e: Exception) {
+            android.util.Log.e("VoskWakeWordDetector", "Error stopping audio", e)
+        }
+
+        try {
             recognizer?.close()
             recognizer = null
             model?.close()
             model = null
         } catch (e: Exception) {
-            android.util.Log.e("VoskWakeWordDetector", "Error stopping", e)
+            android.util.Log.e("VoskWakeWordDetector", "Error stopping model", e)
         }
     }
 
@@ -177,10 +182,18 @@ class VoskWakeWordDetector @Inject constructor(
     }
 
     private suspend fun triggerWakeWord() {
+        // Stop recording immediately so the mic is released before SpeechRecognizer needs it
+        isRunning.set(false)
+        try {
+            audioRecord?.stop()
+            audioRecord?.release()
+            audioRecord = null
+        } catch (e: Exception) {
+            android.util.Log.e("VoskWakeWordDetector", "Error releasing audio on trigger", e)
+        }
+
         withContext(Dispatchers.Main) {
             wakeWordCallback?.invoke()
         }
-        delay(1500)
-        recognizer?.reset()
     }
 }

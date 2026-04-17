@@ -371,6 +371,7 @@ class VoiceCommandViewModel @Inject constructor(
         feedbackJob?.cancel()
         feedbackJob = viewModelScope.launch {
             delay(1500)
+            stopEverything()
             _uiState.update { VoiceUiState() }
             // Restart VOSK detector after command completes (only if enabled and in foreground)
             if (voiceEnabled && wakeWordEnabled && hasMicPermission && isAppInForeground) {

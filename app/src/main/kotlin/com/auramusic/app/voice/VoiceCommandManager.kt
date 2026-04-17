@@ -107,10 +107,11 @@ class VoiceCommandManager @Inject constructor(
     private fun disableSystemSoundEffects() {
         try {
             val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            // Save current state and mute system sound effects (including mic sounds)
+            // Mute only STREAM_MUSIC to suppress the SpeechRecognizer mic-access beep
+            // without affecting notification sounds (STREAM_NOTIFICATION / STREAM_RING)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 audioManager.adjustStreamVolume(
-                    AudioManager.STREAM_SYSTEM,
+                    AudioManager.STREAM_MUSIC,
                     AudioManager.ADJUST_MUTE,
                     0
                 )
@@ -125,7 +126,7 @@ class VoiceCommandManager @Inject constructor(
             val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 audioManager.adjustStreamVolume(
-                    AudioManager.STREAM_SYSTEM,
+                    AudioManager.STREAM_MUSIC,
                     AudioManager.ADJUST_UNMUTE,
                     0
                 )
