@@ -249,9 +249,10 @@ object VoiceCommandActionExecutor {
                         service.database.song(songId).first()?.song?.isDownloaded ?: false
                     }
                     if (!isDownloaded) {
+                        val title = item.mediaMetadata?.title?.toString() ?: "download"
                         val downloadRequest = DownloadRequest.Builder(songId, songId.toUri())
                             .setCustomCacheKey(songId)
-                            .setData(item.mediaMetadata?.title?.toByteArray() ?: "download".toByteArray())
+                            .setData(title.toByteArray())
                             .build()
                         DownloadService.sendAddDownload(
                             service,
@@ -261,7 +262,7 @@ object VoiceCommandActionExecutor {
                         )
                         downloadCount++
                     } else {
-                        item.mediaMetadata?.title?.let { skippedList.add(it) }
+                        item.mediaMetadata?.title?.toString()?.let { skippedList.add(it) }
                     }
                 }
                 val skipped = skippedList.size
