@@ -39,7 +39,7 @@ class VoskWakeWordDetector @Inject constructor(
         private const val WAKE_WORD = "aura"
     }
 
-    fun setOnWakeWordDetectedListener(callback: () -> Unit) {
+    override fun setOnWakeWordDetectedListener(callback: () -> Unit) {
         this.wakeWordCallback = callback
     }
 
