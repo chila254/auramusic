@@ -34,12 +34,24 @@ class VoiceCommandHandler @Inject constructor(
             is VoiceCommand.Next -> CommandResult.Playback("Skipped to next")
             is VoiceCommand.Previous -> CommandResult.Playback("Went to previous")
             is VoiceCommand.Shuffle -> CommandResult.Playback("Toggled shuffle")
+            is VoiceCommand.ShuffleOn -> CommandResult.Playback("Shuffle enabled")
+            is VoiceCommand.ShuffleOff -> CommandResult.Playback("Shuffle disabled")
             is VoiceCommand.Repeat -> CommandResult.Playback("Toggled repeat")
+            is VoiceCommand.RepeatOne -> CommandResult.Playback("Repeat one")
+            is VoiceCommand.RepeatAll -> CommandResult.Playback("Repeat all")
+            is VoiceCommand.RepeatOff -> CommandResult.Playback("Repeat off")
+            
+            is VoiceCommand.SeekForward -> CommandResult.Playback("Skipped forward")
+            is VoiceCommand.SeekBackward -> CommandResult.Playback("Skipped backward")
             
             is VoiceCommand.VolumeUp -> CommandResult.Volume("Volume increased")
             is VoiceCommand.VolumeDown -> CommandResult.Volume("Volume decreased")
             is VoiceCommand.Mute -> CommandResult.Volume("Muted")
             is VoiceCommand.Unmute -> CommandResult.Volume("Unmuted")
+            
+            is VoiceCommand.SpeedUp -> CommandResult.Playback("Speed up")
+            is VoiceCommand.SlowDown -> CommandResult.Playback("Slow down")
+            is VoiceCommand.ResetSpeed -> CommandResult.Playback("Speed reset")
             
             is VoiceCommand.SetDarkMode -> {
                 updateSetting(DARK_MODE, command.enabled)
@@ -63,6 +75,11 @@ class VoiceCommandHandler @Inject constructor(
                 updateSetting(SHOW_LYRICS, false)
                 CommandResult.Settings("Lyrics hidden")
             }
+            is VoiceCommand.ToggleLyrics -> {
+                val current = dataStore.data.map { it[SHOW_LYRICS] ?: false }.first()
+                updateSetting(SHOW_LYRICS, !current)
+                CommandResult.Settings("Lyrics toggled")
+            }
             
             is VoiceCommand.EnableVideo -> {
                 updateSetting(VIDEO_MODE, true)
@@ -72,9 +89,16 @@ class VoiceCommandHandler @Inject constructor(
                 updateSetting(VIDEO_MODE, false)
                 CommandResult.Settings("Video mode disabled")
             }
+            is VoiceCommand.ToggleVideo -> {
+                val current = dataStore.data.map { it[VIDEO_MODE] ?: false }.first()
+                updateSetting(VIDEO_MODE, !current)
+                CommandResult.Settings("Video mode toggled")
+            }
             
             is VoiceCommand.ToggleLike -> CommandResult.Playback("Toggled like")
             is VoiceCommand.ShowQueue -> CommandResult.Navigation("Opening queue")
+            is VoiceCommand.ClearQueue -> CommandResult.Playback("Queue cleared")
+            is VoiceCommand.AddToQueue -> CommandResult.Playback("Added to queue")
             
             is VoiceCommand.OpenHome -> CommandResult.Navigation("Opening home")
             is VoiceCommand.OpenLibrary -> CommandResult.Navigation("Opening library")
