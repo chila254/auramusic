@@ -352,20 +352,15 @@ class VoiceCommandViewModel @Inject constructor(
 
     /**
      * After showing feedback/error, dismiss the overlay and go back to idle.
-     * Then auto-restart wake word listening (Siri/Gemini style).
+     * Wake word detection is handled continuously by VOSK service,
+     * so no manual restart is needed here.
      */
     private fun scheduleOverlayDismiss() {
         feedbackJob?.cancel()
         feedbackJob = viewModelScope.launch {
             delay(1500)
             _uiState.update { VoiceUiState() }
-            // Restart wake word if enabled and no excessive errors
-            if (wakeWordEnabled && voiceEnabled && isAppInForeground && hasMicPermission
-                && consecutiveErrors < maxConsecutiveErrors
-            ) {
-                delay(500)
-                maybeStartWakeWordListening()
-            }
+            // No restart — VOSK service handles continuous listening
         }
     }
 
