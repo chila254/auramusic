@@ -235,7 +235,7 @@ object VoiceCommandActionExecutor {
                 val player = service.player
                 val mediaItems = mutableListOf<androidx.media3.common.MediaItem>()
                 for (i in 0 until player.mediaItemCount) {
-                    player.getMediaItemAt(i)?.let { mediaItems.add(it) }
+                    mediaItems.add(player.getMediaItemAt(i))
                 }
                 if (mediaItems.size <= 1) {
                     return "The queue is empty or has only one song"

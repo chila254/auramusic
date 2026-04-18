@@ -114,6 +114,7 @@ class VoiceFeedbackManager @Inject constructor(
                             }
                         }
                         
+                        @Deprecated("Deprecated in Android API")
                         override fun onError(utteranceId: String?) {
                             mainHandler.post {
                                 android.util.Log.e("VoiceFeedbackManager", "TTS utterance error")
