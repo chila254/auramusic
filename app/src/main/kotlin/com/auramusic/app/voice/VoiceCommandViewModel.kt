@@ -246,7 +246,9 @@ import javax.inject.Inject
             processCommand(remainingText)
         } else {
             // Greet user and wait for command
-            voiceFeedbackManager.speak("Hello! How can I help you today?")
+            if (voiceFeedbackManager.isEnabled()) {
+                voiceFeedbackManager.speak("Hello! How can I help you today?")
+            }
             _uiState.update {
                 VoiceUiState(
                     isVisible = true,
@@ -322,14 +324,18 @@ import javax.inject.Inject
             _uiState.update {
                 it.copy(phase = VoicePhase.ERROR, errorMessage = errorMsg)
             }
-            voiceFeedbackManager.speak(errorMsg)
+            if (voiceFeedbackManager.isEnabled()) {
+                voiceFeedbackManager.speak(errorMsg)
+            }
             scheduleOverlayDismiss()
         } else {
             val errorMsg = event.message
             _uiState.update {
                 it.copy(phase = VoicePhase.ERROR, errorMessage = errorMsg)
             }
-            voiceFeedbackManager.speak(errorMsg)
+            if (voiceFeedbackManager.isEnabled()) {
+                voiceFeedbackManager.speak(errorMsg)
+            }
             scheduleOverlayDismiss()
         }
     }
@@ -357,7 +363,9 @@ import javax.inject.Inject
                             feedbackText = feedback,
                         )
                     }
-                    voiceFeedbackManager.speak(feedback)
+                    if (voiceFeedbackManager.isEnabled()) {
+                        voiceFeedbackManager.speak(feedback)
+                    }
                     scheduleOverlayDismiss()
                 }
 
@@ -375,7 +383,9 @@ import javax.inject.Inject
                         )
                     }
                     // Speak feedback result
-                    voiceFeedbackManager.speak(feedback)
+                    if (voiceFeedbackManager.isEnabled()) {
+                        voiceFeedbackManager.speak(feedback)
+                    }
                     scheduleOverlayDismiss()
                 }
             }

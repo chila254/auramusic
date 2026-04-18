@@ -1598,17 +1598,17 @@ fun AppearanceSettings(
         var showVoiceDialog by rememberSaveable { mutableStateOf(false) }
         var showPitchDialog by rememberSaveable { mutableStateOf(false) }
         var showRateDialog by rememberSaveable { mutableStateOf(false) }
-        var tempPitch by remember { mutableFloatStateOf(voiceFeedbackViewModel.getPitch()) }
-        var tempRate by remember { mutableFloatStateOf(voiceFeedbackViewModel.getSpeechRate()) }
+        var tempPitch by remember { mutableFloatStateOf(voiceFeedbackViewModel.pitch.value) }
+        var tempRate by remember { mutableFloatStateOf(voiceFeedbackViewModel.speechRate.value) }
 
         LaunchedEffect(showPitchDialog) {
             if (showPitchDialog) {
-                tempPitch = voiceFeedbackViewModel.getPitch()
+                tempPitch = voiceFeedbackViewModel.pitch.value
             }
         }
         LaunchedEffect(showRateDialog) {
             if (showRateDialog) {
-                tempRate = voiceFeedbackViewModel.getSpeechRate()
+                tempRate = voiceFeedbackViewModel.speechRate.value
             }
         }
 
@@ -1621,12 +1621,12 @@ fun AppearanceSettings(
                     description = { Text(stringResource(R.string.enable_voice_feedback_desc)) },
                     trailingContent = {
                         Switch(
-                            checked = voiceFeedbackViewModel.isEnabled(),
+                            checked = voiceFeedbackViewModel.isEnabled,
                             onCheckedChange = { voiceFeedbackViewModel.setEnabled(it) },
                             thumbContent = {
                                 Icon(
                                     painter = painterResource(
-                                        id = if (voiceFeedbackViewModel.isEnabled()) R.drawable.check else R.drawable.close
+                                        id = if (voiceFeedbackViewModel.isEnabled) R.drawable.check else R.drawable.close
                                     ),
                                     contentDescription = null,
                                     modifier = Modifier.size(SwitchDefaults.IconSize)
@@ -1634,27 +1634,26 @@ fun AppearanceSettings(
                             }
                         )
                     },
-                    onClick = { voiceFeedbackViewModel.setEnabled(!voiceFeedbackViewModel.isEnabled()) }
+                    onClick = { voiceFeedbackViewModel.setEnabled(!voiceFeedbackViewModel.isEnabled) }
                 ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.mic),
                     title = { Text(stringResource(R.string.assistant_voice)) },
                     description = {
-                        val voice = voiceFeedbackViewModel.getCurrentVoice()
-                        Text(voice?.locale?.displayName ?: "Default")
+                        Text(voiceFeedbackViewModel.selectedVoice.value?.locale?.displayName ?: "Default")
                     },
                     onClick = { showVoiceDialog = true }
                 ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.mic),
                     title = { Text(stringResource(R.string.voice_pitch)) },
-                    description = { Text("${(voiceFeedbackViewModel.getPitch() * 100).roundToInt()}%") },
+                    description = { Text("${(voiceFeedbackViewModel.pitch.value * 100).roundToInt()}%") },
                     onClick = { showPitchDialog = true }
                 ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.mic),
                     title = { Text(stringResource(R.string.voice_speech_rate)) },
-                    description = { Text("${(voiceFeedbackViewModel.getSpeechRate() * 100).roundToInt()}%") },
+                    description = { Text("${(voiceFeedbackViewModel.speechRate.value * 100).roundToInt()}%") },
                     onClick = { showRateDialog = true }
                 )
             )
@@ -1662,9 +1661,9 @@ fun AppearanceSettings(
 
         // Voice selection dialog
         if (showVoiceDialog) {
-            val currentVoice = voiceFeedbackViewModel.getCurrentVoice()
-            val voices = voiceFeedbackViewModel.getAvailableVoices()
+            val voices by voiceFeedbackViewModel.availableVoices
             if (voices.isNotEmpty()) {
+                val currentVoice = voiceFeedbackViewModel.selectedVoice ?: voices.first()
                 EnumDialog(
                     onDismiss = { showVoiceDialog = false },
                     onSelect = { voice ->

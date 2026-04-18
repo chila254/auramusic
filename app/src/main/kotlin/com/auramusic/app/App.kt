@@ -57,6 +57,9 @@ class App : Application(), SingletonImageLoader.Factory {
     @ApplicationScope
     lateinit var applicationScope: CoroutineScope
 
+    @Inject
+    lateinit var voiceFeedbackManager: VoiceFeedbackManager
+
     override fun onCreate() {
         super.onCreate()
         
@@ -70,6 +73,9 @@ class App : Application(), SingletonImageLoader.Factory {
             initializeSettings()
             observeSettingsChanges()
         }
+        
+        // Initialize voice feedback manager (TTS)
+        voiceFeedbackManager.initialize()
     }
 
     private suspend fun initializeSettings() {
