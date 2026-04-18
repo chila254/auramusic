@@ -96,7 +96,13 @@ class VoskWakeWordDetector @Inject constructor(
     private suspend fun ensureModel(): String = withContext(Dispatchers.IO) {
         val modelDir = File(context.filesDir, MODEL_NAME)
         if (modelDir.exists()) {
-            return@withContext modelDir.absolutePath
+            try {
+                validateModelDirectory(modelDir)
+                return@withContext modelDir.absolutePath
+            } catch (e: Exception) {
+                android.util.Log.w("VoskWakeWordDetector", "Existing model invalid, re-downloading: ${e.message}")
+                modelDir.deleteRecursively()
+            }
         }
 
         val zipFile = File(context.cacheDir, "$MODEL_NAME.zip")
@@ -114,14 +120,20 @@ class VoskWakeWordDetector @Inject constructor(
             zipFile.delete()
 
             if (!modelDir.exists()) {
-                throw Exception("Model directory not found after unzip")
+                // Check if zip extracted to a nested directory
+                val extractedDir = findExtractedModelDir(context.filesDir)
+                if (extractedDir != null && extractedDir != modelDir) {
+                    android.util.Log.d("VoskWakeWordDetector", "Found model at: ${extractedDir.name}, renaming to $MODEL_NAME")
+                    extractedDir.renameTo(modelDir)
+                }
+            }
+            
+            if (!modelDir.exists()) {
+                throw Exception("Model directory not found after unzip. Expected: $MODEL_NAME")
             }
             
             // Verify the model is valid
-            val amFile = File(modelDir, "am")
-            if (!amFile.exists() || amFile.length() < 1000) {
-                throw Exception("Model files appear incomplete")
-            }
+            validateModelDirectory(modelDir)
         } catch (e: Exception) {
             // Clean up partial download
             if (zipFile.exists()) zipFile.delete()
@@ -130,6 +142,76 @@ class VoskWakeWordDetector @Inject constructor(
         }
         
         return@withContext modelDir.absolutePath
+    }
+
+        val zipFile = File(context.cacheDir, "$MODEL_NAME.zip")
+        
+        try {
+            downloadModelWithProgress(zipFile) { progress, bytesRead, totalBytes ->
+                progressCallback?.invoke(progress, bytesRead, totalBytes)
+            }
+            
+            withContext(Dispatchers.Main) {
+                showToast("Unpacking wake word model...")
+            }
+            
+            unzip(zipFile, context.filesDir)
+            zipFile.delete()
+
+            if (!modelDir.exists()) {
+                // Check if zip extracted to a nested directory
+                val extractedDir = findExtractedModelDir(context.filesDir)
+                if (extractedDir != null && extractedDir != modelDir) {
+                    android.util.Log.d("VoskWakeWordDetector", "Found model at: ${extractedDir.name}, renaming to $MODEL_NAME")
+                    extractedDir.renameTo(modelDir)
+                }
+            }
+            
+            if (!modelDir.exists()) {
+                throw Exception("Model directory not found after unzip. Expected: $MODEL_NAME")
+            }
+            
+            // Verify the model is valid
+            validateModelDirectory(modelDir)
+        } catch (e: Exception) {
+            // Clean up partial download
+            if (zipFile.exists()) zipFile.delete()
+            if (modelDir.exists()) modelDir.deleteRecursively()
+            throw e
+        }
+        
+        return@withContext modelDir.absolutePath
+    }
+    
+    private fun validateModelDirectory(modelDir: File) {
+        if (!modelDir.isDirectory) {
+            throw Exception("Model path is not a directory: ${modelDir.absolutePath}")
+        }
+        
+        val requiredFiles = listOf("am", "conf", "graph")
+        val missingFiles = requiredFiles.filter { !File(modelDir, it).exists() }
+        
+        if (missingFiles.isNotEmpty()) {
+            val contents = modelDir.list()?.joinToString() ?: "empty"
+            android.util.Log.e("VoskWakeWordDetector", "Model directory contents: $contents")
+            throw Exception("Model missing required files: ${missingFiles.joinToString()}. Found: ${modelDir.list()?.joinToString()}")
+        }
+        
+        // Verify files have reasonable sizes
+        requiredFiles.forEach { fileName ->
+            val file = File(modelDir, fileName)
+            if (file.length() < 100) {
+                throw Exception("Model file '$fileName' appears corrupted (size: ${file.length()} bytes)")
+            }
+        }
+        
+        android.util.Log.d("VoskWakeWordDetector", "Model validated: ${modelDir.absolutePath}, files: ${requiredFiles.joinToString()}")
+    }
+    
+    private fun findExtractedModelDir(parentDir: File): File? {
+        return parentDir.listFiles { file ->
+            file.isDirectory && (file.name.startsWith("vosk-model") || file.name == MODEL_NAME)
+        }?.firstOrNull()
     }
 
     private suspend fun downloadModelWithProgress(
