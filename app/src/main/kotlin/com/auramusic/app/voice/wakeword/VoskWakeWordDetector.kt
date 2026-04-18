@@ -106,6 +106,7 @@ class VoskWakeWordDetector @Inject constructor(
         }
 
         val zipFile = File(context.cacheDir, "$MODEL_NAME.zip")
+        val filesDir = context.filesDir
         
         try {
             downloadModelWithProgress(zipFile) { progress, bytesRead, totalBytes ->
@@ -116,20 +117,38 @@ class VoskWakeWordDetector @Inject constructor(
                 showToast("Unpacking wake word model...")
             }
             
-            unzip(zipFile, context.filesDir)
+            unzip(zipFile, filesDir)
             zipFile.delete()
 
-            if (!modelDir.exists()) {
-                // Check if zip extracted to a nested directory
-                val extractedDir = findExtractedModelDir(context.filesDir)
-                if (extractedDir != null && extractedDir != modelDir) {
-                    android.util.Log.d("VoskWakeWordDetector", "Found model at: ${extractedDir.name}, renaming to $MODEL_NAME")
+            // Check if model files ended up in expected directory
+            val extractedDir = findExtractedModelDir(filesDir)
+            when {
+                extractedDir != null && extractedDir != modelDir -> {
+                    // Rename the extracted directory to the expected model name
+                    android.util.Log.d("VoskWakeWordDetector", "Renaming ${extractedDir.name} to $MODEL_NAME")
                     extractedDir.renameTo(modelDir)
+                }
+                modelDir.exists() -> {
+                    // Already in correct location
+                }
+                hasModelFilesAtRoot(filesDir) -> {
+                    // Files extracted to root of filesDir - move them to modelDir
+                    android.util.Log.d("VoskWakeWordDetector", "Moving model files from root to $MODEL_NAME directory")
+                    modelDir.mkdirs()
+                    val requiredFiles = listOf("am", "conf", "graph")
+                    requiredFiles.forEach { fileName ->
+                        val source = File(filesDir, fileName)
+                        if (source.exists()) {
+                            val dest = File(modelDir, fileName)
+                            source.renameTo(dest)
+                        }
+                    }
                 }
             }
             
             if (!modelDir.exists()) {
-                throw Exception("Model directory not found after unzip. Expected: $MODEL_NAME")
+                val listing = filesDir.list()?.joinToString() ?: "empty"
+                throw Exception("Model directory not found after unzip. Expected: $MODEL_NAME. Files in app dir: $listing")
             }
             
             // Verify the model is valid
@@ -142,6 +161,11 @@ class VoskWakeWordDetector @Inject constructor(
         }
         
         return@withContext modelDir.absolutePath
+    }
+    
+    private fun hasModelFilesAtRoot(dir: File): Boolean {
+        val requiredFiles = listOf("am", "conf", "graph")
+        return requiredFiles.all { fileName -> File(dir, fileName).isFile }
     }
 
         val zipFile = File(context.cacheDir, "$MODEL_NAME.zip")
@@ -209,8 +233,15 @@ class VoskWakeWordDetector @Inject constructor(
     }
     
     private fun findExtractedModelDir(parentDir: File): File? {
+        // First check for expected model directory name
+        val expectedDir = File(parentDir, MODEL_NAME)
+        if (expectedDir.exists() && expectedDir.isDirectory) {
+            return expectedDir
+        }
+        
+        // Check for any vosk-model-* directory
         return parentDir.listFiles { file ->
-            file.isDirectory && (file.name.startsWith("vosk-model") || file.name == MODEL_NAME)
+            file.isDirectory && file.name.startsWith("vosk-model")
         }?.firstOrNull()
     }
 
