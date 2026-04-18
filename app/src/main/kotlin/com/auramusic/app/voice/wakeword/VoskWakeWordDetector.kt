@@ -9,12 +9,14 @@ import android.os.Looper
 import android.widget.Toast
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.vosk.Model
 import org.vosk.Recognizer
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
-import java.net.URL
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -76,19 +78,36 @@ class VoskWakeWordDetector @Inject constructor(
 
     private suspend fun ensureModel(): String {
         val modelDir = File(context.filesDir, MODEL_NAME)
-        if (!modelDir.exists()) {
-            val zipFile = File(context.cacheDir, "$MODEL_NAME.zip")
-            if (!zipFile.exists()) {
-                withContext(Dispatchers.IO) {
-                    URL(MODEL_URL).openStream().use { input ->
-                        FileOutputStream(zipFile).use { output ->
-                            input.copyTo(output)
-                        }
-                    }
+        if (modelDir.exists()) {
+            return modelDir.absolutePath
+        }
+
+        showToast("Downloading wake word model...")
+        val zipFile = File(context.cacheDir, "$MODEL_NAME.zip")
+        if (!zipFile.exists()) {
+            withContext(Dispatchers.IO) {
+                val client = OkHttpClient.Builder()
+                    .connectTimeout(30, TimeUnit.SECONDS)
+                    .readTimeout(5, TimeUnit.MINUTES)
+                    .build()
+                val request = Request.Builder().url(MODEL_URL).build()
+                val response = client.newCall(request).execute()
+                if (!response.isSuccessful) {
+                    throw Exception("Download failed: HTTP ${response.code}")
                 }
+                response.body?.byteStream()?.use { input ->
+                    FileOutputStream(zipFile).use { output ->
+                        input.copyTo(output)
+                    }
+                } ?: throw Exception("Download failed: empty response")
             }
-            unzip(zipFile.absolutePath, context.filesDir.absolutePath)
-            zipFile.delete()
+        }
+        showToast("Unpacking wake word model...")
+        unzip(zipFile.absolutePath, context.filesDir.absolutePath)
+        zipFile.delete()
+
+        if (!modelDir.exists()) {
+            throw Exception("Model directory not found after unzip")
         }
         return modelDir.absolutePath
     }
