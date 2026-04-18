@@ -125,11 +125,21 @@ class VoiceFeedbackManager @Inject constructor(
                             }
                         }
                     })
+                    
+                    // Fallback restore after 5 seconds in case listener fails
+                    launch {
+                        delay(5000)
+                        if (isSpeaking) {
+                            restoreMusicVolume()
+                            isSpeaking = false
+                            onComplete?.invoke()
+                        }
+                    }
                 } else {
                     @Suppress("DEPRECATION")
                     tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null)
-                    // For older APIs, just restore after a short delay
-                    scope.launch {
+                    // For older APIs, restore after a delay
+                    launch {
                         delay(3000)
                         restoreMusicVolume()
                         isSpeaking = false
