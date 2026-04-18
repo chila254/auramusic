@@ -89,79 +89,9 @@ class VoskWakeWordDetector @Inject constructor(
         }
     }
 
-    private suspend fun ensureModel(): String = withContext(Dispatchers.IO) {
-        val modelDir = File(context.filesDir, MODEL_NAME)
-        if (modelDir.exists()) {
-            try {
-                validateModelDirectory(modelDir)
-                return@withContext modelDir.absolutePath
-            } catch (e: Exception) {
-                android.util.Log.w("VoskWakeWordDetector", "Existing model invalid, re-downloading: ${e.message}")
-                modelDir.deleteRecursively()
-            }
-        }
-
-        val zipFile = File(context.cacheDir, "$MODEL_NAME.zip")
-        val filesDir = context.filesDir
-        
-        try {
-            downloadModelWithProgress(zipFile) { progress, bytesRead, totalBytes ->
-                progressCallback?.invoke(progress, bytesRead, totalBytes)
-            }
-            
-            withContext(Dispatchers.Main) {
-                showToast("Unpacking wake word model...")
-            }
-            
-            unzip(zipFile, filesDir)
-            zipFile.delete()
-
-            // Check if model files ended up in expected directory
-            val extractedDir = findExtractedModelDir(filesDir)
-            when {
-                extractedDir != null && extractedDir != modelDir -> {
-                    // Rename the extracted directory to the expected model name
-                    android.util.Log.d("VoskWakeWordDetector", "Renaming ${extractedDir.name} to $MODEL_NAME")
-                    extractedDir.renameTo(modelDir)
-                }
-                modelDir.exists() -> {
-                    // Already in correct location
-                }
-                hasModelFilesAtRoot(filesDir) -> {
-                    // Files extracted to root of filesDir - move them to modelDir
-                    android.util.Log.d("VoskWakeWordDetector", "Moving model files from root to $MODEL_NAME directory")
-                    modelDir.mkdirs()
-                    val requiredFiles = listOf("am", "conf", "graph")
-                    requiredFiles.forEach { fileName ->
-                        val source = File(filesDir, fileName)
-                        if (source.exists()) {
-                            val dest = File(modelDir, fileName)
-                            source.renameTo(dest)
-                        }
-                    }
-                }
-            }
-            
-            if (!modelDir.exists()) {
-                val listing = filesDir.list()?.joinToString() ?: "empty"
-                throw Exception("Model directory not found after unzip. Expected: $MODEL_NAME. Files in app dir: $listing")
-            }
-            
-            // Verify the model is valid
-            validateModelDirectory(modelDir)
-        } catch (e: Exception) {
-            // Clean up partial download
-            if (zipFile.exists()) zipFile.delete()
-            if (modelDir.exists()) modelDir.deleteRecursively()
-            throw e
-        }
-        
-        return@withContext modelDir.absolutePath
-    }
-    
     private fun hasModelFilesAtRoot(dir: File): Boolean {
         val requiredDirs = listOf("am", "conf", "graph")
-        return requiredDirs.all { fileName -> File(dir, it).isDirectory }
+        return requiredDirs.all { fileName -> File(dir, fileName).isDirectory }
     }
 
     private suspend fun ensureModel(): String = withContext(Dispatchers.IO) {
