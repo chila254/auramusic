@@ -4,6 +4,8 @@ import android.app.Service
 import android.content.Context
 import android.media.AudioManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.Voice
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -21,6 +23,7 @@ class VoiceFeedbackManager @Inject constructor(
     private var isSpeaking = false
     private var originalMusicVolume = 0
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private val mainHandler = Handler(Looper.getMainLooper())
     
     // Available English voices
     private var availableVoices: List<Voice> = emptyList()
@@ -100,33 +103,29 @@ class VoiceFeedbackManager @Inject constructor(
                     tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null)
                 }
                 
-                // Wait for completion
-                suspendCancellableCoroutine<Unit> { cont ->
-                    tts?.setOnUtteranceProgressListener(object : TextToSpeech.OnUtteranceProgressListener {
-                        override fun onStart(utteranceId: String?) {
-                            // Started speaking
+                // Set listener to know when done
+                tts?.setOnUtteranceProgressListener(object : TextToSpeech.OnUtteranceProgressListener {
+                    override fun onStart(utteranceId: String?) {
+                        // Started speaking
+                    }
+                    
+                    override fun onDone(utteranceId: String?) {
+                        mainHandler.post {
+                            restoreMusicVolume()
+                            isSpeaking = false
+                            onComplete?.invoke()
                         }
-                        
-                        override fun onDone(utteranceId: String?) {
-                            withContext(Dispatchers.Main) {
-                                restoreMusicVolume()
-                                isSpeaking = false
-                                onComplete?.invoke()
-                                cont.resume(Unit) {}
-                            }
+                    }
+                    
+                    override fun onError(utteranceId: String?) {
+                        mainHandler.post {
+                            android.util.Log.e("VoiceFeedbackManager", "TTS utterance error")
+                            restoreMusicVolume()
+                            isSpeaking = false
+                            onComplete?.invoke()
                         }
-                        
-                        override fun onError(utteranceId: String?) {
-                            withContext(Dispatchers.Main) {
-                                android.util.Log.e("VoiceFeedbackManager", "TTS utterance error")
-                                restoreMusicVolume()
-                                isSpeaking = false
-                                onComplete?.invoke()
-                                cont.resume(Unit) {}
-                            }
-                        }
-                    })
-                }
+                    }
+                })
             } catch (e: Exception) {
                 android.util.Log.e("VoiceFeedbackManager", "Speech error", e)
                 isSpeaking = false

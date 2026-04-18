@@ -1621,16 +1621,43 @@ fun AppearanceSettings(
                     description = { Text(stringResource(R.string.enable_voice_feedback_desc)) },
                     trailingContent = {
                         Switch(
-                            checked = voiceFeedbackViewModel.isEnabled,
+                            checked = voiceFeedbackViewModel.isEnabled.value,
                             onCheckedChange = { voiceFeedbackViewModel.setEnabled(it) },
                             thumbContent = {
                                 Icon(
                                     painter = painterResource(
-                                        id = if (voiceFeedbackViewModel.isEnabled) R.drawable.check else R.drawable.close
+                                        id = if (voiceFeedbackViewModel.isEnabled.value) R.drawable.check else R.drawable.close
                                     ),
                                     contentDescription = null,
                                     modifier = Modifier.size(SwitchDefaults.IconSize)
                                 )
+                            }
+                        )
+                    },
+                    onClick = { voiceFeedbackViewModel.setEnabled(!voiceFeedbackViewModel.isEnabled.value) }
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.mic),
+                    title = { Text(stringResource(R.string.assistant_voice)) },
+                    description = {
+                        Text(voiceFeedbackViewModel.selectedVoice.value?.locale?.displayName ?: "Default")
+                    },
+                    onClick = { showVoiceDialog = true }
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.mic),
+                    title = { Text(stringResource(R.string.voice_pitch)) },
+                    description = { Text("${(voiceFeedbackViewModel.pitch.value * 100).roundToInt()}%") },
+                    onClick = { showPitchDialog = true }
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.mic),
+                    title = { Text(stringResource(R.string.voice_speech_rate)) },
+                    description = { Text("${(voiceFeedbackViewModel.speechRate.value * 100).roundToInt()}%") },
+                    onClick = { showRateDialog = true }
+                )
+            )
+        )
                             }
                         )
                     },
@@ -1663,7 +1690,7 @@ fun AppearanceSettings(
         if (showVoiceDialog) {
             val voices by voiceFeedbackViewModel.availableVoices
             if (voices.isNotEmpty()) {
-                val currentVoice = voiceFeedbackViewModel.selectedVoice ?: voices.first()
+                val currentVoice = voiceFeedbackViewModel.selectedVoice.value ?: voices.first()
                 EnumDialog(
                     onDismiss = { showVoiceDialog = false },
                     onSelect = { voice ->
@@ -1673,7 +1700,7 @@ fun AppearanceSettings(
                     title = stringResource(R.string.assistant_voice),
                     current = currentVoice,
                     values = voices,
-                    valueText = { voice -> voice.locale.displayName }
+                    valueText = { voice: android.speech.tts.Voice -> voice.locale.displayName }
                 )
             } else {
                 DefaultDialog(
