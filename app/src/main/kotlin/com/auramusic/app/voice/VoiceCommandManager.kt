@@ -54,7 +54,8 @@ class VoiceCommandManager @Inject constructor(
      * Triggers a WakeWordDetected event for ViewModel to handle.
      */
     fun onWakeWordDetected() {
-        _events.tryEmit(VoiceRecognitionEvent.WakeWordDetected)
+        val emitted = _events.tryEmit(VoiceRecognitionEvent.WakeWordDetected)
+        android.util.Log.d("VoiceCommandManager", "WakeWordDetected emitted=$emitted")
     }
 
     fun startListening(mode: RecognitionMode) {

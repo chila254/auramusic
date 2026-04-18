@@ -183,6 +183,7 @@ class VoskWakeWordDetector @Inject constructor(
 
     private suspend fun triggerWakeWord() {
         // Stop recording immediately so the mic is released before SpeechRecognizer needs it
+        android.util.Log.d("VoskWakeWordDetector", "triggerWakeWord: callbackNull=${wakeWordCallback == null}")
         isRunning.set(false)
         try {
             audioRecord?.stop()

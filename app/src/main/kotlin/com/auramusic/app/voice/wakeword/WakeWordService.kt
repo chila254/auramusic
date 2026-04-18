@@ -46,6 +46,7 @@ class WakeWordService : Service() {
         createNotificationChannel()
         
         wakeWordDetector.setOnWakeWordDetectedListener {
+            android.util.Log.d("WakeWordService", "Wake word callback fired, forwarding to VoiceCommandManager")
             voiceCommandManager.onWakeWordDetected()
         }
         

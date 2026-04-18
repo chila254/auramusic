@@ -206,10 +206,8 @@ class VoiceCommandViewModel @Inject constructor(
                     }
 
                     VoiceRecognitionEvent.WakeWordDetected -> {
-                        // Wake word detected by VOSK; pause VOSK and start COMMAND mode
-                        try {
-                            wakeWordDetector.stop()
-                        } catch (e: Exception) { e.printStackTrace() }
+                        // Wake word detected by VOSK; detector already stopped itself in triggerWakeWord()
+                        android.util.Log.d("VoiceCommandViewModel", "WakeWordDetected received, showing overlay")
                         stopEverything()
                         consecutiveErrors = 0
                         _uiState.update {
@@ -219,7 +217,11 @@ class VoiceCommandViewModel @Inject constructor(
                                 phase = VoicePhase.LISTENING,
                             )
                         }
-                        voiceCommandManager.startListening(RecognitionMode.COMMAND)
+                        // Short delay to allow mic handoff from VOSK AudioRecord to SpeechRecognizer
+                        viewModelScope.launch {
+                            delay(150)
+                            voiceCommandManager.startListening(RecognitionMode.COMMAND)
+                        }
                     }
                 }
             }
