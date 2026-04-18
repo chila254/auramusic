@@ -25,6 +25,13 @@ class WakeWordService : Service() {
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "wake_word_channel"
         private const val CHANNEL_NAME = "Wake Word Detection"
+        
+        // Progress notification constants
+        private const val PROGRESS_NOTIFICATION_ID = 1002
+        
+        @Volatile
+        var instance: WakeWordService? = null
+            private set
 
         fun start(context: Context) {
             val intent = Intent(context, WakeWordService::class.java)
@@ -43,6 +50,7 @@ class WakeWordService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
         createNotificationChannel()
         
         wakeWordDetector.setOnWakeWordDetectedListener {
@@ -50,22 +58,30 @@ class WakeWordService : Service() {
             voiceCommandManager.onWakeWordDetected()
         }
         
+        wakeWordDetector.setOnProgressListener { progress, bytesRead, totalBytes ->
+            updateProgressNotification(progress, bytesRead, totalBytes)
+        }
+        
         wakeWordDetector.start()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground(NOTIFICATION_ID, buildNotification())
-        // Restart detector if it was stopped (e.g. after wake word detection + command processing)
         wakeWordDetector.start()
         return START_STICKY
     }
 
     override fun onDestroy() {
+        instance = null
         wakeWordDetector.stop()
         super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    fun updateProgress(progress: Int, bytesRead: Long, totalBytes: Long) {
+        updateProgressNotification(progress, bytesRead, totalBytes)
+    }
 
     private fun buildNotification(): Notification {
         val pendingIntent = PendingIntent.getActivity(
@@ -85,6 +101,43 @@ class WakeWordService : Service() {
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
+    }
+
+    private fun buildProgressNotification(progress: Int, bytesRead: Long, totalBytes: Long): Notification {
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val mbRead = bytesRead / (1024 * 1024)
+        val mbTotal = totalBytes / (1024 * 1024)
+        
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("Downloading wake word model")
+            .setContentText("$mbRead MB of $mbTotal MB ($progress%)")
+            .setSmallIcon(R.drawable.download)
+            .setContentIntent(pendingIntent)
+            .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOnlyAlertOnce(true)
+            .setProgress(100, progress, false)
+            .build()
+    }
+
+    private fun updateProgressNotification(progress: Int, bytesRead: Long, totalBytes: Long) {
+        if (progress < 100) {
+            val notification = buildProgressNotification(progress, bytesRead, totalBytes)
+            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.notify(PROGRESS_NOTIFICATION_ID, notification)
+        } else {
+            // Clear progress notification when done
+            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.cancel(PROGRESS_NOTIFICATION_ID)
+        }
     }
 
     private fun createNotificationChannel() {

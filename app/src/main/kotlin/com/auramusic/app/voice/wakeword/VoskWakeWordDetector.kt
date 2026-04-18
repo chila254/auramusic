@@ -11,11 +11,14 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.vosk.Model
 import org.vosk.Recognizer
+import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.util.zip.ZipInputStream
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -32,6 +35,7 @@ class VoskWakeWordDetector @Inject constructor(
     private var model: Model? = null
     private val isRunning = AtomicBoolean(false)
     private var wakeWordCallback: (() -> Unit)? = null
+    private var progressCallback: ((progress: Int, bytesRead: Long, totalBytes: Long) -> Unit)? = null
     private val mainHandler = Handler(Looper.getMainLooper())
 
     companion object {
@@ -40,8 +44,6 @@ class VoskWakeWordDetector @Inject constructor(
         private const val MODEL_NAME = "vosk-model-small-en-us-0.15"
         private const val MODEL_URL = "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip"
         private const val WAKE_WORD = "aura"
-        // Grammar constrains VOSK to only recognize these phrases (+ [unk] for everything else)
-        // Without this, VOSK does free-form recognition and may transcribe "aura" as "are a", "or a", etc.
         private const val WAKE_WORD_GRAMMAR = "[\"hey aura\", \"hello aura\", \"ok aura\", \"aura\", \"[unk]\"]"
     }
 
@@ -55,6 +57,10 @@ class VoskWakeWordDetector @Inject constructor(
         this.wakeWordCallback = callback
     }
 
+    override fun setOnProgressListener(callback: (progress: Int, bytesRead: Long, totalBytes: Long) -> Unit) {
+        this.progressCallback = callback
+    }
+
     override fun start() {
         if (isRunning.getAndSet(true)) return
 
@@ -62,58 +68,159 @@ class VoskWakeWordDetector @Inject constructor(
             try {
                 val modelPath = ensureModel()
                 android.util.Log.d("VoskWakeWordDetector", "Loading model from: $modelPath")
+                
+                // Verify model directory contains required files
+                val modelFile = File(modelPath, "am")
+                if (!modelFile.exists()) {
+                    throw Exception("Model files incomplete or corrupted")
+                }
+                
                 model = Model(modelPath)
-                // Use grammar mode to constrain recognition to wake word phrases only
                 recognizer = Recognizer(model, SAMPLE_RATE.toFloat(), WAKE_WORD_GRAMMAR)
                 android.util.Log.d("VoskWakeWordDetector", "Model loaded with grammar, starting audio")
-                showToast("Aura wake word detection active")
+                
+                withContext(Dispatchers.Main) {
+                    showToast("Aura wake word detection active")
+                }
                 startAudioRecording()
             } catch (e: Exception) {
                 android.util.Log.e("VoskWakeWordDetector", "Failed to start", e)
-                showToast("Wake word failed: ${e.message}")
+                withContext(Dispatchers.Main) {
+                    showToast("Wake word failed: ${e.message}")
+                }
                 isRunning.set(false)
             }
         }
     }
 
-    private suspend fun ensureModel(): String {
+    private suspend fun ensureModel(): String = withContext(Dispatchers.IO) {
         val modelDir = File(context.filesDir, MODEL_NAME)
         if (modelDir.exists()) {
-            return modelDir.absolutePath
+            return@withContext modelDir.absolutePath
         }
 
-        showToast("Downloading wake word model...")
         val zipFile = File(context.cacheDir, "$MODEL_NAME.zip")
-        if (!zipFile.exists()) {
-            withContext(Dispatchers.IO) {
-                val client = OkHttpClient.Builder()
-                    .connectTimeout(30, TimeUnit.SECONDS)
-                    .readTimeout(5, TimeUnit.MINUTES)
-                    .build()
-                val request = Request.Builder().url(MODEL_URL).build()
-                val response = client.newCall(request).execute()
-                if (!response.isSuccessful) {
-                    throw Exception("Download failed: HTTP ${response.code}")
-                }
-                response.body?.byteStream()?.use { input ->
-                    FileOutputStream(zipFile).use { output ->
-                        input.copyTo(output)
-                    }
-                } ?: throw Exception("Download failed: empty response")
+        
+        try {
+            downloadModelWithProgress(zipFile) { progress, bytesRead, totalBytes ->
+                progressCallback?.invoke(progress, bytesRead, totalBytes)
             }
-        }
-        showToast("Unpacking wake word model...")
-        unzip(zipFile.absolutePath, context.filesDir.absolutePath)
-        zipFile.delete()
+            
+            withContext(Dispatchers.Main) {
+                showToast("Unpacking wake word model...")
+            }
+            
+            unzip(zipFile, context.filesDir)
+            zipFile.delete()
 
-        if (!modelDir.exists()) {
-            throw Exception("Model directory not found after unzip")
+            if (!modelDir.exists()) {
+                throw Exception("Model directory not found after unzip")
+            }
+            
+            // Verify the model is valid
+            val amFile = File(modelDir, "am")
+            if (!amFile.exists() || amFile.length() < 1000) {
+                throw Exception("Model files appear incomplete")
+            }
+        } catch (e: Exception) {
+            // Clean up partial download
+            if (zipFile.exists()) zipFile.delete()
+            if (modelDir.exists()) modelDir.deleteRecursively()
+            throw e
         }
-        return modelDir.absolutePath
+        
+        return@withContext modelDir.absolutePath
     }
 
-    private fun unzip(zipPath: String, destDir: String) {
-        java.util.zip.ZipInputStream(FileInputStream(File(zipPath))).use { zis ->
+    private suspend fun downloadModelWithProgress(
+        outputFile: File,
+        onProgress: (progress: Int, bytesRead: Long, totalBytes: Long) -> Unit
+    ) = withContext(Dispatchers.IO) {
+        val client = OkHttpClient.Builder()
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.MINUTES)
+            .build()
+        
+        val request = Request.Builder()
+            .url(MODEL_URL)
+            .header("User-Agent", "AuraMusic/1.0")
+            .build()
+        
+        val startTime = System.currentTimeMillis()
+        var lastLogTime = 0L
+        
+        try {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw Exception("Download failed: HTTP ${response.code} ${response.message}")
+                }
+                
+                val body = response.body
+                    ?: throw Exception("Download failed: empty response")
+                
+                val totalBytes = body.contentLength()
+                if (totalBytes <= 0) {
+                    throw Exception("Invalid content length: $totalBytes")
+                }
+                
+                val inputStream = BufferedInputStream(body.byteStream())
+                val outputStream = FileOutputStream(outputFile)
+                
+                val buffer = ByteArray(8192)
+                var bytesRead: Long = 0
+                var lastProgress = 0
+                
+                try {
+                    var read: Int
+                    var iterations = 0
+                    while (inputStream.read(buffer).also { read = it } != -1) {
+                        if (!isRunning.get()) {
+                            throw Exception("Download cancelled")
+                        }
+                        outputStream.write(buffer, 0, read)
+                        bytesRead += read
+                        iterations++
+                        
+                        // Report progress every 1%
+                        val progress = ((bytesRead * 100) / totalBytes).toInt()
+                        if (progress > lastProgress) {
+                            lastProgress = progress
+                            onProgress(progress, bytesRead, totalBytes)
+                        }
+                        
+                        // Periodic speed logging every 5 seconds
+                        val now = System.currentTimeMillis()
+                        if (now - lastLogTime > 5000) {
+                            val speed = bytesRead / (now - startTime) * 1000
+                            android.util.Log.d("VoskWakeWordDetector", 
+                                "Download progress: $progress% ($bytesRead/$totalBytes bytes, ${speed/1024} KB/s)")
+                            lastLogTime = now
+                        }
+                    }
+                    outputStream.flush()
+                    
+                    // Verify we received the full file
+                    if (bytesRead != totalBytes) {
+                        throw Exception("Download incomplete: expected $totalBytes bytes, got $bytesRead")
+                    }
+                    
+                    android.util.Log.d("VoskWakeWordDetector", 
+                        "Download complete: ${bytesRead} bytes in ${System.currentTimeMillis() - startTime}ms")
+                } finally {
+                    inputStream.close()
+                    outputStream.close()
+                }
+            }
+        } catch (e: Exception) {
+            throw Exception("Download error: ${e.message}", e)
+        }
+    }
+
+    private fun unzip(zipFile: File, destDir: File) {
+        val totalEntries = countZipEntries(zipFile)
+        var extractedEntries = 0
+        
+        ZipInputStream(BufferedInputStream(FileInputStream(zipFile))).use { zis ->
             var entry = zis.nextEntry
             while (entry != null) {
                 val file = File(destDir, entry.name)
@@ -127,8 +234,21 @@ class VoskWakeWordDetector @Inject constructor(
                 }
                 zis.closeEntry()
                 entry = zis.nextEntry
+                extractedEntries++
             }
         }
+        
+        android.util.Log.d("VoskWakeWordDetector", "Extracted $extractedEntries entries")
+    }
+    
+    private fun countZipEntries(zipFile: File): Int {
+        var count = 0
+        ZipInputStream(BufferedInputStream(FileInputStream(zipFile))).use { zis ->
+            while (zis.nextEntry != null) {
+                count++
+            }
+        }
+        return count
     }
 
     override fun stop() {
@@ -184,24 +304,26 @@ class VoskWakeWordDetector @Inject constructor(
                     try {
                         val isFinal = recognizer?.acceptWaveForm(buffer, read)
 
-                        // Check partial results for wake word (low-latency detection)
                         val partialJson = recognizer?.partialResult ?: ""
                         if (partialJson.isNotEmpty() && "[unk]" !in partialJson) {
                             android.util.Log.d("VoskWakeWordDetector", "Partial: $partialJson")
                         }
                         if (WAKE_WORD in partialJson.lowercase() && "[unk]" !in partialJson) {
                             android.util.Log.d("VoskWakeWordDetector", "DETECTED in partial: $partialJson")
-                            showToast("Wake word detected!")
+                            withContext(Dispatchers.Main) {
+                                showToast("Wake word detected!")
+                            }
                             triggerWakeWord()
                             continue
                         }
 
-                        // Check final results
                         if (isFinal == true) {
                             val finalJson = recognizer?.result ?: ""
                             if (WAKE_WORD in finalJson.lowercase() && "[unk]" !in finalJson) {
                                 android.util.Log.d("VoskWakeWordDetector", "DETECTED in final: $finalJson")
-                                showToast("Wake word detected!")
+                                withContext(Dispatchers.Main) {
+                                    showToast("Wake word detected!")
+                                }
                                 triggerWakeWord()
                                 continue
                             }
@@ -221,7 +343,6 @@ class VoskWakeWordDetector @Inject constructor(
     }
 
     private suspend fun triggerWakeWord() {
-        // Stop recording immediately so the mic is released before SpeechRecognizer needs it
         android.util.Log.d("VoskWakeWordDetector", "triggerWakeWord: callbackNull=${wakeWordCallback == null}")
         isRunning.set(false)
         try {

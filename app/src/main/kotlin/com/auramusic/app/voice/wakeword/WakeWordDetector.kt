@@ -19,4 +19,10 @@ interface WakeWordDetector : AutoCloseable {
      * Set a callback to be invoked when wake word is detected.
      */
     fun setOnWakeWordDetectedListener(callback: () -> Unit)
+
+    /**
+     * Set a callback for download progress updates during model download.
+     * Progress values: 0-100
+     */
+    fun setOnProgressListener(callback: (progress: Int, bytesRead: Long, totalBytes: Long) -> Unit)
 }
