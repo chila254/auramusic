@@ -49,7 +49,7 @@ class VoskWakeWordDetector @Inject constructor(
         private const val MODEL_NAME = "vosk-model-small-en-us-0.15"
         private const val MODEL_URL = "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip"
         private const val WAKE_WORD = "aura"
-        private const val WAKE_WORD_GRAMMAR = "[\"hey aura\", \"hello aura\", \"ok aura\", \"aura\", \"[unk]\"]"
+        private const val WAKE_WORD_GRAMMAR = "[\"hey aura\", \"hello aura\", \"ok aura\", \"[unk]\"]"
     }
 
     private fun showToast(message: String) {
