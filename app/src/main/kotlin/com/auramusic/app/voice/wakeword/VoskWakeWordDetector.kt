@@ -40,8 +40,6 @@ class VoskWakeWordDetector @Inject constructor(
     private val mainHandler = Handler(Looper.getMainLooper())
     
     private val WAKE_WORD_COOLDOWN_MS = 2000
-    
-    private val WAKE_WORD_COOLDOWN_MS = 2000
 
     companion object {
         private const val SAMPLE_RATE = 16000
@@ -373,27 +371,7 @@ class VoskWakeWordDetector @Inject constructor(
                     try {
                         val isFinal = recognizer?.acceptWaveForm(buffer, read)
 
-                        val partialJson = recognizer?.partialResult ?: ""
-                        if (partialJson.isNotEmpty() && "[unk]" !in partialJson) {
-                            android.util.Log.d("VoskWakeWordDetector", "Partial: $partialJson")
-                        }
-                        if (WAKE_WORD in partialJson.lowercase() && "[unk]" !in partialJson) {
-                            android.util.Log.d("VoskWakeWordDetector", "DETECTED in partial: $partialJson")
-                            
-                            val now = System.currentTimeMillis()
-                            if (now - lastWakeWordTime < WAKE_WORD_COOLDOWN_MS) {
-                                android.util.Log.d("VoskWakeWordDetector", "Ignoring wake word (cooldown)")
-                                continue
-                            }
-                            lastWakeWordTime = now
-                            
-                            withContext(Dispatchers.Main) {
-                                showToast("Wake word detected!")
-                            }
-                            triggerWakeWord()
-                            continue
-                        }
-
+                        // Only check final results to avoid false positives from partial hypotheses
                         if (isFinal == true) {
                             val finalJson = recognizer?.result ?: ""
                             if (WAKE_WORD in finalJson.lowercase() && "[unk]" !in finalJson) {
