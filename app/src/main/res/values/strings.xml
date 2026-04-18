@@ -462,6 +462,16 @@
     <string name="enable_voice_wake_word_desc">Continuously listen for \"Hey Aura\" to activate voice commands without touching the screen. Works while the app is open.</string>
     <string name="voice_wake_word">Custom wake word</string>
     <string name="voice_wake_word_desc">Set your custom wake word (default: Aura)</string>
+
+    <!-- Voice feedback settings -->
+    <string name="voice_feedback">Voice Feedback</string>
+    <string name="enable_voice_feedback">Enable voice responses</string>
+    <string name="enable_voice_feedback_desc">Hear spoken confirmations for voice commands</string>
+    <string name="assistant_voice">Assistant voice</string>
+    <string name="assistant_voice_desc">Select TTS voice (US, UK, Australian, etc.)</string>
+    <string name="voice_pitch">Voice pitch</string>
+    <string name="voice_speech_rate">Speech rate</string>
+
     <string name="font">Font</string>
     <string name="about">About</string>
     <string name="general">General</string>

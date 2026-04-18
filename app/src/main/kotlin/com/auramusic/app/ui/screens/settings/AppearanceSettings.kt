@@ -123,10 +123,13 @@ import com.auramusic.app.ui.theme.DefaultThemeColor
 import com.auramusic.app.ui.theme.PlayerSliderColors
 import com.auramusic.app.ui.utils.backToMain
 import com.auramusic.app.utils.IconUtils
-import com.auramusic.app.utils.rememberEnumPreference
-import com.auramusic.app.utils.rememberPreference
-import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
+ import com.auramusic.app.utils.rememberEnumPreference
+ import com.auramusic.app.utils.rememberPreference
+ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+ import com.auramusic.app.ui.screens.settings.VoiceFeedbackSettingsViewModel
+ import android.speech.tts.Voice
+ import androidx.compose.runtime.LaunchedEffect
+ import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1589,6 +1592,143 @@ fun AppearanceSettings(
                 )
             )
         )
+
+        // Voice Feedback Settings
+        val voiceFeedbackViewModel: VoiceFeedbackSettingsViewModel = hiltViewModel()
+        var showVoiceDialog by rememberSaveable { mutableStateOf(false) }
+        var showPitchDialog by rememberSaveable { mutableStateOf(false) }
+        var showRateDialog by rememberSaveable { mutableStateOf(false) }
+        var tempPitch by remember { mutableFloatStateOf(voiceFeedbackViewModel.getPitch()) }
+        var tempRate by remember { mutableFloatStateOf(voiceFeedbackViewModel.getSpeechRate()) }
+
+        LaunchedEffect(showPitchDialog) {
+            if (showPitchDialog) {
+                tempPitch = voiceFeedbackViewModel.getPitch()
+            }
+        }
+        LaunchedEffect(showRateDialog) {
+            if (showRateDialog) {
+                tempRate = voiceFeedbackViewModel.getSpeechRate()
+            }
+        }
+
+        Material3SettingsGroup(
+            title = stringResource(R.string.voice_feedback),
+            items = listOf(
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.mic),
+                    title = { Text(stringResource(R.string.enable_voice_feedback)) },
+                    description = { Text(stringResource(R.string.enable_voice_feedback_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = voiceFeedbackViewModel.isEnabled(),
+                            onCheckedChange = { voiceFeedbackViewModel.setEnabled(it) },
+                            thumbContent = {
+                                Icon(
+                                    painter = painterResource(
+                                        id = if (voiceFeedbackViewModel.isEnabled()) R.drawable.check else R.drawable.close
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    },
+                    onClick = { voiceFeedbackViewModel.setEnabled(!voiceFeedbackViewModel.isEnabled()) }
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.mic),
+                    title = { Text(stringResource(R.string.assistant_voice)) },
+                    description = {
+                        val voice = voiceFeedbackViewModel.getCurrentVoice()
+                        Text(voice?.locale?.displayName ?: "Default")
+                    },
+                    onClick = { showVoiceDialog = true }
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.mic),
+                    title = { Text(stringResource(R.string.voice_pitch)) },
+                    description = { Text("${(voiceFeedbackViewModel.getPitch() * 100).roundToInt()}%") },
+                    onClick = { showPitchDialog = true }
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.mic),
+                    title = { Text(stringResource(R.string.voice_speech_rate)) },
+                    description = { Text("${(voiceFeedbackViewModel.getSpeechRate() * 100).roundToInt()}%") },
+                    onClick = { showRateDialog = true }
+                )
+            )
+        )
+
+        // Voice selection dialog
+        if (showVoiceDialog) {
+            val currentVoice = voiceFeedbackViewModel.getCurrentVoice()
+            val voices = voiceFeedbackViewModel.getAvailableVoices()
+            if (voices.isNotEmpty()) {
+                EnumDialog(
+                    onDismiss = { showVoiceDialog = false },
+                    onSelect = { voice ->
+                        voiceFeedbackViewModel.setVoice(voice)
+                        showVoiceDialog = false
+                    },
+                    title = stringResource(R.string.assistant_voice),
+                    current = currentVoice,
+                    values = voices,
+                    valueText = { voice -> voice.locale.displayName }
+                )
+            } else {
+                DefaultDialog(
+                    onDismiss = { showVoiceDialog = false },
+                    buttons = {}
+                ) {
+                    Text(text = "No TTS voices installed. Install a TTS engine from Play Store.")
+                }
+            }
+        }
+
+        // Pitch dialog
+        if (showPitchDialog) {
+            DefaultDialog(
+                onDismiss = { showPitchDialog = false },
+                buttons = {
+                    TextButton(onClick = { tempPitch = 1.0f }) { Text(stringResource(R.string.reset)) }
+                    Spacer(modifier = Modifier.weight(1f))
+                    TextButton(onClick = { showPitchDialog = false }) { Text(stringResource(android.R.string.cancel)) }
+                    TextButton(onClick = {
+                        voiceFeedbackViewModel.setPitch(tempPitch)
+                        showPitchDialog = false
+                    }) { Text(stringResource(android.R.string.ok)) }
+                }
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
+                    Text(text = stringResource(R.string.voice_pitch), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp))
+                    Text(text = "${(tempPitch * 100).roundToInt()}%", modifier = Modifier.padding(bottom = 8.dp))
+                    Slider(value = tempPitch, onValueChange = { tempPitch = it }, valueRange = 0.5f..2.0f, steps = 15, modifier = Modifier.fillMaxWidth())
+                }
+            }
+        }
+
+        // Speech rate dialog
+        if (showRateDialog) {
+            DefaultDialog(
+                onDismiss = { showRateDialog = false },
+                buttons = {
+                    TextButton(onClick = { tempRate = 1.0f }) { Text(stringResource(R.string.reset)) }
+                    Spacer(modifier = Modifier.weight(1f))
+                    TextButton(onClick = { showRateDialog = false }) { Text(stringResource(android.R.string.cancel)) }
+                    TextButton(onClick = {
+                        voiceFeedbackViewModel.setSpeechRate(tempRate)
+                        showRateDialog = false
+                    }) { Text(stringResource(android.R.string.ok)) }
+                }
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
+                    Text(text = stringResource(R.string.voice_speech_rate), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp))
+                    Text(text = "${(tempRate * 100).roundToInt()}%", modifier = Modifier.padding(bottom = 8.dp))
+                    Slider(value = tempRate, onValueChange = { tempRate = it }, valueRange = 0.5f..2.0f, steps = 15, modifier = Modifier.fillMaxWidth())
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(27.dp))
 
