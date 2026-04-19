@@ -87,7 +87,10 @@ import javax.inject.Inject
 
     fun onMicPermissionChanged(granted: Boolean) {
         hasMicPermission = granted
-        // Do NOT auto-start mic on permission grant
+        // Auto-start wake word service when permission is granted and feature is enabled
+        if (granted && voiceEnabled && wakeWordEnabled && isAppInForeground) {
+            WakeWordService.start(context)
+        }
     }
 
     fun startManualSession() {
@@ -103,7 +106,13 @@ import javax.inject.Inject
                 phase = VoicePhase.LISTENING,
             )
         }
-        voiceCommandManager.startListening(RecognitionMode.COMMAND)
+        if (voiceFeedbackManager.isEnabled()) {
+            voiceFeedbackManager.speak("Hello! How can I help you today?") {
+                voiceCommandManager.startListening(RecognitionMode.COMMAND)
+            }
+        } else {
+            voiceCommandManager.startListening(RecognitionMode.COMMAND)
+        }
     }
 
     fun dismissOverlay() {
@@ -148,13 +157,15 @@ import javax.inject.Inject
                     voiceEnabled = enabled
                     wakeWordEnabled = wakeWord
                     customWakeWord = customWake
-                    // Do NOT auto-start wake word on app foreground
-                    // Wake word only starts when user manually activates mic or says wake word during manual session
-                    if (!enabled || !wakeWord) {
+                    if (enabled && wakeWord && hasMicPermission && isAppInForeground) {
+                        // Auto-start wake word service when settings are enabled
+                        WakeWordService.start(context)
+                    } else if (!enabled || !wakeWord) {
                         if (_uiState.value.mode == VoiceMode.WAKE_WORD) {
                             voiceCommandManager.stopListening()
                             restartJob?.cancel()
                         }
+                        WakeWordService.stop(context)
                     }
                 }
         }
@@ -223,7 +234,13 @@ import javax.inject.Inject
                         // Short delay to allow mic handoff from VOSK AudioRecord to SpeechRecognizer
                         viewModelScope.launch {
                             delay(150)
-                            voiceCommandManager.startListening(RecognitionMode.COMMAND)
+                            if (voiceFeedbackManager.isEnabled()) {
+                                voiceFeedbackManager.speak("Hello! How can I help you today?") {
+                                    voiceCommandManager.startListening(RecognitionMode.COMMAND)
+                                }
+                            } else {
+                                voiceCommandManager.startListening(RecognitionMode.COMMAND)
+                            }
                         }
                     }
                 }
@@ -246,9 +263,6 @@ import javax.inject.Inject
             processCommand(remainingText)
         } else {
             // Greet user and wait for command
-            if (voiceFeedbackManager.isEnabled()) {
-                voiceFeedbackManager.speak("Hello! How can I help you today?")
-            }
             _uiState.update {
                 VoiceUiState(
                     isVisible = true,
@@ -256,7 +270,13 @@ import javax.inject.Inject
                     phase = VoicePhase.LISTENING,
                 )
             }
-            voiceCommandManager.startListening(RecognitionMode.COMMAND)
+            if (voiceFeedbackManager.isEnabled()) {
+                voiceFeedbackManager.speak("Hello! How can I help you today?") {
+                    voiceCommandManager.startListening(RecognitionMode.COMMAND)
+                }
+            } else {
+                voiceCommandManager.startListening(RecognitionMode.COMMAND)
+            }
         }
     }
 

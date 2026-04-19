@@ -12,16 +12,25 @@ object VoiceCommandParser {
     fun extractWakeWord(text: String, customWakeWord: String = "aura"): WakeWordMatch {
         val lowerText = text.lowercase().trim()
 
-        // Check custom wake word first (if longer than defaults)
-        val customWake = customWakeWord.lowercase().trim()
-        if (customWake.isNotEmpty() && lowerText.startsWith(customWake)) {
-            return WakeWordMatch(true, lowerText.removePrefix(customWake).trim())
-        }
-
-        // Check default wake words (longer phrases first)
-        for (wake in defaultWakeWords) {
+        // Check default wake phrases first (longer phrases first to avoid partial matches)
+        for (wake in defaultWakeWords.filter { it != "aura" }) {
             if (lowerText.startsWith(wake)) {
                 return WakeWordMatch(true, lowerText.removePrefix(wake).trim())
+            }
+        }
+
+        // Check custom wake word only as a full-word prefix (e.g. "aura play" but not "aural")
+        val customWake = customWakeWord.lowercase().trim()
+        if (customWake.isNotEmpty()) {
+            val wakePatterns = listOf("hey $customWake", "hello $customWake", "ok $customWake", customWake)
+            for (pattern in wakePatterns) {
+                if (lowerText.startsWith(pattern)) {
+                    val remaining = lowerText.removePrefix(pattern)
+                    // Ensure it's a full word match (followed by space, end, or punctuation)
+                    if (remaining.isEmpty() || remaining[0] == ' ' || remaining[0].isWhitespace()) {
+                        return WakeWordMatch(true, remaining.trim())
+                    }
+                }
             }
         }
 

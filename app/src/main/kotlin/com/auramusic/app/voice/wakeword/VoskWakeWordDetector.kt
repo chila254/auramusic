@@ -374,7 +374,10 @@ class VoskWakeWordDetector @Inject constructor(
                         // Only check final results to avoid false positives from partial hypotheses
                         if (isFinal == true) {
                             val finalJson = recognizer?.result ?: ""
-                            if (WAKE_WORD in finalJson.lowercase() && "[unk]" !in finalJson) {
+                            // Require an exact phrase match from the grammar (hey aura / hello aura / ok aura)
+                            val textMatch = Regex("\"text\"\\s*:\\s*\"([^\"]+)\"").find(finalJson)?.groupValues?.get(1)?.trim() ?: ""
+                            val isWakePhrase = textMatch == "hey aura" || textMatch == "hello aura" || textMatch == "ok aura"
+                            if (isWakePhrase) {
                                 android.util.Log.d("VoskWakeWordDetector", "DETECTED in final: $finalJson")
                                 
                                 val now = System.currentTimeMillis()
