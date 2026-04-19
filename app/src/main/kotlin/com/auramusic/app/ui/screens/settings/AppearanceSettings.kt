@@ -68,9 +68,6 @@ import com.auramusic.app.constants.DefaultOpenTabKey
 import com.auramusic.app.constants.DynamicThemeKey
 import com.auramusic.app.constants.EnableDynamicIconKey
 import com.auramusic.app.constants.EnableHighRefreshRateKey
-import com.auramusic.app.constants.EnableVoiceCommandsKey
-import com.auramusic.app.constants.EnableVoiceWakeWordKey
-import com.auramusic.app.constants.VoiceWakeWordKey
 import com.auramusic.app.constants.GridItemSize
 import com.auramusic.app.constants.GridItemsSizeKey
 import com.auramusic.app.constants.HidePlayerThumbnailKey
@@ -125,10 +122,6 @@ import com.auramusic.app.ui.utils.backToMain
 import com.auramusic.app.utils.IconUtils
  import com.auramusic.app.utils.rememberEnumPreference
  import com.auramusic.app.utils.rememberPreference
- import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
- import com.auramusic.app.ui.screens.settings.VoiceFeedbackSettingsViewModel
- import android.speech.tts.Voice
- import androidx.compose.runtime.LaunchedEffect
  import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -227,10 +220,6 @@ fun AppearanceSettings(
     val (lyricsTextSize, onLyricsTextSizeChange) = rememberPreference(LyricsTextSizeKey, defaultValue = 24f)
     val (lyricsLineSpacing, onLyricsLineSpacingChange) = rememberPreference(LyricsLineSpacingKey, defaultValue = 1.3f)
     val (lyricsGlowEffect, onLyricsGlowEffectChange) = rememberPreference(LyricsGlowEffectKey, defaultValue = false)
-    val (enableVoiceCommands, onEnableVoiceCommandsChange) = rememberPreference(EnableVoiceCommandsKey, defaultValue = true)
-    val (enableVoiceWakeWord, onEnableVoiceWakeWordChange) = rememberPreference(EnableVoiceWakeWordKey, defaultValue = false)
-    val (voiceWakeWord, onVoiceWakeWordChange) = rememberPreference(VoiceWakeWordKey, defaultValue = "Aura")
-
     val (sliderStyle, onSliderStyleChange) = rememberEnumPreference(
         SliderStyleKey,
         defaultValue = SliderStyle.DEFAULT
@@ -345,10 +334,6 @@ fun AppearanceSettings(
     }
 
     var showLyricsLineSpacingDialog by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    var showWakeWordDialog by rememberSaveable {
         mutableStateOf(false)
     }
 
@@ -518,71 +503,6 @@ fun AppearanceSettings(
                     valueRange = 1.0f..2.0f,
                     steps = 19,
                     modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }
-    }
-
-    if (showWakeWordDialog) {
-        var tempWakeWord by remember { mutableStateOf(voiceWakeWord) }
-        
-        DefaultDialog(
-            onDismiss = { 
-                tempWakeWord = voiceWakeWord
-                showWakeWordDialog = false 
-            },
-            buttons = {
-                TextButton(
-                    onClick = { 
-                        tempWakeWord = "Aura"
-                    }
-                ) {
-                    Text(stringResource(R.string.reset))
-                }
-                
-                Spacer(modifier = Modifier.weight(1f))
-                
-                TextButton(
-                    onClick = { 
-                        tempWakeWord = voiceWakeWord
-                        showWakeWordDialog = false 
-                    }
-                ) {
-                    Text(stringResource(android.R.string.cancel))
-                }
-                TextButton(
-                    onClick = { 
-                        if (tempWakeWord.isNotBlank()) {
-                            onVoiceWakeWordChange(tempWakeWord.trim())
-                        }
-                        showWakeWordDialog = false 
-                    }
-                ) {
-                    Text(stringResource(android.R.string.ok))
-                }
-            }
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.voice_wake_word),
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-                
-                Text(
-                    text = "Current: $tempWakeWord",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                
-                Text(
-                    text = "Say \"Hey Aura\", \"Hello Aura\", \"Aura\", or your custom wake word to activate",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
                 )
             }
         }
@@ -1536,198 +1456,6 @@ fun AppearanceSettings(
                 )
             )
         )
-
-        Spacer(modifier = Modifier.height(27.dp))
-
-        Material3SettingsGroup(
-            title = stringResource(R.string.voice_commands),
-            items = listOf(
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.mic),
-                    title = { Text(stringResource(R.string.enable_voice_commands)) },
-                    description = { Text(stringResource(R.string.enable_voice_commands_desc)) },
-                    trailingContent = {
-                        Switch(
-                            checked = enableVoiceCommands,
-                            onCheckedChange = onEnableVoiceCommandsChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (enableVoiceCommands) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
-                        )
-                    },
-                    onClick = { onEnableVoiceCommandsChange(!enableVoiceCommands) }
-                ),
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.mic),
-                    title = { Text(stringResource(R.string.enable_voice_wake_word)) },
-                    description = { Text(stringResource(R.string.enable_voice_wake_word_desc)) },
-                    trailingContent = {
-                        Switch(
-                            checked = enableVoiceWakeWord,
-                            onCheckedChange = onEnableVoiceWakeWordChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (enableVoiceWakeWord) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
-                        )
-                    },
-                    onClick = { onEnableVoiceWakeWordChange(!enableVoiceWakeWord) }
-                ),
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.mic),
-                    title = { Text(stringResource(R.string.voice_wake_word)) },
-                    description = { Text(voiceWakeWord) },
-                    onClick = { showWakeWordDialog = true }
-                )
-            )
-        )
-
-        // Voice Feedback Settings
-        val voiceFeedbackViewModel: VoiceFeedbackSettingsViewModel = hiltViewModel()
-        var showVoiceDialog by rememberSaveable { mutableStateOf(false) }
-        var showPitchDialog by rememberSaveable { mutableStateOf(false) }
-        var showRateDialog by rememberSaveable { mutableStateOf(false) }
-        var tempPitch by remember { mutableFloatStateOf(voiceFeedbackViewModel.pitch.value) }
-        var tempRate by remember { mutableFloatStateOf(voiceFeedbackViewModel.speechRate.value) }
-
-        LaunchedEffect(showPitchDialog) {
-            if (showPitchDialog) {
-                tempPitch = voiceFeedbackViewModel.pitch.value
-            }
-        }
-        LaunchedEffect(showRateDialog) {
-            if (showRateDialog) {
-                tempRate = voiceFeedbackViewModel.speechRate.value
-            }
-        }
-
-        Material3SettingsGroup(
-            title = stringResource(R.string.voice_feedback),
-            items = listOf(
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.mic),
-                    title = { Text(stringResource(R.string.enable_voice_feedback)) },
-                    description = { Text(stringResource(R.string.enable_voice_feedback_desc)) },
-                    trailingContent = {
-                        Switch(
-                            checked = voiceFeedbackViewModel.isEnabled.value,
-                            onCheckedChange = { voiceFeedbackViewModel.setEnabled(it) },
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (voiceFeedbackViewModel.isEnabled.value) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
-                        )
-                    },
-                    onClick = { voiceFeedbackViewModel.setEnabled(!voiceFeedbackViewModel.isEnabled.value) }
-                ),
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.mic),
-                    title = { Text(stringResource(R.string.assistant_voice)) },
-                    description = {
-                        Text(voiceFeedbackViewModel.selectedVoice.value?.locale?.displayName ?: "Default")
-                    },
-                    onClick = { showVoiceDialog = true }
-                ),
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.mic),
-                    title = { Text(stringResource(R.string.voice_pitch)) },
-                    description = { Text("${(voiceFeedbackViewModel.pitch.value * 100).roundToInt()}%") },
-                    onClick = { showPitchDialog = true }
-                ),
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.mic),
-                    title = { Text(stringResource(R.string.voice_speech_rate)) },
-                    description = { Text("${(voiceFeedbackViewModel.speechRate.value * 100).roundToInt()}%") },
-                    onClick = { showRateDialog = true }
-                )
-            )
-        )
-
-        // Voice selection dialog
-        if (showVoiceDialog) {
-            val voices by voiceFeedbackViewModel.availableVoices
-            if (voices.isNotEmpty()) {
-                val currentVoice = voiceFeedbackViewModel.selectedVoice.value ?: voices.first()
-                EnumDialog(
-                    onDismiss = { showVoiceDialog = false },
-                    onSelect = { voice ->
-                        voiceFeedbackViewModel.setVoice(voice)
-                        showVoiceDialog = false
-                    },
-                    title = stringResource(R.string.assistant_voice),
-                    current = currentVoice,
-                    values = voices,
-                    valueText = { voice: android.speech.tts.Voice -> voice.locale.displayName }
-                )
-            } else {
-                DefaultDialog(
-                    onDismiss = { showVoiceDialog = false },
-                    buttons = {}
-                ) {
-                    Text(text = "No TTS voices installed. Install a TTS engine from Play Store.")
-                }
-            }
-        }
-
-        // Pitch dialog
-        if (showPitchDialog) {
-            DefaultDialog(
-                onDismiss = { showPitchDialog = false },
-                buttons = {
-                    TextButton(onClick = { tempPitch = 1.0f }) { Text(stringResource(R.string.reset)) }
-                    Spacer(modifier = Modifier.weight(1f))
-                    TextButton(onClick = { showPitchDialog = false }) { Text(stringResource(android.R.string.cancel)) }
-                    TextButton(onClick = {
-                        voiceFeedbackViewModel.setPitch(tempPitch)
-                        showPitchDialog = false
-                    }) { Text(stringResource(android.R.string.ok)) }
-                }
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
-                    Text(text = stringResource(R.string.voice_pitch), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp))
-                    Text(text = "${(tempPitch * 100).roundToInt()}%", modifier = Modifier.padding(bottom = 8.dp))
-                    Slider(value = tempPitch, onValueChange = { tempPitch = it }, valueRange = 0.5f..2.0f, steps = 15, modifier = Modifier.fillMaxWidth())
-                }
-            }
-        }
-
-        // Speech rate dialog
-        if (showRateDialog) {
-            DefaultDialog(
-                onDismiss = { showRateDialog = false },
-                buttons = {
-                    TextButton(onClick = { tempRate = 1.0f }) { Text(stringResource(R.string.reset)) }
-                    Spacer(modifier = Modifier.weight(1f))
-                    TextButton(onClick = { showRateDialog = false }) { Text(stringResource(android.R.string.cancel)) }
-                    TextButton(onClick = {
-                        voiceFeedbackViewModel.setSpeechRate(tempRate)
-                        showRateDialog = false
-                    }) { Text(stringResource(android.R.string.ok)) }
-                }
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
-                    Text(text = stringResource(R.string.voice_speech_rate), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp))
-                    Text(text = "${(tempRate * 100).roundToInt()}%", modifier = Modifier.padding(bottom = 8.dp))
-                    Slider(value = tempRate, onValueChange = { tempRate = it }, valueRange = 0.5f..2.0f, steps = 15, modifier = Modifier.fillMaxWidth())
-                }
-            }
-        }
 
         Spacer(modifier = Modifier.height(27.dp))
 

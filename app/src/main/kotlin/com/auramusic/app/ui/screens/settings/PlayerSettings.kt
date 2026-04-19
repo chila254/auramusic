@@ -31,16 +31,21 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.auramusic.app.BuildConfig
 import com.auramusic.app.LocalPlayerAwareWindowInsets
@@ -57,6 +62,8 @@ import com.auramusic.app.constants.AutoLoadMoreKey
 import com.auramusic.app.constants.AutoSkipNextOnErrorKey
 import com.auramusic.app.constants.DisableLoadMoreWhenRepeatAllKey
 import com.auramusic.app.constants.EnableGoogleCastKey
+import com.auramusic.app.constants.EnableVoiceCommandsKey
+import com.auramusic.app.constants.EnableVoiceWakeWordKey
 import com.auramusic.app.constants.HistoryDuration
 import com.auramusic.app.constants.KeepScreenOn
 import com.auramusic.app.constants.PauseOnMute
@@ -73,6 +80,7 @@ import com.auramusic.app.constants.SubtitlesEnabledKey
 import com.auramusic.app.constants.SubtitleFontSizeKey
 import com.auramusic.app.constants.SubtitleLanguageKey
 import com.auramusic.app.constants.VideoModeEnabledKey
+import com.auramusic.app.constants.VoiceWakeWordKey
 import com.auramusic.app.ui.component.DefaultDialog
 import com.auramusic.app.ui.component.EnumDialog
 import com.auramusic.app.ui.component.IconButton
@@ -202,6 +210,9 @@ fun PlayerSettings(
         HistoryDuration,
         defaultValue = 30f
     )
+    val (enableVoiceCommands, onEnableVoiceCommandsChange) = rememberPreference(EnableVoiceCommandsKey, defaultValue = true)
+    val (enableVoiceWakeWord, onEnableVoiceWakeWordChange) = rememberPreference(EnableVoiceWakeWordKey, defaultValue = false)
+    val (voiceWakeWord, onVoiceWakeWordChange) = rememberPreference(VoiceWakeWordKey, defaultValue = "Aura")
 
     var showAudioQualityDialog by remember {
         mutableStateOf(false)
@@ -875,6 +886,267 @@ fun PlayerSettings(
                 )
             )
         )
+        Spacer(modifier = Modifier.height(27.dp))
+
+        // Voice Command Settings
+        var showWakeWordDialog by rememberSaveable { mutableStateOf(false) }
+
+        Material3SettingsGroup(
+            title = stringResource(R.string.voice_commands),
+            items = listOf(
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.mic),
+                    title = { Text(stringResource(R.string.enable_voice_commands)) },
+                    description = { Text(stringResource(R.string.enable_voice_commands_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = enableVoiceCommands,
+                            onCheckedChange = onEnableVoiceCommandsChange,
+                            thumbContent = {
+                                Icon(
+                                    painter = painterResource(
+                                        id = if (enableVoiceCommands) R.drawable.check else R.drawable.close
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    },
+                    onClick = { onEnableVoiceCommandsChange(!enableVoiceCommands) }
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.mic),
+                    title = { Text(stringResource(R.string.enable_voice_wake_word)) },
+                    description = { Text(stringResource(R.string.enable_voice_wake_word_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = enableVoiceWakeWord,
+                            onCheckedChange = onEnableVoiceWakeWordChange,
+                            thumbContent = {
+                                Icon(
+                                    painter = painterResource(
+                                        id = if (enableVoiceWakeWord) R.drawable.check else R.drawable.close
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    },
+                    onClick = { onEnableVoiceWakeWordChange(!enableVoiceWakeWord) }
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.mic),
+                    title = { Text(stringResource(R.string.voice_wake_word)) },
+                    description = { Text(voiceWakeWord) },
+                    onClick = { showWakeWordDialog = true }
+                )
+            )
+        )
+
+        // Voice Feedback Settings
+        val voiceFeedbackViewModel: VoiceFeedbackSettingsViewModel = hiltViewModel()
+        var showVoiceDialog by rememberSaveable { mutableStateOf(false) }
+        var showPitchDialog by rememberSaveable { mutableStateOf(false) }
+        var showRateDialog by rememberSaveable { mutableStateOf(false) }
+        var tempPitch by remember { mutableFloatStateOf(voiceFeedbackViewModel.pitch.value) }
+        var tempRate by remember { mutableFloatStateOf(voiceFeedbackViewModel.speechRate.value) }
+
+        LaunchedEffect(showPitchDialog) {
+            if (showPitchDialog) {
+                tempPitch = voiceFeedbackViewModel.pitch.value
+            }
+        }
+        LaunchedEffect(showRateDialog) {
+            if (showRateDialog) {
+                tempRate = voiceFeedbackViewModel.speechRate.value
+            }
+        }
+
+        Material3SettingsGroup(
+            title = stringResource(R.string.voice_feedback),
+            items = listOf(
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.mic),
+                    title = { Text(stringResource(R.string.enable_voice_feedback)) },
+                    description = { Text(stringResource(R.string.enable_voice_feedback_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = voiceFeedbackViewModel.isEnabled.value,
+                            onCheckedChange = { voiceFeedbackViewModel.setEnabled(it) },
+                            thumbContent = {
+                                Icon(
+                                    painter = painterResource(
+                                        id = if (voiceFeedbackViewModel.isEnabled.value) R.drawable.check else R.drawable.close
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    },
+                    onClick = { voiceFeedbackViewModel.setEnabled(!voiceFeedbackViewModel.isEnabled.value) }
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.mic),
+                    title = { Text(stringResource(R.string.assistant_voice)) },
+                    description = {
+                        Text(voiceFeedbackViewModel.selectedVoice.value?.locale?.displayName ?: "Default")
+                    },
+                    onClick = { showVoiceDialog = true }
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.mic),
+                    title = { Text(stringResource(R.string.voice_pitch)) },
+                    description = { Text("${(voiceFeedbackViewModel.pitch.value * 100).roundToInt()}%") },
+                    onClick = { showPitchDialog = true }
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.mic),
+                    title = { Text(stringResource(R.string.voice_speech_rate)) },
+                    description = { Text("${(voiceFeedbackViewModel.speechRate.value * 100).roundToInt()}%") },
+                    onClick = { showRateDialog = true }
+                )
+            )
+        )
+
+        // Wake word dialog
+        if (showWakeWordDialog) {
+            var tempWakeWord by remember { mutableStateOf(voiceWakeWord) }
+            
+            DefaultDialog(
+                onDismiss = { 
+                    tempWakeWord = voiceWakeWord
+                    showWakeWordDialog = false 
+                },
+                buttons = {
+                    TextButton(
+                        onClick = { 
+                            tempWakeWord = "Aura"
+                        }
+                    ) {
+                        Text(stringResource(R.string.reset))
+                    }
+                    
+                    Spacer(modifier = Modifier.weight(1f))
+                    
+                    TextButton(
+                        onClick = { 
+                            tempWakeWord = voiceWakeWord
+                            showWakeWordDialog = false 
+                        }
+                    ) {
+                        Text(stringResource(android.R.string.cancel))
+                    }
+                    TextButton(
+                        onClick = { 
+                            if (tempWakeWord.isNotBlank()) {
+                                onVoiceWakeWordChange(tempWakeWord.trim())
+                            }
+                            showWakeWordDialog = false 
+                        }
+                    ) {
+                        Text(stringResource(android.R.string.ok))
+                    }
+                }
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.voice_wake_word),
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    
+                    Text(
+                        text = "Current: $tempWakeWord",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    
+                    Text(
+                        text = "Say \"Hey Aura\", \"Hello Aura\", \"Aura\", or your custom wake word to activate",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+
+        // Voice selection dialog
+        if (showVoiceDialog) {
+            val voices by voiceFeedbackViewModel.availableVoices
+            if (voices.isNotEmpty()) {
+                val currentVoice = voiceFeedbackViewModel.selectedVoice.value ?: voices.first()
+                EnumDialog(
+                    onDismiss = { showVoiceDialog = false },
+                    onSelect = { voice ->
+                        voiceFeedbackViewModel.setVoice(voice)
+                        showVoiceDialog = false
+                    },
+                    title = stringResource(R.string.assistant_voice),
+                    current = currentVoice,
+                    values = voices,
+                    valueText = { voice: android.speech.tts.Voice -> voice.locale.displayName }
+                )
+            } else {
+                DefaultDialog(
+                    onDismiss = { showVoiceDialog = false },
+                    buttons = {}
+                ) {
+                    Text(text = "No TTS voices installed. Install a TTS engine from Play Store.")
+                }
+            }
+        }
+
+        // Pitch dialog
+        if (showPitchDialog) {
+            DefaultDialog(
+                onDismiss = { showPitchDialog = false },
+                buttons = {
+                    TextButton(onClick = { tempPitch = 1.0f }) { Text(stringResource(R.string.reset)) }
+                    Spacer(modifier = Modifier.weight(1f))
+                    TextButton(onClick = { showPitchDialog = false }) { Text(stringResource(android.R.string.cancel)) }
+                    TextButton(onClick = {
+                        voiceFeedbackViewModel.setPitch(tempPitch)
+                        showPitchDialog = false
+                    }) { Text(stringResource(android.R.string.ok)) }
+                }
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
+                    Text(text = stringResource(R.string.voice_pitch), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp))
+                    Text(text = "${(tempPitch * 100).roundToInt()}%", modifier = Modifier.padding(bottom = 8.dp))
+                    Slider(value = tempPitch, onValueChange = { tempPitch = it }, valueRange = 0.5f..2.0f, steps = 15, modifier = Modifier.fillMaxWidth())
+                }
+            }
+        }
+
+        // Speech rate dialog
+        if (showRateDialog) {
+            DefaultDialog(
+                onDismiss = { showRateDialog = false },
+                buttons = {
+                    TextButton(onClick = { tempRate = 1.0f }) { Text(stringResource(R.string.reset)) }
+                    Spacer(modifier = Modifier.weight(1f))
+                    TextButton(onClick = { showRateDialog = false }) { Text(stringResource(android.R.string.cancel)) }
+                    TextButton(onClick = {
+                        voiceFeedbackViewModel.setSpeechRate(tempRate)
+                        showRateDialog = false
+                    }) { Text(stringResource(android.R.string.ok)) }
+                }
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
+                    Text(text = stringResource(R.string.voice_speech_rate), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp))
+                    Text(text = "${(tempRate * 100).roundToInt()}%", modifier = Modifier.padding(bottom = 8.dp))
+                    Slider(value = tempRate, onValueChange = { tempRate = it }, valueRange = 0.5f..2.0f, steps = 15, modifier = Modifier.fillMaxWidth())
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
     }
 

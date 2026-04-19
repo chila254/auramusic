@@ -455,22 +455,6 @@
     <string name="enable_dynamic_icon">Enable dynamic icon</string>
     <string name="enable_high_refresh_rate">High refresh rate</string>
     <string name="enable_high_refresh_rate_desc">Enable 90Hz/120Hz display support</string>
-    <string name="voice_commands">Voice Commands</string>
-    <string name="enable_voice_commands">Enable voice commands</string>
-    <string name="enable_voice_commands_desc">Enable interactive voice control with animated overlay. Say commands like \"Play\", \"Next\", or \"Search songs\".</string>
-    <string name="enable_voice_wake_word">Hands-free wake word</string>
-    <string name="enable_voice_wake_word_desc">Continuously listen for \"Hey Aura\" to activate voice commands without touching the screen. Works while the app is open.</string>
-    <string name="voice_wake_word">Custom wake word</string>
-    <string name="voice_wake_word_desc">Set your custom wake word (default: Aura)</string>
-
-    <!-- Voice feedback settings -->
-    <string name="voice_feedback">Voice Feedback</string>
-    <string name="enable_voice_feedback">Enable voice responses</string>
-    <string name="enable_voice_feedback_desc">Hear spoken confirmations for voice commands</string>
-    <string name="assistant_voice">Assistant voice</string>
-    <string name="assistant_voice_desc">Select TTS voice (US, UK, Australian, etc.)</string>
-    <string name="voice_pitch">Voice pitch</string>
-    <string name="voice_speech_rate">Speech rate</string>
 
     <string name="font">Font</string>
     <string name="about">About</string>
@@ -602,6 +586,24 @@
     <string name="stop_music_on_task_clear">Stop music on task clear</string>
     <string name="pause_music_when_media_is_muted">Pause music when media is muted</string>
     <string name="keep_screen_on_when_player_is_expanded">Keep screen on when player is expanded</string>
+
+    <!-- Voice commands -->
+    <string name="voice_commands">Voice Commands</string>
+    <string name="enable_voice_commands">Enable voice commands</string>
+    <string name="enable_voice_commands_desc">Enable interactive voice control with animated overlay. Say commands like \"Play\", \"Next\", or \"Search songs\".</string>
+    <string name="enable_voice_wake_word">Hands-free wake word</string>
+    <string name="enable_voice_wake_word_desc">Continuously listen for \"Hey Aura\" to activate voice commands without touching the screen. Works while the app is open.</string>
+    <string name="voice_wake_word">Custom wake word</string>
+    <string name="voice_wake_word_desc">Set your custom wake word (default: Aura)</string>
+
+    <!-- Voice feedback -->
+    <string name="voice_feedback">Voice Feedback</string>
+    <string name="enable_voice_feedback">Enable voice responses</string>
+    <string name="enable_voice_feedback_desc">Hear spoken confirmations for voice commands</string>
+    <string name="assistant_voice">Assistant voice</string>
+    <string name="assistant_voice_desc">Select TTS voice (US, UK, Australian, etc.)</string>
+    <string name="voice_pitch">Voice pitch</string>
+    <string name="voice_speech_rate">Speech rate</string>
 
     <!-- Queue settings -->
     <!-- Storage -->
