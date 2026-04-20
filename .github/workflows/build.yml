@@ -73,8 +73,18 @@ jobs:
           sed -i 's|tinypinyin = "2.0.3"|tinypinyin = "2.0.1"|g' gradle/libs.versions.toml
           ./gradlew assembleFossUniversalRelease --no-daemon --no-configuration-cache
 
-      - name: Upload APK
+      - name: Build GmsUniversalRelease APK
+        run: |
+          ./gradlew assembleGmsUniversalRelease --no-daemon --no-configuration-cache
+
+      - name: Upload FOSS APK
         uses: actions/upload-artifact@v4
         with:
           name: FossUniversalRelease
-          path: app/build/outputs/apk/**/*.apk
+          path: app/build/outputs/apk/fossUniversal/release/*.apk
+
+      - name: Upload GMS APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GmsUniversalRelease
+          path: app/build/outputs/apk/gmsUniversal/release/*.apk

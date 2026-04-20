@@ -37,7 +37,9 @@ import com.auramusic.app.ui.component.IconButton
 import com.auramusic.app.ui.component.Material3SettingsGroup
 import com.auramusic.app.ui.component.Material3SettingsItem
 import com.auramusic.app.ui.utils.backToMain
+import com.auramusic.app.constants.UpdateVariantKey
 import com.auramusic.app.utils.Updater
+import com.auramusic.app.utils.rememberPreference
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +50,8 @@ fun SettingsScreen(
 ) {
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
+    val defaultVariant = if (BuildConfig.CAST_AVAILABLE) "gms" else "foss"
+    val (updateVariant, _) = rememberPreference(UpdateVariantKey, defaultVariant)
     val isAndroid12OrLater = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     Column(
@@ -207,7 +211,7 @@ fun SettingsScreen(
                 )
                 if (latestVersionName != BuildConfig.VERSION_NAME) {
                     val releaseInfo = Updater.getCachedLatestRelease()
-                    val downloadUrl = releaseInfo?.let { Updater.getDownloadUrlForCurrentVariant(it) }
+                    val downloadUrl = releaseInfo?.let { Updater.getDownloadUrlForCurrentVariant(it, updateVariant) }
                     
                     if (downloadUrl != null) {
                         add(

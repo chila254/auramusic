@@ -265,21 +265,24 @@ object Updater {
         }
 
     /**
-     * Get the download URL for the correct app variant
+     * Get the download URL for the correct app variant.
+     * @param preferredVariant Override variant selection ("foss" or "gms").
+     *        When null, uses the current build's variant.
      */
-    fun getDownloadUrlForCurrentVariant(releaseInfo: ReleaseInfo): String? {
-        val (currentArch, currentVariant) = getCurrentAppVariant()
+    fun getDownloadUrlForCurrentVariant(releaseInfo: ReleaseInfo, preferredVariant: String? = null): String? {
+        val (currentArch, _) = getCurrentAppVariant()
+        val variant = preferredVariant ?: getCurrentAppVariant().second
         
         // First try to find exact match
         val exactMatch = releaseInfo.assets
-            .find { it.architecture == currentArch && it.variant == currentVariant }
+            .find { it.architecture == currentArch && it.variant == variant }
             ?.downloadUrl
         
         if (exactMatch != null) return exactMatch
         
         // Fallback: if we can't find exact match, try to find any APK for this variant
         val fallbackMatch = releaseInfo.assets
-            .find { it.variant == currentVariant }
+            .find { it.variant == variant }
             ?.downloadUrl
         
         if (fallbackMatch != null) return fallbackMatch

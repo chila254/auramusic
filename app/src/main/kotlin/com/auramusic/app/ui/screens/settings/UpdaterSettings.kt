@@ -41,6 +41,7 @@ import com.auramusic.app.LocalPlayerAwareWindowInsets
 import com.auramusic.app.R
 import com.auramusic.app.constants.CheckForUpdatesKey
 import com.auramusic.app.constants.UpdateNotificationsEnabledKey
+import com.auramusic.app.constants.UpdateVariantKey
 import com.auramusic.app.ui.component.IconButton
 import com.auramusic.app.ui.component.Material3SettingsGroup
 import com.auramusic.app.ui.component.Material3SettingsItem
@@ -59,6 +60,8 @@ fun UpdaterScreen(
 ) {
     val (checkForUpdates, onCheckForUpdatesChange) = rememberPreference(CheckForUpdatesKey, true)
     val (updateNotifications, onUpdateNotificationsChange) = rememberPreference(UpdateNotificationsEnabledKey, true)
+    val defaultVariant = if (BuildConfig.CAST_AVAILABLE) "gms" else "foss"
+    val (updateVariant, onUpdateVariantChange) = rememberPreference(UpdateVariantKey, defaultVariant)
     
     var isChecking by remember { mutableStateOf(false) }
     var updateAvailable by remember { mutableStateOf(false) }
@@ -163,6 +166,37 @@ fun UpdaterScreen(
                     )
                 }
             }
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        // APK Variant Selection
+        Material3SettingsGroup(
+            title = "APK Variant",
+            items = listOf(
+                Material3SettingsItem(
+                    title = { Text("AuraMusic") },
+                    description = { Text("Standard build without Google Cast") },
+                    trailingContent = {
+                        androidx.compose.material3.RadioButton(
+                            selected = updateVariant == "foss",
+                            onClick = { onUpdateVariantChange("foss") }
+                        )
+                    },
+                    onClick = { onUpdateVariantChange("foss") }
+                ),
+                Material3SettingsItem(
+                    title = { Text("AuraMusic with Google Cast") },
+                    description = { Text("Includes Google Cast support") },
+                    trailingContent = {
+                        androidx.compose.material3.RadioButton(
+                            selected = updateVariant == "gms",
+                            onClick = { onUpdateVariantChange("gms") }
+                        )
+                    },
+                    onClick = { onUpdateVariantChange("gms") }
+                )
+            )
         )
 
         Spacer(Modifier.height(16.dp))
