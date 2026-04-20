@@ -94,6 +94,18 @@ android {
         }
     }
 
+    sourceSets {
+        getByName("main") {
+            kotlin.srcDir("src/main/kotlin")
+        }
+        create("foss") {
+            kotlin.srcDirs("src/foss/kotlin")
+        }
+        create("gms") {
+            kotlin.srcDirs("src/gms/kotlin")
+        }
+    }
+
     signingConfigs {
         // Load from local.properties for persistent debug and release builds
         create("persistentDebug") {
