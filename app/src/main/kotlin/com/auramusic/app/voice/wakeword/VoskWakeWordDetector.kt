@@ -48,13 +48,12 @@ class VoskWakeWordDetector @Inject constructor(
     }
     
     private val WAKE_WORD_COOLDOWN_MS = 2000
-    // Minimum RMS energy threshold to consider audio as intentional speech
-    // Audio below this is ambient noise or bleed-through from speakers
-    private val MIN_SPEECH_RMS = 800.0
-    // Higher RMS threshold when music is actively playing to reduce false triggers
-    private val MIN_SPEECH_RMS_DURING_PLAYBACK = 2000.0
-    // Number of consecutive high-energy frames required to confirm speech presence
-    private val REQUIRED_SPEECH_FRAMES = 3
+    // Minimum RMS energy to consider audio as speech (filters dead silence / very faint bleed)
+    private val MIN_SPEECH_RMS = 100.0
+    // Slightly higher threshold when music is playing (AEC handles most filtering)
+    private val MIN_SPEECH_RMS_DURING_PLAYBACK = 200.0
+    // At least 2 consecutive speech-energy frames to confirm it's not a transient spike
+    private val REQUIRED_SPEECH_FRAMES = 2
     private var consecutiveSpeechFrames = 0
 
     companion object {
