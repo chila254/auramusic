@@ -1,7 +1,7 @@
 <div align="center">
 <img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png" width="160" height="160" style="display: block; margin: 0 auto"/>
 <h1>AuraMusic</h1>
-<p>A modern Android music player with YouTube Music integration, powerful audio features, and a beautiful Material 3 interface.</p>
+<p>A modern Android music player with YouTube Music integration, powerful audio features, Google Cast support, voice control, and a beautiful Material 3 interface.</p>
 
 <h1>Screenshots</h1>
 
@@ -66,28 +66,53 @@
 <h1>Features</h1>
 </div>
 
+### Playback & Streaming
 - Play any song or video from YouTube Music
 - Background playback
-- Personalized quick picks
-- Library management
-- Listen together with friends
 - Download and cache songs for offline playback
 - Search for songs, albums, artists, videos and playlists
-- Live lyrics (Kugou, LRCLib, RushLyrics, BetterLyrics)
 - YouTube Music account login support
 - Syncing of songs, artists, albums and playlists from and to your account
-- Skip silence
-- Import playlists
-- Audio normalization
-- Adjust tempo/pitch
-- Local playlist management
-- Reorder songs in playlist or queue
-- Home screen widget with playback controls
-- Light - Dark - Black - Dynamic theme
-- Sleep timer
+
+### Audio Features
 - Equalizer with custom presets
-- Material 3 design
+- Audio normalization
+- Skip silence
+- Adjust tempo/pitch
+- Sleep timer
+- VOSK wake word detection for hands-free voice control
+
+### Voice Control
+- Hands-free voice commands (say "Hey Aura" to activate)
+- AEC and noise suppression for accurate detection
+- Voice feedback with TTS
+- Control playback, volume, and search with your voice
+
+### Casting & Sharing
+- **Google Cast support** (Chromecast to TV, speakers, Android TV)
+- Listen together with friends in real-time
 - Discord Rich Presence
+
+### Lyrics
+- Live synchronized lyrics
+- Multiple sources: Kugou, LRCLib, RushLyrics, BetterLyrics
+- Word-by-word highlighting
+
+### Library & Organization
+- Personalized quick picks
+- Library management
+- Local playlist management
+- Import playlists
+- Reorder songs in playlist or queue
+
+### UI & Themes
+- Material 3 design
+- Light - Dark - Black - Dynamic theme
+- Home screen widget with playback controls
+
+### Integration
+- Shazam music recognition
+- Last.fm scrobbling
 
 <div align="center">
 <h1>Tech Stack</h1>
@@ -96,10 +121,12 @@
 - **Language:** Kotlin
 - **UI:** Jetpack Compose + Material 3
 - **Audio:** Media3 ExoPlayer
+- **Voice:** VOSK offline speech recognition
 - **DI:** Hilt
 - **Database:** Room
 - **Networking:** Ktor
 - **Image Loading:** Coil
+- **Casting:** Google Cast Framework
 
 <div align="center">
 <h1>Requirements</h1>
@@ -132,9 +159,11 @@ cp local.properties.example local.properties
 | Variant | Description |
 |---------|-------------|
 | `foss` | F-Droid compatible, no Google Play Services |
-| `gms` | With Google Cast support |
+| `gms` | With Google Cast support, voice features |
 
 **ABI Variants:** universal, arm64, armeabi, x86, x86_64
+
+**Example:** `./gradlew assembleGmsUniversalRelease`
 
 <div align="center">
 <h1>Support Me</h1>
@@ -174,6 +203,7 @@ Join our community on social media - more platforms coming soon!
 - [**AuraMusicServer**](https://github.com/TeamAuraMusic/AuraMusicServer) – Listen together implementation
 - [**MusicRecognizer**](https://github.com/aleksey-saenko/MusicRecognizer) – Music recognition and Shazam API
 - [**Flow**](https://github.com/A-EDev/Flow) - Extract videos from YouTube 
+- [**VOSK**](https://github.com/alphacephei/vosk-android) - Offline wake word recognition
 
 The open-source community for tools, libraries, and APIs that make this project possible.
 
