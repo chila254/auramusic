@@ -112,7 +112,7 @@ fun CastButton(
         }
         
         routeSelector?.let { selector ->
-            mediaRouter?.addCallback(selector, callback, MediaRouter.CALLBACK_FLAG_PERFORM_DISCOVERY)
+            mediaRouter?.addCallback(selector, callback, MediaRouter.CALLBACK_FLAG_REQUEST_DISCOVERY)
             // Get initial routes
             updateRoutes(mediaRouter, selector) { availableRoutes = it }
         }
