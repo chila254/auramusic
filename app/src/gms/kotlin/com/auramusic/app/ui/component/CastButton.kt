@@ -4,9 +4,15 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -46,6 +52,7 @@ fun CastButton(
     var mediaRouter by remember { mutableStateOf<MediaRouter?>(null) }
     var routeSelector by remember { mutableStateOf<MediaRouteSelector?>(null) }
     var availableRoutes by remember { mutableStateOf<List<MediaRouter.RouteInfo>>(emptyList()) }
+    var showCastDialog by remember { mutableStateOf(false) }
     
     val (enableGoogleCast) = rememberPreference(
         key = EnableGoogleCastKey,
@@ -134,25 +141,7 @@ fun CastButton(
                     .align(Alignment.Center)
                     .clip(RoundedCornerShape(20.dp))
                     .clickable {
-                        val currentRoute = if (isCasting) {
-                            mediaRouter?.routes?.find { route ->
-                                routeSelector?.let { selector -> 
-                                    route.matchesSelector(selector) && route.isSelected
-                                } == true
-                            }
-                        } else null
-
-                        showCastPickerDialog(
-                            routes = availableRoutes,
-                            isConnecting = isConnecting,
-                            currentlyConnectedRoute = currentRoute,
-                            onRouteSelected = { route ->
-                                castHandler?.connectToRoute(route)
-                            },
-                            onDisconnect = {
-                                castHandler?.disconnect()
-                            }
-                        )
+                        showCastDialog = true
                     }
             ) {
                 Image(
@@ -167,6 +156,32 @@ fun CastButton(
                 )
             }
         }
+    }
+    
+    // Cast device selection dialog
+    if (showCastDialog) {
+        val currentRoute = if (isCasting) {
+            mediaRouter?.routes?.find { route ->
+                routeSelector?.let { selector -> 
+                    route.matchesSelector(selector) && route.isSelected
+                } == true
+            }
+        } else null
+
+        CastDeviceDialog(
+            routes = availableRoutes,
+            isConnecting = isConnecting,
+            currentlyConnectedRoute = currentRoute,
+            onRouteSelected = { route ->
+                castHandler?.connectToRoute(route)
+                showCastDialog = false
+            },
+            onDisconnect = {
+                castHandler?.disconnect()
+                showCastDialog = false
+            },
+            onDismiss = { showCastDialog = false }
+        )
     }
 }
 
@@ -185,17 +200,78 @@ private fun updateRoutes(
     onUpdate(routes)
 }
 
-private fun showCastPickerDialog(
+@Composable
+private fun CastDeviceDialog(
     routes: List<MediaRouter.RouteInfo>,
     isConnecting: Boolean,
     currentlyConnectedRoute: MediaRouter.RouteInfo?,
     onRouteSelected: (MediaRouter.RouteInfo) -> Unit,
-    onDisconnect: () -> Unit
+    onDisconnect: () -> Unit,
+    onDismiss: () -> Unit
 ) {
-    // Simple implementation - connect to first available route or disconnect if already connected
+    if (isConnecting) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text("Connecting...") },
+            text = { Text("Looking for Cast devices...") },
+            confirmButton = {
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel")
+                }
+            }
+        )
+        return
+    }
+    
     if (currentlyConnectedRoute != null) {
-        onDisconnect()
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text("Stop Casting?") },
+            text = { Text("Disconnect from ${currentlyConnectedRoute.name}?") },
+            confirmButton = {
+                TextButton(onClick = onDisconnect) {
+                    Text("Stop")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel")
+                }
+            }
+        )
     } else if (routes.isNotEmpty()) {
-        onRouteSelected(routes.first())
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text("Select Cast Device") },
+            text = {
+                Column {
+                    routes.forEach { route ->
+                        TextButton(
+                            onClick = { onRouteSelected(route) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(route.name ?: "Unknown Device")
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel")
+                }
+            }
+        )
+    } else {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text("No Devices Found") },
+            text = { Text("Make sure your Cast device is powered on and on the same network.") },
+            confirmButton = {
+                TextButton(onClick = onDismiss) {
+                    Text("OK")
+                }
+            }
+        )
     }
 }
