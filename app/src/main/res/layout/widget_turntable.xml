@@ -10,6 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="centerCrop"
+        android:src="@drawable/ic_widget_music_placeholder"
         android:contentDescription="@string/widget_turntable_album_art" />
 
     <!-- Gradient overlay -->
