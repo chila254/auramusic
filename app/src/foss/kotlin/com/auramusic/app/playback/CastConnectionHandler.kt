@@ -45,8 +45,6 @@ class CastConnectionHandler(
 
     fun disconnect() {}
 
-    fun connectToRoute(route: androidx.mediarouter.media.MediaRouter.RouteInfo) {}
-
     interface CastConnectionListener {
         fun onConnected()
         fun onDisconnected()
