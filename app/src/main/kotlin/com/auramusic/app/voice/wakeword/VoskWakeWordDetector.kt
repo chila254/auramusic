@@ -2,11 +2,9 @@ package com.auramusic.app.voice.wakeword
 
 import android.content.Context
 import android.media.AudioFormat
-import android.media.AudioManager
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.media.audiofx.AcousticEchoCanceler
-import android.media.audiofx.NoiseSuppressor
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
@@ -42,19 +40,8 @@ class VoskWakeWordDetector @Inject constructor(
     private var lastWakeWordTime = 0L
     private val mainHandler = Handler(Looper.getMainLooper())
     private var echoCanceler: AcousticEchoCanceler? = null
-    private var noiseSuppressor: NoiseSuppressor? = null
-    private val audioManager by lazy {
-        context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    }
     
     private val WAKE_WORD_COOLDOWN_MS = 2000
-    // Minimum RMS energy to consider audio as speech (filters dead silence / very faint bleed)
-    private val MIN_SPEECH_RMS = 100.0
-    // Slightly higher threshold when music is playing (AEC handles most filtering)
-    private val MIN_SPEECH_RMS_DURING_PLAYBACK = 200.0
-    // At least 2 consecutive speech-energy frames to confirm it's not a transient spike
-    private val REQUIRED_SPEECH_FRAMES = 2
-    private var consecutiveSpeechFrames = 0
 
     companion object {
         private const val SAMPLE_RATE = 16000
@@ -342,8 +329,6 @@ class VoskWakeWordDetector @Inject constructor(
         try {
             echoCanceler?.release()
             echoCanceler = null
-            noiseSuppressor?.release()
-            noiseSuppressor = null
             audioRecord?.stop()
             audioRecord?.release()
             audioRecord = null
@@ -363,22 +348,6 @@ class VoskWakeWordDetector @Inject constructor(
 
     override fun close() = stop()
 
-    private fun calculateRms(buffer: ShortArray, length: Int): Double {
-        var sum = 0.0
-        for (i in 0 until length) {
-            sum += buffer[i].toDouble() * buffer[i].toDouble()
-        }
-        return Math.sqrt(sum / length)
-    }
-
-    private fun isMusicPlaying(): Boolean {
-        return try {
-            audioManager.isMusicActive
-        } catch (e: Exception) {
-            false
-        }
-    }
-
     private suspend fun startAudioRecording() {
         val buffer = ShortArray(BUFFER_SIZE)
 
@@ -397,37 +366,20 @@ class VoskWakeWordDetector @Inject constructor(
                 return
             }
 
-            // Enable hardware AEC and noise suppression to filter out
-            // speaker playback bleed and background chatter
+            // Enable AEC to cancel the device's own audio output from the mic input
+            // (same approach as Google Assistant / Siri — let the model handle detection)
             val sessionId = audioRecord!!.audioSessionId
             if (AcousticEchoCanceler.isAvailable()) {
                 echoCanceler = AcousticEchoCanceler.create(sessionId)?.apply { enabled = true }
                 android.util.Log.d("VoskWakeWordDetector", "AEC enabled")
             }
-            if (NoiseSuppressor.isAvailable()) {
-                noiseSuppressor = NoiseSuppressor.create(sessionId)?.apply { enabled = true }
-                android.util.Log.d("VoskWakeWordDetector", "NoiseSuppressor enabled")
-            }
 
             audioRecord?.startRecording()
             android.util.Log.d("VoskWakeWordDetector", "Recording started")
-            consecutiveSpeechFrames = 0
 
             while (isRunning.get()) {
                 val read = audioRecord?.read(buffer, 0, BUFFER_SIZE) ?: -1
                 if (read > 0) {
-                    // Calculate RMS energy of this audio frame
-                    val rms = calculateRms(buffer, read)
-                    val musicActive = isMusicPlaying()
-                    val threshold = if (musicActive) MIN_SPEECH_RMS_DURING_PLAYBACK else MIN_SPEECH_RMS
-
-                    // Track consecutive speech-level frames
-                    if (rms >= threshold) {
-                        consecutiveSpeechFrames++
-                    } else {
-                        consecutiveSpeechFrames = 0
-                    }
-
                     try {
                         val isFinal = recognizer?.acceptWaveForm(buffer, read)
 
@@ -438,15 +390,7 @@ class VoskWakeWordDetector @Inject constructor(
                             val textMatch = Regex("\"text\"\\s*:\\s*\"([^\"]+)\"").find(finalJson)?.groupValues?.get(1)?.trim() ?: ""
                             val isWakePhrase = textMatch == "hey aura" || textMatch == "hello aura" || textMatch == "ok aura"
                             if (isWakePhrase) {
-                                // Reject detection if energy was too low (background noise / speaker bleed)
-                                if (consecutiveSpeechFrames < REQUIRED_SPEECH_FRAMES) {
-                                    android.util.Log.d("VoskWakeWordDetector",
-                                        "Ignoring wake word (insufficient speech energy: rms=$rms, frames=$consecutiveSpeechFrames, musicActive=$musicActive)")
-                                    consecutiveSpeechFrames = 0
-                                    continue
-                                }
-
-                                android.util.Log.d("VoskWakeWordDetector", "DETECTED in final: $finalJson (rms=$rms, musicActive=$musicActive)")
+                                android.util.Log.d("VoskWakeWordDetector", "DETECTED in final: $finalJson")
                                 
                                 val now = System.currentTimeMillis()
                                 if (now - lastWakeWordTime < WAKE_WORD_COOLDOWN_MS) {
@@ -454,7 +398,6 @@ class VoskWakeWordDetector @Inject constructor(
                                     continue
                                 }
                                 lastWakeWordTime = now
-                                consecutiveSpeechFrames = 0
                                 
                                 withContext(Dispatchers.Main) {
                                     showToast("Wake word detected!")
@@ -473,8 +416,6 @@ class VoskWakeWordDetector @Inject constructor(
         } finally {
             echoCanceler?.release()
             echoCanceler = null
-            noiseSuppressor?.release()
-            noiseSuppressor = null
             audioRecord?.stop()
             audioRecord?.release()
             audioRecord = null
