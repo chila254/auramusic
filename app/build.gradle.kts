@@ -98,10 +98,10 @@ android {
         getByName("main") {
             kotlin.srcDir("src/main/kotlin")
         }
-        create("foss") {
+        getByName("foss") {
             kotlin.srcDirs("src/foss/kotlin")
         }
-        create("gms") {
+        getByName("gms") {
             kotlin.srcDirs("src/gms/kotlin")
         }
     }
