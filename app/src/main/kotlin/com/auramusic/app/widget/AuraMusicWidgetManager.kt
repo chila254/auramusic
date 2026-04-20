@@ -46,7 +46,6 @@ class AuraMusicWidgetManager @Inject constructor(
     // Cache for album art to avoid reloading
     private var cachedArtworkUri: String? = null
     private var cachedAlbumArt: Bitmap? = null
-    private var cachedCircularAlbumArt: Bitmap? = null
 
     suspend fun updateWidgets(
         title: String,
@@ -61,18 +60,14 @@ class AuraMusicWidgetManager @Inject constructor(
 
         // Use cached album art if URI hasn't changed, otherwise load new one
         val albumArt: Bitmap?
-        val circularAlbumArt: Bitmap?
 
         if (artworkUri != null && artworkUri == cachedArtworkUri && cachedAlbumArt != null) {
             albumArt = cachedAlbumArt
-            circularAlbumArt = cachedCircularAlbumArt
         } else {
             albumArt = artworkUri?.let { loadAlbumArt(it, 300) }
-            circularAlbumArt = albumArt?.let { getCircularBitmap(it) }
             // Update cache
             cachedArtworkUri = artworkUri
             cachedAlbumArt = albumArt
-            cachedCircularAlbumArt = circularAlbumArt
         }
 
         // Update main music player widgets
@@ -92,20 +87,6 @@ class AuraMusicWidgetManager @Inject constructor(
                     currentPosition
                 )
                 appWidgetManager.updateAppWidget(widgetId, views)
-            }
-        }
-
-        // Update turntable widgets
-        val turntableComponentName = ComponentName(context, TurntableWidgetReceiver::class.java)
-        val turntableWidgetIds = appWidgetManager.getAppWidgetIds(turntableComponentName)
-        if (turntableWidgetIds.isNotEmpty()) {
-            val turntableViews = createTurntableRemoteViews(
-                circularAlbumArt,
-                isPlaying,
-                isLiked
-            )
-            turntableWidgetIds.forEach { widgetId ->
-                appWidgetManager.updateAppWidget(widgetId, turntableViews)
             }
         }
 
@@ -253,31 +234,6 @@ class AuraMusicWidgetManager @Inject constructor(
         return output
     }
 
-    private fun getCircularBitmap(bitmap: Bitmap): Bitmap {
-        val size = minOf(bitmap.width, bitmap.height)
-
-        // First crop to square
-        val xOffset = (bitmap.width - size) / 2
-        val yOffset = (bitmap.height - size) / 2
-        val squareBitmap = Bitmap.createBitmap(bitmap, xOffset, yOffset, size, size)
-
-        // Create circular output
-        val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(output)
-        val paint = Paint().apply {
-            isAntiAlias = true
-            isFilterBitmap = true
-            shader = BitmapShader(squareBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
-        }
-        val radius = size / 2f
-        canvas.drawCircle(radius, radius, radius, paint)
-
-        if (squareBitmap != bitmap) {
-            squareBitmap.recycle()
-        }
-        return output
-    }
-
     private fun createCompactSquareRemoteViews(
         albumArt: Bitmap?,
         isPlaying: Boolean
@@ -341,45 +297,6 @@ class AuraMusicWidgetManager @Inject constructor(
         views.setOnClickPendingIntent(R.id.widget_wide_like_button, getLikeIntent())
 
         return views
-    }
-
-    private fun createTurntableRemoteViews(
-        circularAlbumArt: Bitmap?,
-        isPlaying: Boolean,
-        isLiked: Boolean
-    ): RemoteViews {
-        val views = RemoteViews(context.packageName, R.layout.widget_turntable)
-
-        // Set circular album art - create circular default icon if no album art
-        if (circularAlbumArt != null) {
-            views.setImageViewBitmap(R.id.widget_turntable_album_art, circularAlbumArt)
-        } else {
-            // Load and make the default icon circular
-            views.setImageViewBitmap(R.id.widget_turntable_album_art, getCircularDefaultIcon())
-        }
-
-        // Set play/pause icon - using secondary color icons for turntable
-        val playPauseIcon = if (isPlaying) R.drawable.ic_widget_pause_secondary else R.drawable.ic_widget_play_secondary
-        views.setImageViewResource(R.id.widget_turntable_play_pause, playPauseIcon)
-
-        // Set click intents
-        views.setOnClickPendingIntent(R.id.widget_turntable_album_art, getOpenAppIntent())
-        views.setOnClickPendingIntent(R.id.widget_turntable_play_container, getTurntablePlayPauseIntent())
-        views.setOnClickPendingIntent(R.id.widget_turntable_prev_button, getTurntablePreviousIntent())
-        views.setOnClickPendingIntent(R.id.widget_turntable_next_button, getTurntableNextIntent())
-
-        return views
-    }
-
-    private fun getCircularDefaultIcon(): Bitmap {
-        // Get the launcher icon and make it circular
-        val drawable = context.packageManager.getApplicationIcon(context.packageName)
-        val size = 300
-        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        drawable.setBounds(0, 0, size, size)
-        drawable.draw(canvas)
-        return getCircularBitmap(bitmap)
     }
 
     private fun getRoundedDefaultIcon(cornerRadius: Float): Bitmap {
@@ -446,42 +363,6 @@ class AuraMusicWidgetManager @Inject constructor(
         return PendingIntent.getBroadcast(
             context,
             10,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-    }
-
-    private fun getTurntablePlayPauseIntent(): PendingIntent {
-        val intent = Intent(context, TurntableWidgetReceiver::class.java).apply {
-            action = TurntableWidgetReceiver.ACTION_TURNTABLE_PLAY_PAUSE
-        }
-        return PendingIntent.getBroadcast(
-            context,
-            3,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-    }
-
-    private fun getTurntableNextIntent(): PendingIntent {
-        val intent = Intent(context, TurntableWidgetReceiver::class.java).apply {
-            action = TurntableWidgetReceiver.ACTION_TURNTABLE_NEXT
-        }
-        return PendingIntent.getBroadcast(
-            context,
-            4,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-    }
-
-    private fun getTurntablePreviousIntent(): PendingIntent {
-        val intent = Intent(context, TurntableWidgetReceiver::class.java).apply {
-            action = TurntableWidgetReceiver.ACTION_TURNTABLE_PREVIOUS
-        }
-        return PendingIntent.getBroadcast(
-            context,
-            5,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

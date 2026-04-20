@@ -324,7 +324,6 @@
     <!-- Notification name -->
     <string name="music_player">AuraMusic</string>
     <string name="widget_music_player">Music Player</string>
-    <string name="widget_turntable">Turntable</string>
     <string name="widget_song_title">Song title</string>
     <string name="widget_artist_name">Artist name</string>
     <string name="widget_album_art">Album art</string>
@@ -343,13 +342,7 @@
     <string name="widget_wide_play_pause">Play/Pause</string>
     <string name="widget_wide_like_button">Like</string>
     <string name="widget_wide_play_container">Play</string>
-    <string name="widget_turntable_album_art">Album art</string>
-    <string name="widget_turntable_play_pause">Play/Pause</string>
-    <string name="widget_turntable_play_container">Play</string>
-    <string name="widget_turntable_prev_button">Previous</string>
-    <string name="widget_turntable_next_button">Next</string>
     <string name="widget_music_player_desc">Control your music with play/pause, skip, and like buttons</string>
-    <string name="widget_turntable_desc">A stylish turntable widget with album art display</string>
     <string name="widget_compact_square_desc">Compact square widget for quick playback control</string>
     <string name="widget_compact_wide_desc">Compact wide widget showing song info and controls</string>
 

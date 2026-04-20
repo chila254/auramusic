@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:minWidth="110dp"
-    android:minHeight="110dp"
-    android:minResizeWidth="80dp"
-    android:minResizeHeight="80dp"
-    android:maxResizeWidth="200dp"
-    android:maxResizeHeight="200dp"
+    android:minWidth="180dp"
+    android:minHeight="180dp"
+    android:minResizeWidth="140dp"
+    android:minResizeHeight="140dp"
+    android:maxResizeWidth="300dp"
+    android:maxResizeHeight="300dp"
     android:updatePeriodMillis="3600000"
     android:initialLayout="@layout/widget_compact_square"
     android:resizeMode="horizontal|vertical"
@@ -13,7 +13,7 @@
     android:previewImage="@drawable/widget_compact_square_preview"
     android:previewLayout="@layout/widget_compact_square"
     android:description="@string/widget_compact_square_desc"
-    android:targetCellWidth="2"
-    android:targetCellHeight="2"
+    android:targetCellWidth="4"
+    android:targetCellHeight="4"
     android:widgetFeatures="reconfigurable|configuration_optional">
 </appwidget-provider>

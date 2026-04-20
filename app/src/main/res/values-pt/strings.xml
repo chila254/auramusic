@@ -305,7 +305,6 @@
     <!-- Notification name -->
     <string name="music_player">AuraMusic</string>
     <string name="widget_music_player">Player de Música</string>
-    <string name="widget_turntable">Toca-discos</string>
     <string name="widget_song_title">Título da música</string>
     <string name="widget_artist_name">Nome do artista</string>
     <string name="widget_album_art">Capa do álbum</string>

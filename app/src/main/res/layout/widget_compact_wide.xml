@@ -1,77 +1,82 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="250dp"
-    android:layout_height="60dp"
-    android:background="@color/widget_primary_container"
-    android:padding="8dp">
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/widget_primary_container">
 
+    <!-- Album art with rounded corners -->
     <ImageView
         android:id="@+id/widget_wide_album_art"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:layout_alignParentStart="true"
-        android:layout_centerVertical="true"
         android:scaleType="centerCrop"
         android:src="@drawable/ic_widget_music_placeholder" />
 
+    <!-- Dark overlay for text contrast -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#30000000" />
+
+    <!-- Content container -->
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_toStartOf="@id/widget_wide_play_container"
-        android:layout_toEndOf="@id/widget_wide_album_art"
-        android:layout_centerVertical="true"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
-        android:orientation="vertical">
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="12dp"
+        android:background="#80000000">
 
-        <TextView
-            android:id="@+id/widget_wide_song_title"
-            android:layout_width="match_parent"
+        <!-- Song info -->
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="@color/widget_text_primary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginEnd="12dp">
 
-        <TextView
-            android:id="@+id/widget_wide_artist_name"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="@color/widget_text_secondary"
-            android:textSize="11sp" />
+            <TextView
+                android:id="@+id/widget_wide_song_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
-    </LinearLayout>
+            <TextView
+                android:id="@+id/widget_wide_artist_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="#B3FFFFFF"
+                android:textSize="12sp" />
 
-    <LinearLayout
-        android:id="@+id/widget_wide_play_container"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_toStartOf="@id/widget_wide_like_button"
-        android:layout_centerVertical="true"
-        android:layout_marginEnd="4dp"
-        android:orientation="horizontal">
+        </LinearLayout>
+
+        <!-- Control buttons -->
+        <ImageView
+            android:id="@+id/widget_wide_like_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/widget_button_transparent"
+            android:padding="8dp"
+            android:src="@drawable/ic_widget_heart_outline_nav" />
 
         <ImageView
             android:id="@+id/widget_wide_play_pause"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:background="@drawable/widget_button_bg"
-            android:padding="6dp"
-            android:src="@drawable/ic_widget_play_low" />
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/widget_button_circle"
+            android:padding="12dp"
+            android:src="@drawable/ic_widget_play" />
 
     </LinearLayout>
-
-    <ImageView
-        android:id="@+id/widget_wide_like_button"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
-        android:layout_alignParentEnd="true"
-        android:layout_centerVertical="true"
-        android:background="@drawable/widget_button_bg"
-        android:padding="6dp"
-        android:src="@drawable/ic_widget_heart_outline_nav" />
 
 </RelativeLayout>
