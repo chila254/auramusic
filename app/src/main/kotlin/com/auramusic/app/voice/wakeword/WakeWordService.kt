@@ -54,7 +54,16 @@ class WakeWordService : Service() {
         createNotificationChannel()
         // Must call startForeground() immediately in onCreate() when started via
         // startForegroundService() to avoid ForegroundServiceDidNotStartInTimeException
-        startForeground(NOTIFICATION_ID, buildNotification())
+        try {
+            startForeground(NOTIFICATION_ID, buildNotification())
+        } catch (e: SecurityException) {
+            // Android 14+ may block microphone FGS from background on some devices (Xiaomi MIUI)
+            android.util.Log.e("WakeWordService", "Failed to start foreground service - may be in background", e)
+            // Stop self to avoid ANR
+            stopSelf()
+            instance = null
+            return
+        }
         
         wakeWordDetector.setOnWakeWordDetectedListener {
             android.util.Log.d("WakeWordService", "Wake word callback fired, forwarding to VoiceCommandManager")

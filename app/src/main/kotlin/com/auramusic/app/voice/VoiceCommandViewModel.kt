@@ -125,11 +125,16 @@ import javax.inject.Inject
 
     private fun restartWakeWordService() {
         try {
+            // Only restart if app is in foreground (Android 14+ restricts microphone FGS from background)
+            if (!isAppInForeground) {
+                android.util.Log.d("VoiceCommandViewModel", "Skipping wake word restart - app in background")
+                return
+            }
             // Stop any existing service first to prevent microphone loops
             WakeWordService.stop(context)
             WakeWordService.start(context)
         } catch (e: Exception) {
-            e.printStackTrace()
+            android.util.Log.e("VoiceCommandViewModel", "Wake word restart failed", e)
         }
     }
 
