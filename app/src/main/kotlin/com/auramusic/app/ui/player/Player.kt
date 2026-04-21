@@ -1708,35 +1708,75 @@ fun BottomSheetPlayer(
                                 )
                             }
                         }
+
+                        Spacer(Modifier.height(12.dp))
+
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = PlayerHorizontalPadding)
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Sleep timer button
+                                FilledIconButton(
+                                    onClick = { showSleepTimerDialog = true },
+                                    shape = RoundedCornerShape(50),
+                                    colors = IconButtonDefaults.filledIconButtonColors(
+                                        containerColor = sideButtonContainerColor,
+                                        contentColor = if (sleepTimerEnabled) MaterialTheme.colorScheme.primary else sideButtonContentColor,
+                                    ),
+                                    modifier = Modifier.size(42.dp),
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.bedtime),
+                                        contentDescription = stringResource(R.string.sleep_timer),
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+
+                                // Lyrics toggle button
+                                FilledIconButton(
+                                    onClick = { onLyricsToggle() },
+                                    shape = RoundedCornerShape(50),
+                                    colors = IconButtonDefaults.filledIconButtonColors(
+                                        containerColor = if (showInlineLyrics) textButtonColor else sideButtonContainerColor,
+                                        contentColor = if (showInlineLyrics) iconButtonColor else sideButtonContentColor,
+                                    ),
+                                    modifier = Modifier.size(42.dp),
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.lyrics),
+                                        contentDescription = stringResource(R.string.lyrics),
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(Modifier.weight(1f))
+                        }
                     } else {
+                        // Playback controls: centered prev / play / next
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            horizontalArrangement = Arrangement.Center,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = PlayerHorizontalPadding),
                         ) {
-                            // Shuffle button with animation
-                            val shuffleInteractionSource = remember { MutableInteractionSource() }
-                            val isShufflePressed by shuffleInteractionSource.collectIsPressedAsState()
-                            val shuffleScale by animateFloatAsState(
-                                targetValue = if (isShufflePressed) 0.85f else 1f,
-                                animationSpec = spring(dampingRatio = 0.6f, stiffness = 800f),
-                                label = "shuffleScale"
-                            )
+                            // Shuffle button
                             Box(
                                 modifier = Modifier
-                                    .size((32 * shuffleScale).dp)
+                                    .size(32.dp)
                                     .clip(CircleShape)
                                     .background(if (shuffleModeEnabled && !isListenTogetherGuest) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
-                                    .combinedClickable(
-                                        interactionSource = shuffleInteractionSource,
-                                        indication = ripple(bounded = true, radius = 16.dp),
-                                        enabled = !isListenTogetherGuest,
-                                        onClick = {
-                                            playerConnection.player.shuffleModeEnabled = !playerConnection.player.shuffleModeEnabled
-                                        }
-                                    ),
+                                    .clickable(enabled = !isListenTogetherGuest) {
+                                        playerConnection.player.shuffleModeEnabled = !playerConnection.player.shuffleModeEnabled
+                                    },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Image(
@@ -1749,25 +1789,107 @@ fun BottomSheetPlayer(
                                 )
                             }
 
-                            // Repeat button with animation
-                            val repeatInteractionSource = remember { MutableInteractionSource() }
-                            val isRepeatPressed by repeatInteractionSource.collectIsPressedAsState()
-                            val repeatScale by animateFloatAsState(
-                                targetValue = if (isRepeatPressed) 0.85f else 1f,
-                                animationSpec = spring(dampingRatio = 0.6f, stiffness = 800f),
-                                label = "repeatScale"
-                            )
+                            Spacer(Modifier.weight(1f))
+
+                            // Previous button
                             Box(
                                 modifier = Modifier
-                                    .size((32 * repeatScale).dp)
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .clickable(enabled = canSkipPrevious && !isListenTogetherGuest) {
+                                        playerConnection.seekToPrevious()
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Image(
+                                    painter = painterResource(R.drawable.skip_previous),
+                                    contentDescription = stringResource(R.string.previous),
+                                    colorFilter = ColorFilter.tint(TextBackgroundColor),
+                                    modifier = Modifier
+                                        .size(28.dp)
+                                        .alpha(if (isListenTogetherGuest) 0.5f else 1f)
+                                )
+                            }
+
+                            Spacer(Modifier.width(16.dp))
+
+                            // Play/Pause button
+                            Box(
+                                modifier = Modifier
+                                    .size(72.dp)
+                                    .clip(CircleShape)
+                                    .background(textButtonColor)
+                                    .clickable {
+                                        if (isListenTogetherGuest) {
+                                            playerConnection.toggleMute()
+                                            return@clickable
+                                        }
+                                        if (isCasting) {
+                                            if (castIsPlaying) {
+                                                castHandler?.pause()
+                                            } else {
+                                                castHandler?.play()
+                                            }
+                                        } else if (playbackState == STATE_ENDED) {
+                                            playerConnection.player.seekTo(0, 0)
+                                            playerConnection.player.playWhenReady = true
+                                        } else {
+                                            playerConnection.player.togglePlayPause()
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Image(
+                                    painter = painterResource(
+                                        if (isListenTogetherGuest) {
+                                            if (isMuted) R.drawable.volume_off else R.drawable.volume_up
+                                        } else if (playbackState == STATE_ENDED) {
+                                            R.drawable.replay
+                                        } else if (effectiveIsPlaying) {
+                                            R.drawable.pause
+                                        } else {
+                                            R.drawable.play
+                                        },
+                                    ),
+                                    contentDescription = null,
+                                    colorFilter = ColorFilter.tint(iconButtonColor),
+                                    modifier = Modifier.size(36.dp),
+                                )
+                            }
+
+                            Spacer(Modifier.width(16.dp))
+
+                            // Next button
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .clickable(enabled = canSkipNext && !isListenTogetherGuest) {
+                                        playerConnection.seekToNext()
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Image(
+                                    painter = painterResource(R.drawable.skip_next),
+                                    contentDescription = stringResource(R.string.next),
+                                    colorFilter = ColorFilter.tint(TextBackgroundColor),
+                                    modifier = Modifier
+                                        .size(28.dp)
+                                        .alpha(if (isListenTogetherGuest) 0.5f else 1f)
+                                )
+                            }
+
+                            Spacer(Modifier.weight(1f))
+
+                            // Repeat button
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
                                     .clip(CircleShape)
                                     .background(if (repeatMode != Player.REPEAT_MODE_OFF && !isListenTogetherGuest) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
-                                    .combinedClickable(
-                                        interactionSource = repeatInteractionSource,
-                                        indication = ripple(bounded = true, radius = 16.dp),
-                                        enabled = !isListenTogetherGuest,
-                                        onClick = { playerConnection.player.toggleRepeatMode() }
-                                    ),
+                                    .clickable(enabled = !isListenTogetherGuest) {
+                                        playerConnection.player.toggleRepeatMode()
+                                    },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Image(
@@ -1785,151 +1907,65 @@ fun BottomSheetPlayer(
                                         .alpha(if (isListenTogetherGuest) 0.5f else 1f)
                                 )
                             }
+                        }
 
-                            // Previous button with animation
-                            val prevInteractionSource = remember { MutableInteractionSource() }
-                            val isPrevPressed by prevInteractionSource.collectIsPressedAsState()
-                            val prevScale by animateFloatAsState(
-                                targetValue = if (isPrevPressed) 0.85f else 1f,
-                                animationSpec = spring(dampingRatio = 0.6f, stiffness = 800f),
-                                label = "prevScale"
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .size((36 * prevScale).dp)
-                                    .clip(CircleShape)
-                                    .background(if (canSkipPrevious && !isListenTogetherGuest) Color.Transparent else Color.Transparent)
-                                    .combinedClickable(
-                                        interactionSource = prevInteractionSource,
-                                        indication = ripple(bounded = true, radius = 18.dp),
-                                        enabled = canSkipPrevious && !isListenTogetherGuest,
-                                        onClick = playerConnection::seekToPrevious
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Image(
-                                    painter = painterResource(R.drawable.skip_previous),
-                                    contentDescription = stringResource(R.string.previous),
-                                    colorFilter = ColorFilter.tint(TextBackgroundColor),
-                                    modifier = Modifier
-                                        .size(28.dp)
-                                        .alpha(if (isListenTogetherGuest) 0.5f else 1f)
-                                )
-                            }
+                        Spacer(Modifier.height(12.dp))
 
-                            // Play/Pause button with animation
-                            val playPauseInteractionSource = remember { MutableInteractionSource() }
-                            val isPlayPausePressed by playPauseInteractionSource.collectIsPressedAsState()
-                            val playPauseScale by animateFloatAsState(
-                                targetValue = if (isPlayPausePressed) 0.9f else 1f,
-                                animationSpec = spring(dampingRatio = 0.6f, stiffness = 800f),
-                                label = "playPauseScale"
-                            )
-                            Box(
-                                modifier =
-                                Modifier
-                                    .size((72 * playPauseScale).dp)
-                                    .clip(CircleShape)
-                                    .background(textButtonColor)
-                                    .combinedClickable(
-                                        interactionSource = playPauseInteractionSource,
-                                        indication = ripple(bounded = true, radius = 36.dp),
-                                        onClick = {
-                                            if (isListenTogetherGuest) {
-                                                playerConnection.toggleMute()
-                                                return@combinedClickable
-                                            }
-                                            if (isCasting) {
-                                                if (castIsPlaying) {
-                                                    castHandler?.pause()
-                                                } else {
-                                                    castHandler?.play()
-                                                }
-                                            } else if (playbackState == STATE_ENDED) {
-                                                playerConnection.player.seekTo(0, 0)
-                                                playerConnection.player.playWhenReady = true
-                                            } else {
-                                                playerConnection.player.togglePlayPause()
-                                            }
-                                        },
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Image(
-                                    painter =
-                                    painterResource(
-                                        if (isListenTogetherGuest) {
-                                            if (isMuted) R.drawable.volume_off else R.drawable.volume_up
-                                        } else if (playbackState == STATE_ENDED) {
-                                            R.drawable.replay
-                                        } else if (effectiveIsPlaying) {
-                                            R.drawable.pause
-                                        } else {
-                                            R.drawable.play
-                                        },
-                                    ),
-                                    contentDescription = null,
-                                    colorFilter = ColorFilter.tint(iconButtonColor),
-                                    modifier = Modifier.size(36.dp),
-                                )
-                            }
-
-                            // Next button with animation
-                            val nextInteractionSource = remember { MutableInteractionSource() }
-                            val isNextPressed by nextInteractionSource.collectIsPressedAsState()
-                            val nextScale by animateFloatAsState(
-                                targetValue = if (isNextPressed) 0.85f else 1f,
-                                animationSpec = spring(dampingRatio = 0.6f, stiffness = 800f),
-                                label = "nextScale"
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .size((36 * nextScale).dp)
-                                    .clip(CircleShape)
-                                    .background(if (canSkipNext && !isListenTogetherGuest) Color.Transparent else Color.Transparent)
-                                    .combinedClickable(
-                                        interactionSource = nextInteractionSource,
-                                        indication = ripple(bounded = true, radius = 18.dp),
-                                        enabled = canSkipNext && !isListenTogetherGuest,
-                                        onClick = playerConnection::seekToNext
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Image(
-                                    painter = painterResource(R.drawable.skip_next),
-                                    contentDescription = stringResource(R.string.next),
-                                    colorFilter = ColorFilter.tint(TextBackgroundColor),
-                                    modifier = Modifier
-                                        .size(28.dp)
-                                        .alpha(if (isListenTogetherGuest) 0.5f else 1f)
-                                )
-                            }
-
-                            // Like button with animation
-                            val likeInteractionSource = remember { MutableInteractionSource() }
-                            val isLikePressed by likeInteractionSource.collectIsPressedAsState()
-                            val likeScale by animateFloatAsState(
-                                targetValue = if (isLikePressed) 0.85f else 1f,
-                                animationSpec = spring(dampingRatio = 0.6f, stiffness = 800f),
-                                label = "likeScale"
-                            )
+                        // Bottom row: like on left, kebab menu (vertical 3 dots) on right
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = PlayerHorizontalPadding),
+                        ) {
+                            // Like button
                             val isLiked = currentSong?.song?.liked == true
                             Box(
                                 modifier = Modifier
-                                    .size((32 * likeScale).dp)
+                                    .size(32.dp)
                                     .clip(CircleShape)
                                     .background(if (isLiked) MaterialTheme.colorScheme.errorContainer else Color.Transparent)
-                                    .combinedClickable(
-                                        interactionSource = likeInteractionSource,
-                                        indication = ripple(bounded = true, radius = 16.dp),
-                                        onClick = playerConnection::toggleLike
-                                    ),
+                                    .clickable { playerConnection.toggleLike() },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Image(
                                     painter = painterResource(if (isLiked) R.drawable.favorite else R.drawable.favorite_border),
                                     contentDescription = stringResource(R.string.like),
                                     colorFilter = ColorFilter.tint(if (isLiked) MaterialTheme.colorScheme.error else TextBackgroundColor),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+
+                            // Kebab menu button (vertical 3 dots)
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(24.dp))
+                                    .background(textButtonColor)
+                                    .clickable {
+                                        menuState.show {
+                                            PlayerMenu(
+                                                mediaMetadata = mediaMetadata,
+                                                navController = navController,
+                                                playerBottomSheetState = state,
+                                                onShowDetailsDialog = {
+                                                    mediaMetadata.id.let {
+                                                        bottomSheetPageState.show {
+                                                            ShowMediaInfo(it)
+                                                        }
+                                                    }
+                                                },
+                                                onDismiss = menuState::dismiss,
+                                            )
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Image(
+                                    painter = painterResource(R.drawable.more_vert),
+                                    contentDescription = stringResource(R.string.more_options),
+                                    colorFilter = ColorFilter.tint(iconButtonColor),
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -2261,7 +2297,7 @@ private fun PlayerMoreMenuButton(
             },
     ) {
         Image(
-            painter = painterResource(R.drawable.more_horiz),
+            painter = painterResource(R.drawable.more_vert),
             contentDescription = null,
             colorFilter = ColorFilter.tint(iconButtonColor),
         )
