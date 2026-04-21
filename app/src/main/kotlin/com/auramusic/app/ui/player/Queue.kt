@@ -307,7 +307,7 @@ fun Queue(
                         },
                         isActive = repeatMode != Player.REPEAT_MODE_OFF,
                         enabled = !isListenTogetherGuest,
-                        shape = repeatShape,
+                        shape = middleShape,
                         modifier = Modifier.size(buttonSize),
                         textButtonColor = textButtonColor,
                         iconButtonColor = iconButtonColor,
