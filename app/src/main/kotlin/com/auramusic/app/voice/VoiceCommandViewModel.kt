@@ -97,19 +97,31 @@ import javax.inject.Inject
         stopEverything()
         consecutiveErrors = 0
         isSessionActive = true
+        val greetingText = "Hello! How can I help you today?"
         _uiState.update {
             VoiceUiState(
                 isVisible = true,
                 mode = VoiceMode.MANUAL,
-                phase = VoicePhase.LISTENING,
+                phase = VoicePhase.GREETING,
+                feedbackText = greetingText,
             )
         }
         if (voiceFeedbackManager.isEnabled()) {
-            voiceFeedbackManager.speak("Hello! How can I help you today?") {
-                voiceCommandManager.startListening(RecognitionMode.COMMAND)
+            voiceFeedbackManager.speak(greetingText) {
+                // Delay to allow TTS audio to fully release the mic before SpeechRecognizer starts
+                viewModelScope.launch {
+                    delay(350)
+                    _uiState.update { it.copy(phase = VoicePhase.LISTENING, feedbackText = "") }
+                    voiceCommandManager.startListening(RecognitionMode.COMMAND)
+                }
             }
         } else {
-            voiceCommandManager.startListening(RecognitionMode.COMMAND)
+            // Show greeting briefly even without TTS
+            viewModelScope.launch {
+                delay(1200)
+                _uiState.update { it.copy(phase = VoicePhase.LISTENING, feedbackText = "") }
+                voiceCommandManager.startListening(RecognitionMode.COMMAND)
+            }
         }
     }
 
@@ -229,21 +241,31 @@ import javax.inject.Inject
                         android.util.Log.d("VoiceCommandViewModel", "WakeWordDetected received, showing overlay")
                         stopEverything()
                         consecutiveErrors = 0
+                        val greetingText = "Hello! How can I help you today?"
                         _uiState.update {
                             VoiceUiState(
                                 isVisible = true,
                                 mode = VoiceMode.COMMAND,
-                                phase = VoicePhase.LISTENING,
+                                phase = VoicePhase.GREETING,
+                                feedbackText = greetingText,
                             )
                         }
                         // Short delay to allow mic handoff from VOSK AudioRecord to SpeechRecognizer
                         viewModelScope.launch {
-                            delay(150)
+                            delay(300)
                             if (voiceFeedbackManager.isEnabled()) {
-                                voiceFeedbackManager.speak("Hello! How can I help you today?") {
-                                    voiceCommandManager.startListening(RecognitionMode.COMMAND)
+                                voiceFeedbackManager.speak(greetingText) {
+                                    // Extra delay after TTS finishes to avoid mic contention
+                                    viewModelScope.launch {
+                                        delay(350)
+                                        _uiState.update { it.copy(phase = VoicePhase.LISTENING, feedbackText = "") }
+                                        voiceCommandManager.startListening(RecognitionMode.COMMAND)
+                                    }
                                 }
                             } else {
+                                // Show greeting briefly even without TTS
+                                delay(1200)
+                                _uiState.update { it.copy(phase = VoicePhase.LISTENING, feedbackText = "") }
                                 voiceCommandManager.startListening(RecognitionMode.COMMAND)
                             }
                         }
@@ -268,19 +290,29 @@ import javax.inject.Inject
             processCommand(remainingText)
         } else {
             // Greet user and wait for command
+            val greetingText = "Hello! How can I help you today?"
             _uiState.update {
                 VoiceUiState(
                     isVisible = true,
                     mode = VoiceMode.COMMAND,
-                    phase = VoicePhase.LISTENING,
+                    phase = VoicePhase.GREETING,
+                    feedbackText = greetingText,
                 )
             }
             if (voiceFeedbackManager.isEnabled()) {
-                voiceFeedbackManager.speak("Hello! How can I help you today?") {
-                    voiceCommandManager.startListening(RecognitionMode.COMMAND)
+                voiceFeedbackManager.speak(greetingText) {
+                    viewModelScope.launch {
+                        delay(350)
+                        _uiState.update { it.copy(phase = VoicePhase.LISTENING, feedbackText = "") }
+                        voiceCommandManager.startListening(RecognitionMode.COMMAND)
+                    }
                 }
             } else {
-                voiceCommandManager.startListening(RecognitionMode.COMMAND)
+                viewModelScope.launch {
+                    delay(1200)
+                    _uiState.update { it.copy(phase = VoicePhase.LISTENING, feedbackText = "") }
+                    voiceCommandManager.startListening(RecognitionMode.COMMAND)
+                }
             }
         }
     }
@@ -378,18 +410,26 @@ import javax.inject.Inject
             val command = VoiceCommandParser.parseCommand(text, customWakeWord)
             when (command) {
                 is VoiceCommand.WakeWordDetected -> {
+                    val greetingText = "Hello! How can I help you today?"
                     _uiState.update {
                         it.copy(
                             mode = VoiceMode.COMMAND,
-                            phase = VoicePhase.LISTENING,
+                            phase = VoicePhase.GREETING,
                             recognizedText = "",
+                            feedbackText = greetingText,
                         )
                     }
                     if (voiceFeedbackManager.isEnabled()) {
-                        voiceFeedbackManager.speak("Hello! How can I help you today?") {
-                            voiceCommandManager.startListening(RecognitionMode.COMMAND)
+                        voiceFeedbackManager.speak(greetingText) {
+                            viewModelScope.launch {
+                                delay(350)
+                                _uiState.update { it.copy(phase = VoicePhase.LISTENING, feedbackText = "") }
+                                voiceCommandManager.startListening(RecognitionMode.COMMAND)
+                            }
                         }
                     } else {
+                        delay(1200)
+                        _uiState.update { it.copy(phase = VoicePhase.LISTENING, feedbackText = "") }
                         voiceCommandManager.startListening(RecognitionMode.COMMAND)
                     }
                 }

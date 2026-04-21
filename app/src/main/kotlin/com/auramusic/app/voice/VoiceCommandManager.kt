@@ -66,22 +66,23 @@ fun startListening(mode: RecognitionMode) {
 
         currentMode = mode
         
+        // Destroy previous recognizer first, then delay before creating a new one
+        // to prevent recognizer busy errors from rapid restarts (avoid Thread.sleep on main thread)
         mainHandler.post {
+            try {
+                speechRecognizer?.destroy()
+                speechRecognizer = null
+            } catch (_: Exception) {}
+        }
+        mainHandler.postDelayed({
             try {
                 // Disable system sound effects (like Google mic click sounds)
                 disableSystemSoundEffects()
- 
-                // Destroy previous recognizer to avoid stale state
-                speechRecognizer?.destroy()
-                speechRecognizer = null
-                
-                // Small delay to prevent recognizer busy errors from rapid restarts
-                Thread.sleep(100)
-                
+
                 speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
                     setRecognitionListener(createRecognitionListener())
                 }
- 
+
                 val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                     putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                     putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
@@ -95,13 +96,15 @@ fun startListening(mode: RecognitionMode) {
                             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 7000L)
                         }
                         RecognitionMode.COMMAND -> {
-                            // Shorter silence timeout for command mode, wait longer for user to speak
-                            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
-                            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
+                            // Longer silence timeouts so SpeechRecognizer waits for user to actually speak
+                            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
+                            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 4000L)
+                            // Give user more time before initial speech timeout
+                            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 5000L)
                         }
                     }
                 }
- 
+
                 speechRecognizer?.startListening(intent)
                 _isListening.value = true
             } catch (e: Exception) {
@@ -109,7 +112,7 @@ fun startListening(mode: RecognitionMode) {
                 _events.tryEmit(VoiceRecognitionEvent.Error(-1, "Failed to start: ${e.message}", true))
                 _isListening.value = false
             }
-        }
+        }, 150)
     }
 
     private fun disableSystemSoundEffects() {

@@ -99,6 +99,7 @@ fun VoiceCommandOverlay(
                 // Status text
                 Text(
                     text = when (state.phase) {
+                        VoicePhase.GREETING -> state.feedbackText.ifEmpty { "Hello! How can I help you today?" }
                         VoicePhase.LISTENING -> "Listening..."
                         VoicePhase.PROCESSING -> "Processing..."
                         VoicePhase.FEEDBACK -> ""
@@ -161,7 +162,8 @@ private fun VoiceWaveVisualizer(
 
     val isActive = phase == VoicePhase.LISTENING || phase == VoicePhase.PROCESSING
     val isProcessing = phase == VoicePhase.PROCESSING
-    val isFeedback = phase == VoicePhase.FEEDBACK
+    val isGreeting = phase == VoicePhase.GREETING
+    val isFeedback = phase == VoicePhase.FEEDBACK || isGreeting
     val isError = phase == VoicePhase.ERROR
 
     val primaryColor = MaterialTheme.colorScheme.primary

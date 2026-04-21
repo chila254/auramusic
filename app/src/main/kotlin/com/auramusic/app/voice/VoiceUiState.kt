@@ -12,4 +12,4 @@ data class VoiceUiState(
 
 enum class VoiceMode { WAKE_WORD, COMMAND, MANUAL }
 
-enum class VoicePhase { IDLE, LISTENING, PROCESSING, FEEDBACK, ERROR }
+enum class VoicePhase { IDLE, GREETING, LISTENING, PROCESSING, FEEDBACK, ERROR }

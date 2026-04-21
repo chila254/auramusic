@@ -116,9 +116,8 @@ class VoiceFeedbackManager @Inject constructor(
                 val utteranceId = UUID.randomUUID().toString()
                 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
-                    
-                    // Set listener to know when done (API 21+)
+                    // Set listener BEFORE speaking to avoid race condition where onDone fires
+                    // before the listener is registered
                     tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                         override fun onStart(utteranceId: String?) {
                             // Started speaking
@@ -142,10 +141,12 @@ class VoiceFeedbackManager @Inject constructor(
                             }
                         }
                     })
+
+                    tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
                     
-                    // Fallback restore after 5 seconds in case listener fails
+                    // Fallback restore after 8 seconds in case listener fails
                     launch {
-                        delay(5000)
+                        delay(8000)
                         if (isSpeaking) {
                             restoreMusicVolume()
                             isSpeaking = false
