@@ -23,19 +23,24 @@
 
 <h1>Join our community</h1>
 
+<table align="center">
+<tr>
+<td align="center">
 <a href="https://discord.gg/PFvX7gnJg">
 <img src="https://logotyp.us/file/discord.svg" alt="Discord" width="50" height="50">
 </a>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<br>
+<a href="https://discord.gg/PFvX7gnJg">Discord</a>
+</td>
+<td align="center">
 <a href="https://t.me/AuraMusicUpdates">
 <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram" width="50" height="50">
 </a>
-
 <br>
-
-<a href="https://discord.gg/PFvX7gnJg">Join on Discord</a>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<a href="https://t.me/AuraMusicUpdates">Join on Telegram</a>
+<a href="https://t.me/AuraMusicUpdates">Telegram</a>
+</td>
+</tr>
+</table>
 
 </div>
 
@@ -68,9 +73,9 @@
 <h1>Features</h1>
 </div>
 
-<table>
+<table width="100%">
 <tr>
-<td>
+<td width="50%" valign="top">
 
 ### Playback & Streaming
 - Play any song or video from YouTube Music
@@ -81,7 +86,7 @@
 - Syncing of songs, artists, albums and playlists from and to your account
 
 </td>
-<td>
+<td width="50%" valign="top">
 
 ### Audio Features
 - Equalizer with custom presets
@@ -94,7 +99,7 @@
 </td>
 </tr>
 <tr>
-<td>
+<td width="50%" valign="top">
 
 ### Voice Control
 - Hands-free voice commands (say "Hey Aura" to activate)
@@ -103,7 +108,7 @@
 - Control playback, volume, and search with your voice
 
 </td>
-<td>
+<td width="50%" valign="top">
 
 ### Casting & Sharing
 - **Google Cast support** (Chromecast to TV, speakers, Android TV)
@@ -113,7 +118,7 @@
 </td>
 </tr>
 <tr>
-<td>
+<td width="50%" valign="top">
 
 ### Lyrics
 - Live synchronized lyrics
@@ -121,7 +126,7 @@
 - Word-by-word highlighting
 
 </td>
-<td>
+<td width="50%" valign="top">
 
 ### Library & Organization
 - Personalized quick picks
@@ -133,7 +138,7 @@
 </td>
 </tr>
 <tr>
-<td>
+<td width="50%" valign="top">
 
 ### UI & Themes
 - Material 3 design
@@ -141,7 +146,7 @@
 - Home screen widget with playback controls
 
 </td>
-<td>
+<td width="50%" valign="top">
 
 ### Integration
 - Shazam music recognition
