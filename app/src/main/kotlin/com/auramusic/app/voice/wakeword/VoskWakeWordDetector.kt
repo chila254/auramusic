@@ -20,6 +20,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.util.zip.ZipInputStream
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -40,6 +41,9 @@ class VoskWakeWordDetector @Inject constructor(
     private var lastWakeWordTime = 0L
     private val mainHandler = Handler(Looper.getMainLooper())
     private var echoCanceler: AcousticEchoCanceler? = null
+
+    private val detectorDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+    private val detectorScope = CoroutineScope(SupervisorJob() + detectorDispatcher)
     
     private val WAKE_WORD_COOLDOWN_MS = 2000
 
@@ -69,7 +73,7 @@ class VoskWakeWordDetector @Inject constructor(
     override fun start() {
         if (isRunning.getAndSet(true)) return
 
-        detectionJob = CoroutineScope(Dispatchers.IO).launch {
+        detectionJob = detectorScope.launch {
             try {
                 val modelPath = ensureModel()
                 android.util.Log.d("VoskWakeWordDetector", "Loading model from: $modelPath")
@@ -323,26 +327,35 @@ class VoskWakeWordDetector @Inject constructor(
     override fun stop() {
         isRunning.set(false)
 
-        detectionJob?.cancel()
+        val job = detectionJob
         detectionJob = null
 
-        try {
-            echoCanceler?.release()
-            echoCanceler = null
-            audioRecord?.stop()
-            audioRecord?.release()
-            audioRecord = null
-        } catch (e: Exception) {
-            android.util.Log.e("VoskWakeWordDetector", "Error stopping audio", e)
-        }
+        val ec = echoCanceler
+        echoCanceler = null
+        val ar = audioRecord
+        audioRecord = null
+        val rec = recognizer
+        recognizer = null
+        val mod = model
+        model = null
 
-        try {
-            recognizer?.close()
-            recognizer = null
-            model?.close()
-            model = null
-        } catch (e: Exception) {
-            android.util.Log.e("VoskWakeWordDetector", "Error stopping model", e)
+        detectorScope.launch(NonCancellable) {
+            job?.cancelAndJoin()
+
+            try {
+                ec?.release()
+                ar?.stop()
+                ar?.release()
+            } catch (e: Exception) {
+                android.util.Log.e("VoskWakeWordDetector", "Error stopping audio", e)
+            }
+
+            try {
+                rec?.close()
+                mod?.close()
+            } catch (e: Exception) {
+                android.util.Log.e("VoskWakeWordDetector", "Error stopping model", e)
+            }
         }
     }
 
@@ -437,11 +450,22 @@ class VoskWakeWordDetector @Inject constructor(
         android.util.Log.d("VoskWakeWordDetector", "triggerWakeWord: callbackNull=${wakeWordCallback == null}")
         isRunning.set(false)
         try {
+            echoCanceler?.release()
+            echoCanceler = null
             audioRecord?.stop()
             audioRecord?.release()
             audioRecord = null
         } catch (e: Exception) {
             android.util.Log.e("VoskWakeWordDetector", "Error releasing audio on trigger", e)
+        }
+
+        try {
+            recognizer?.close()
+            recognizer = null
+            model?.close()
+            model = null
+        } catch (e: Exception) {
+            android.util.Log.e("VoskWakeWordDetector", "Error closing model on trigger", e)
         }
 
         withContext(Dispatchers.Main) {

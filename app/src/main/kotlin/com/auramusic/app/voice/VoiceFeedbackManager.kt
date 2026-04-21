@@ -98,9 +98,12 @@ class VoiceFeedbackManager @Inject constructor(
 
     fun speak(text: String, onComplete: (() -> Unit)? = null) {
         if (!isInitialized) {
-            android.util.Log.w("VoiceFeedbackManager", "TTS not initialized, cannot speak")
-            onComplete?.invoke()
-            return
+            initialize()
+            if (!isInitialized) {
+                android.util.Log.w("VoiceFeedbackManager", "TTS not initialized, cannot speak")
+                onComplete?.invoke()
+                return
+            }
         }
 
         scope.launch {

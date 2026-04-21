@@ -53,8 +53,6 @@ import javax.inject.Inject
     init {
         observePreferences()
         collectRecognitionEvents()
-        // Initialize voice feedback manager
-        voiceFeedbackManager.initialize()
     }
 
     fun bindHandlers(

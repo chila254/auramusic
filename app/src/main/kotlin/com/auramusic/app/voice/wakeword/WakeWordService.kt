@@ -64,8 +64,6 @@ class WakeWordService : Service() {
         wakeWordDetector.setOnProgressListener { progress, bytesRead, totalBytes ->
             updateProgressNotification(progress, bytesRead, totalBytes)
         }
-        
-        wakeWordDetector.start()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
