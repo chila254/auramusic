@@ -389,7 +389,7 @@ fun Queue(
                     }
                 }
             } else {
-                // Old design - sleep timer and lyrics moved to player controls
+                // Old design - with lyrics button
                 Row(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
@@ -420,6 +420,29 @@ fun Queue(
                             Text(
                                 text = stringResource(id = R.string.queue),
                                 color = TextBackgroundColor,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.basicMarquee()
+                            )
+                        }
+                    }
+
+                    TextButton(onClick = onToggleLyrics) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.lyrics),
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = if (showInlineLyrics) MaterialTheme.colorScheme.primary else TextBackgroundColor
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = stringResource(id = R.string.lyrics),
+                                color = if (showInlineLyrics) MaterialTheme.colorScheme.primary else TextBackgroundColor,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 textAlign = TextAlign.Center,

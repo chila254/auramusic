@@ -1231,6 +1231,40 @@ fun BottomSheetPlayer(
 
                     Spacer(modifier = Modifier.size(12.dp))
 
+                    // Voice command button
+                    if (enableVoiceCommands) {
+                        VoiceCommandButton(
+                            onSearch = { query ->
+                                navController.navigate("search/$query")
+                            },
+                            onNavigate = { route ->
+                                navController.navigate(route)
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.size(12.dp))
+
+                    // Sleep timer button
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(textButtonColor)
+                            .clickable { showSleepTimerDialog = true },
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.bedtime),
+                            contentDescription = stringResource(R.string.sleep_timer),
+                            tint = if (sleepTimerEnabled) MaterialTheme.colorScheme.primary else iconButtonColor,
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .size(24.dp),
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.size(12.dp))
+
                     AnimatedContent(
                         targetState = isVideoAvailable,
                         label = "VideoToggle"
