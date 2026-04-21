@@ -42,7 +42,9 @@ class VoskWakeWordDetector @Inject constructor(
     private val mainHandler = Handler(Looper.getMainLooper())
     private var echoCanceler: AcousticEchoCanceler? = null
 
-    private val detectorDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+    // Store executor reference for proper shutdown
+    private val detectorExecutor = Executors.newSingleThreadExecutor()
+    private val detectorDispatcher = detectorExecutor.asCoroutineDispatcher()
     private val detectorScope = CoroutineScope(SupervisorJob() + detectorDispatcher)
     
     private val WAKE_WORD_COOLDOWN_MS = 2000
@@ -359,7 +361,19 @@ class VoskWakeWordDetector @Inject constructor(
         }
     }
 
-    override fun close() = stop()
+    override fun close() {
+        stop()
+        // Shutdown executor to prevent thread/memory leaks
+        try {
+            detectorScope.cancel()
+            detectorExecutor.shutdown()
+            if (!detectorExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
+                detectorExecutor.shutdownNow()
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("VoskWakeWordDetector", "Error shutting down executor", e)
+        }
+    }
 
     private suspend fun startAudioRecording() {
         val buffer = ShortArray(BUFFER_SIZE)
