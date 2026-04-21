@@ -1712,7 +1712,7 @@ fun BottomSheetPlayer(
                                         .alpha(if (isListenTogetherGuest) 0.5f else 1f),
                                     enabled = !isListenTogetherGuest,
                                     onClick = {
-                                        playerConnection.player.toggleShuffleModeEnabled()
+                                        playerConnection.player.shuffleModeEnabled = !playerConnection.player.shuffleModeEnabled
                                     }
                                 )
                             }
@@ -1841,7 +1841,7 @@ fun BottomSheetPlayer(
                                         .align(Alignment.Center),
                                     onClick = {
                                         // Expand queue - trigger queue sheet
-                                        queueSheetState.expand()
+                                        queueSheetState.expandSoft()
                                     }
                                 )
                             }

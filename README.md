@@ -21,18 +21,20 @@
 [![GitHub license](https://img.shields.io/github/license/TeamAuraMusic/AuraMusic?style=for-the-badge)](https://github.com/TeamAuraMusic/AuraMusic/blob/main/LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/TeamAuraMusic/AuraMusic/total?style=for-the-badge)](https://github.com/TeamAuraMusic/AuraMusic/releases)
 
-### Socials
+<h1>Join our community</h1>
 
 <a href="https://discord.gg/PFvX7gnJg">
 <img src="https://logotyp.us/file/discord.svg" alt="Discord" width="50" height="50">
 </a>
-<a href="https://discord.gg/PFvX7gnJg">Join on Discord</a>
-
-&nbsp;&nbsp;
-
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <a href="https://t.me/AuraMusicUpdates">
 <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram" width="50" height="50">
 </a>
+
+<br>
+
+<a href="https://discord.gg/PFvX7gnJg">Join on Discord</a>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <a href="https://t.me/AuraMusicUpdates">Join on Telegram</a>
 
 </div>
@@ -66,6 +68,10 @@
 <h1>Features</h1>
 </div>
 
+<table>
+<tr>
+<td>
+
 ### Playback & Streaming
 - Play any song or video from YouTube Music
 - Background playback
@@ -73,6 +79,9 @@
 - Search for songs, albums, artists, videos and playlists
 - YouTube Music account login support
 - Syncing of songs, artists, albums and playlists from and to your account
+
+</td>
+<td>
 
 ### Audio Features
 - Equalizer with custom presets
@@ -82,21 +91,37 @@
 - Sleep timer
 - VOSK wake word detection for hands-free voice control
 
+</td>
+</tr>
+<tr>
+<td>
+
 ### Voice Control
 - Hands-free voice commands (say "Hey Aura" to activate)
 - AEC and noise suppression for accurate detection
 - Voice feedback with TTS
 - Control playback, volume, and search with your voice
 
+</td>
+<td>
+
 ### Casting & Sharing
 - **Google Cast support** (Chromecast to TV, speakers, Android TV)
 - Listen together with friends in real-time
 - Discord Rich Presence
 
+</td>
+</tr>
+<tr>
+<td>
+
 ### Lyrics
 - Live synchronized lyrics
 - Multiple sources: Kugou, LRCLib, RushLyrics, BetterLyrics
 - Word-by-word highlighting
+
+</td>
+<td>
 
 ### Library & Organization
 - Personalized quick picks
@@ -105,14 +130,26 @@
 - Import playlists
 - Reorder songs in playlist or queue
 
+</td>
+</tr>
+<tr>
+<td>
+
 ### UI & Themes
 - Material 3 design
 - Light - Dark - Black - Dynamic theme
 - Home screen widget with playback controls
 
+</td>
+<td>
+
 ### Integration
 - Shazam music recognition
 - Last.fm scrobbling
+
+</td>
+</tr>
+</table>
 
 <div align="center">
 <h1>Tech Stack</h1>
@@ -174,12 +211,6 @@ If you'd like to support my work, you can donate via PayPal:
 <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=franklinfinyange%40gmail.com">
 <img src="https://www.paypalobjects.com/webstatic/mktg/Logo/pp-logo-200px.png" alt="PayPal" height="60">
 </a>
-
-<div align="center">
-<h1>Join our community</h1>
-</div>
-
-Join our community on social media - more platforms coming soon!
 
 <div align="center">
 <h1>Special Thanks</h1>
