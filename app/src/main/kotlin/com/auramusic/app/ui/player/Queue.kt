@@ -316,43 +316,32 @@ fun Queue(
                         playerBackground = playerBackground
                     )
 
-                    val sleepTimerShape = RoundedCornerShape(3.dp)
-                    val lyricsShape = RoundedCornerShape(
-                        topStart = 3.dp, bottomStart = 3.dp,
-                        topEnd = 50.dp, bottomEnd = 50.dp
+                    PlayerQueueButton(
+                        icon = R.drawable.bedtime,
+                        onClick = { showSleepTimerDialog = true },
+                        isActive = sleepTimerEnabled,
+                        enabled = !isListenTogetherGuest,
+                        shape = middleShape,
+                        modifier = Modifier.size(buttonSize),
+                        textButtonColor = textButtonColor,
+                        iconButtonColor = iconButtonColor,
+                        iconSize = iconSize,
+                        textBackgroundColor = TextBackgroundColor,
+                        playerBackground = playerBackground
                     )
 
-                    FilledIconButton(
-                        onClick = { showSleepTimerDialog = true },
-                        shape = sleepTimerShape,
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = textButtonColor,
-                            contentColor = if (sleepTimerEnabled) MaterialTheme.colorScheme.primary else iconButtonColor,
-                        ),
-                        modifier = Modifier.size(buttonSize),
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.bedtime),
-                            contentDescription = stringResource(R.string.sleep_timer),
-                            modifier = Modifier.size(iconSize)
-                        )
-                    }
-
-                    FilledIconButton(
+                    PlayerQueueButton(
+                        icon = R.drawable.lyrics,
                         onClick = onToggleLyrics,
-                        shape = lyricsShape,
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = textButtonColor,
-                            contentColor = if (showInlineLyrics) MaterialTheme.colorScheme.primary else iconButtonColor,
-                        ),
+                        isActive = showInlineLyrics,
+                        shape = repeatShape,
                         modifier = Modifier.size(buttonSize),
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.lyrics),
-                            contentDescription = stringResource(R.string.lyrics),
-                            modifier = Modifier.size(iconSize)
-                        )
-                    }
+                        textButtonColor = textButtonColor,
+                        iconButtonColor = iconButtonColor,
+                        iconSize = iconSize,
+                        textBackgroundColor = TextBackgroundColor,
+                        playerBackground = playerBackground
+                    )
 
                     Spacer(modifier = Modifier.weight(1f))
 
