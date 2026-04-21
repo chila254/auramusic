@@ -116,6 +116,11 @@
     <!-- Button -->
     <string name="retry">Retry</string>
     <string name="shuffle">Shuffle</string>
+    <string name="repeat">Repeat</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
+    <string name="like">Like</string>
+    <string name="more_options">More options</string>
     <string name="reset">Reset</string>
     <string name="play">Play</string>
     <string name="pause">Pause</string>

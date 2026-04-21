@@ -37,7 +37,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.interaction.ripple
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -73,6 +72,7 @@ import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -1307,30 +1307,6 @@ fun BottomSheetPlayer(
                     }
 
                     Spacer(modifier = Modifier.size(12.dp))
-
-                    // More menu (kebab) button
-                    PlayerMoreMenuButton(
-                        mediaMetadata = mediaMetadata,
-                        navController = navController,
-                        state = state,
-                        textButtonColor = textButtonColor,
-                        iconButtonColor = iconButtonColor,
-                    )
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    // Voice command button
-                    if (enableVoiceCommands) {
-                        VoiceCommandButton(
-                            onSearch = { query ->
-                                navController.navigate("search/$query")
-                            },
-                            onNavigate = { route ->
-                                navController.navigate(route)
-                            }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
 
                     // Kebab menu button (hamburger icon in circle)
                     Box(
