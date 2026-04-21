@@ -444,9 +444,6 @@ class MainActivity : ComponentActivity() {
                             runBlocking {
                                 dataStore.edit { 
                                     it[LastSeenVersionKey] = currentVersion
-                                    if (isAppUpdated) {
-                                        it[ChangelogShownForVersionKey] = currentVersion
-                                    }
                                 }
                             }
                         }
@@ -1214,7 +1211,14 @@ class MainActivity : ComponentActivity() {
 
                     if (changelogState.value) {
                         ChangelogScreen(
-                            onDismiss = { changelogState.value = false }
+                            onDismiss = {
+                                changelogState.value = false
+                                lifecycleScope.launch {
+                                    dataStore.edit {
+                                        it[ChangelogShownForVersionKey] = BuildConfig.VERSION_NAME
+                                    }
+                                }
+                            }
                         )
                     }
 
