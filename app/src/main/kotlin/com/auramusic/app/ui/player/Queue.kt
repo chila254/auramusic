@@ -48,8 +48,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -313,6 +315,44 @@ fun Queue(
                         textBackgroundColor = TextBackgroundColor,
                         playerBackground = playerBackground
                     )
+
+                    val sleepTimerShape = RoundedCornerShape(3.dp)
+                    val lyricsShape = RoundedCornerShape(
+                        topStart = 3.dp, bottomStart = 3.dp,
+                        topEnd = 50.dp, bottomEnd = 50.dp
+                    )
+
+                    FilledIconButton(
+                        onClick = { showSleepTimerDialog = true },
+                        shape = sleepTimerShape,
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = textButtonColor,
+                            contentColor = if (sleepTimerEnabled) MaterialTheme.colorScheme.primary else iconButtonColor,
+                        ),
+                        modifier = Modifier.size(buttonSize),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.bedtime),
+                            contentDescription = stringResource(R.string.sleep_timer),
+                            modifier = Modifier.size(iconSize)
+                        )
+                    }
+
+                    FilledIconButton(
+                        onClick = onToggleLyrics,
+                        shape = lyricsShape,
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = textButtonColor,
+                            contentColor = if (showInlineLyrics) MaterialTheme.colorScheme.primary else iconButtonColor,
+                        ),
+                        modifier = Modifier.size(buttonSize),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.lyrics),
+                            contentDescription = stringResource(R.string.lyrics),
+                            modifier = Modifier.size(iconSize)
+                        )
+                    }
 
                     Spacer(modifier = Modifier.weight(1f))
 

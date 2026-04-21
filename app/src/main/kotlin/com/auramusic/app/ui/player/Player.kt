@@ -1635,57 +1635,6 @@ fun BottomSheetPlayer(
                                 )
                             }
                         }
-
-                        Spacer(Modifier.height(12.dp))
-
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = PlayerHorizontalPadding)
-                        ) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                // Sleep timer button
-                                FilledIconButton(
-                                    onClick = { showSleepTimerDialog = true },
-                                    shape = RoundedCornerShape(50),
-                                    colors = IconButtonDefaults.filledIconButtonColors(
-                                        containerColor = sideButtonContainerColor,
-                                        contentColor = if (sleepTimerEnabled) MaterialTheme.colorScheme.primary else sideButtonContentColor,
-                                    ),
-                                    modifier = Modifier.size(42.dp),
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.bedtime),
-                                        contentDescription = stringResource(R.string.sleep_timer),
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                }
-
-                                // Lyrics toggle button
-                                FilledIconButton(
-                                    onClick = { onLyricsToggle() },
-                                    shape = RoundedCornerShape(50),
-                                    colors = IconButtonDefaults.filledIconButtonColors(
-                                        containerColor = if (showInlineLyrics) textButtonColor else sideButtonContainerColor,
-                                        contentColor = if (showInlineLyrics) iconButtonColor else sideButtonContentColor,
-                                    ),
-                                    modifier = Modifier.size(42.dp),
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.lyrics),
-                                        contentDescription = stringResource(R.string.lyrics),
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                }
-                            }
-
-                            Spacer(Modifier.weight(1f))
-                        }
                     } else {
                         // Playback controls: centered prev / play / next
                         Row(
