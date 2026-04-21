@@ -10,7 +10,6 @@
 - Updated README with Google Cast and voice control features
 
 ## Voice Command Improvements
-- Added download commands (current song, playlist, album)
 - Added confidence and audio energy filtering to reduce false wake word triggers
 - Lowered wake word detection thresholds for maximum sensitivity
 - Added AEC, NoiseSuppressor, and RMS energy filtering to wake word detection
@@ -18,6 +17,19 @@
 - Fixed minimum speech length requirements for command mode
 - Improved TTS greeting and audio ducking during voice commands
 - Fixed microphone loop by stopping wake word service before restart
+
+### Voice Commands Supported
+**Playback:** Play, Pause, Toggle play/pause, Next, Previous, Shuffle (on/off/toggle), Repeat (one/all/off)
+**Seek:** Skip forward/backward N seconds/minutes
+**Volume:** Volume up/down, Mute/Unmute
+**Speed:** Speed up, Slow down, Reset to normal speed
+**Search:** Search, Play search query
+**Downloads:** Download current song, Download playlist, Download album
+**Lyrics:** Show/Hide/Toggle lyrics
+**Video:** Enable/Disable/Toggle video mode
+**Media:** Toggle like, Show/Clear queue, Add to queue
+**Settings:** Dark mode on/off, Toggle theme
+**Navigation:** Go home, Go library, Open search, Open settings
 
 ## UI/UX Improvements
 - Added sleep timer and lyrics buttons to queue bar in new player design

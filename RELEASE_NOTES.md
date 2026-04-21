@@ -22,8 +22,23 @@
 ### Voice Commands
 - Interactive overlay with wave animations (Siri/Gemini-like)
 - Text-to-Speech feedback with multi-voice selection and audio ducking
-- Commands: play, search, pause, skip, seek, shuffle, repeat, theme toggle, lyrics toggle, video toggle, downloads, speed control
+- Comprehensive voice command support with 40+ commands
 - Automatic volume restoration after voice commands
+
+#### Command Reference
+| Category | Commands |
+|----------|---------|
+| **Playback** | play, pause, next, previous, shuffle on/off, repeat one/all/off |
+| **Seek** | skip forward N seconds/minutes, go back N seconds/minutes |
+| **Volume** | volume up/down, mute, unmute |
+| **Speed** | speed up, slow down, normal speed |
+| **Search** | search, play [song/artist] |
+| **Downloads** | download this song, download playlist, download album |
+| **Lyrics** | show lyrics, hide lyrics, toggle lyrics |
+| **Video** | video on/off, toggle video |
+| **Media** | like, show queue, clear queue, add to queue |
+| **Settings** | dark mode on/off, toggle theme |
+| **Navigation** | go home, go library, open search, open settings |
 
 ### Google Cast Support (GMS variant only)
 - Added Cast device discovery and selection
