@@ -97,6 +97,11 @@ import javax.inject.Inject
         stopEverything()
         consecutiveErrors = 0
         isSessionActive = true
+        
+        // Stop wake word service to release microphone for SpeechRecognizer
+        if (voiceEnabled && wakeWordEnabled && hasMicPermission && isAppInForeground) {
+            WakeWordService.stop(context)
+        }
         val greetingText = "Hello! How can I help you today?"
         _uiState.update {
             VoiceUiState(
