@@ -295,7 +295,7 @@ fun YouTubeSongMenu(
                             showChoosePlaylistDialog = true
                         }
                     ),
-                    NewAction(
+                     NewAction(
                         icon = {
                             Icon(
                                 painter = painterResource(R.drawable.share),
@@ -309,23 +309,27 @@ fun YouTubeSongMenu(
                             onDismiss()
                             showShareDialog = true
                         }
-
-
-                if (showShareDialog) {
-                    ShareSongBottomSheet(
-                        songData = ShareUtils.SongShareData(
-                            id = song.id,
-                            title = song.title,
-                            artist = song.artists.joinToString(", ") { it.name },
-                            album = song.album?.name,
-                            thumbnailUrl = song.thumbnail
-                        ),
-                        onDismiss = { showShareDialog = false }
                     )
-                }
-
-            ),
+                ),
                 columns = if (isGuest) 2 else 3,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 16.dp)
+            )
+        }
+
+        if (showShareDialog) {
+            ShareSongBottomSheet(
+                songData = ShareUtils.SongShareData(
+                    id = song.id,
+                    title = song.title,
+                    artist = song.artists.joinToString(", ") { it.name },
+                    album = song.album?.name,
+                    thumbnailUrl = song.thumbnail
+                ),
+                onDismiss = { showShareDialog = false }
+            )
+        }
+
+        item {
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 16.dp)
             )
         }
