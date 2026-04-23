@@ -221,35 +221,7 @@ class MainActivity : ComponentActivity() {
         private const val ACTION_LIBRARY = "com.auramusic.app.action.LIBRARY"
     }
 
-    private fun handleDeepLinkIntent(intent: Intent?, navController: NavHostController) {
-        if (intent == null) return
-        
-        val data = intent.data
-        if (data != null && data.host == "www.auramusic.site" && data.pathSegments.firstOrNull() == "play") {
-            // Deep link: auramusic.site/play/{videoId}
-            val videoId = data.pathSegments.getOrNull(1)
-            if (videoId != null) {
-                lifecycleScope.launch {
-                    try {
-                        // Try to get song from local database first
-                        val database = this@MainActivity.database
-                        val localSong = database.song(videoId).first()
 
-                        if (localSong != null) {
-                            // Song exists locally, play it directly
-                            val playerConnection = this@MainActivity.playerConnection
-                            playerConnection?.playQueue(YouTubeQueue.radio(localSong.toMediaMetadata()))
-                        } else {
-                            // Could not find song, just open the app
-                            // User can search for it manually
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-        }
-    }
 
     @Inject
     lateinit var database: MusicDatabase
@@ -1288,7 +1260,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun handleDeepLinkIntent(intent: Intent, navController: NavHostController) {
+    private fun handleDeepLinkIntent(intent: Intent?, navController: NavHostController) {
+        if (intent == null) return
         val uri = intent.data ?: intent.extras?.getString(Intent.EXTRA_TEXT)?.toUri() ?: return
         intent.data = null
         intent.removeExtra(Intent.EXTRA_TEXT)
@@ -1339,6 +1312,7 @@ class MainActivity : ComponentActivity() {
                 val videoId = when {
                     path == "watch" -> uri.getQueryParameter("v")
                     uri.host == "youtu.be" -> uri.pathSegments.firstOrNull()
+                    path == "play" && uri.host == "www.auramusic.site" -> uri.pathSegments.getOrNull(1)
                     else -> null
                 }
 
