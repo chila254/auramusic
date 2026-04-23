@@ -114,6 +114,7 @@ fun YouTubeSongMenu(
             }
         }
     }
+    var showShareDialog by remember { mutableStateOf(false) }
 
     var showChoosePlaylistDialog by rememberSaveable {  
         mutableStateOf(false)  
@@ -176,10 +177,23 @@ fun YouTubeSongMenu(
                             maxLines = 1,  
                             overflow = TextOverflow.Ellipsis,  
                         )  
-                    }  
-                }  
-            }  
-        }  
+                }
+        }
+    }
+
+    if (showShareDialog) {
+        ShareSongBottomSheet(
+            songData = ShareUtils.SongShareData(
+                id = song.id,
+                title = song.title,
+                artist = song.artists.joinToString(", ") { it.name },
+                album = song.album?.name,
+                thumbnailUrl = song.thumbnail
+            ),
+            onDismiss = { showShareDialog = false }
+        )
+    }
+}
     }  
 
     ListItem(  
@@ -306,21 +320,22 @@ fun YouTubeSongMenu(
                         text = stringResource(R.string.share),
                         onClick = {
                             onDismiss()
-                            bottomSheetPageState.show {
-                                ShareSongBottomSheet(
-                                    songData = ShareUtils.SongShareData(
-                                        id = song.id,
-                                        title = song.title,
-                                        artist = song.artists.joinToString(", ") { it.name },
-                                        album = song.album?.name,
-                                        thumbnailUrl = song.thumbnail
-                                    ),
-                                    onDismiss = { bottomSheetPageState.dismiss() }
-                                )
-                            }
+                            showShareDialog = true
                         }
                     )
-                ),
+                if (showShareDialog) {
+                    ShareSongBottomSheet(
+                        songData = ShareUtils.SongShareData(
+                            id = song.id,
+                            title = song.title,
+                            artist = song.artists.joinToString(", ") { it.name },
+                            album = song.album?.name,
+                            thumbnailUrl = song.thumbnail
+                        ),
+                        onDismiss = { showShareDialog = false }
+                    )
+                }
+            ),
                 columns = if (isGuest) 2 else 3,
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 16.dp)
             )

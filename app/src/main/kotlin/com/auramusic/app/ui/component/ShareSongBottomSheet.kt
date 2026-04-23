@@ -8,7 +8,6 @@ package com.auramusic.app.ui.component
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,7 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -74,7 +72,7 @@ fun ShareSongBottomSheet(
         SharePlatformItem(ShareUtils.SharePlatform.INSTAGRAM, R.drawable.instagram, Color(0xFFE4405F)),
         SharePlatformItem(ShareUtils.SharePlatform.FACEBOOK, R.drawable.facebook, Color(0xFF1877F2)),
         SharePlatformItem(ShareUtils.SharePlatform.WHATSAPP, R.drawable.whatsapp, Color(0xFF25D366)),
-        SharePlatformItem(ShareUtils.SharePlatform.TWITTER, R.drawable.twitter, Color(0xFF000000)),
+        SharePlatformItem(ShareUtils.SharePlatform.X, R.drawable.x_logo, Color(0xFF000000)),
         SharePlatformItem(ShareUtils.SharePlatform.TELEGRAM, R.drawable.telegram, Color(0xFF0088CC)),
         SharePlatformItem(ShareUtils.SharePlatform.SNAPCHAT, R.drawable.snapchat, Color(0xFFFFFC00)),
         SharePlatformItem(ShareUtils.SharePlatform.TIKTOK, R.drawable.tiktok, Color(0xFFEE1D52)),
@@ -116,11 +114,10 @@ fun ShareSongBottomSheet(
                 Text("Share to", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
                 Spacer(Modifier.height(12.dp))
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                // Vertical layout for social media icons
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     platforms.forEach { platformItem ->
                         SharePlatformButton(platformItem, isGenerating = isGenerating, onClick = {
@@ -136,9 +133,13 @@ fun ShareSongBottomSheet(
 
 @Composable
 fun SharePlatformButton(platformItem: SharePlatformItem, isGenerating: Boolean = false, onClick: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable(enabled = !isGenerating) { onClick() }) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable(enabled = !isGenerating) { onClick() }.padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
         Box(
-            modifier = Modifier.size(56.dp).clip(CircleShape).background(platformItem.color.copy(alpha = 0.15f)).padding(12.dp),
+            modifier = Modifier.size(48.dp).clip(CircleShape).background(platformItem.color.copy(alpha = 0.15f)).padding(10.dp),
             contentAlignment = Alignment.Center
         ) {
             if (isGenerating) {
@@ -147,13 +148,12 @@ fun SharePlatformButton(platformItem: SharePlatformItem, isGenerating: Boolean =
                 Image(
                     painter = painterResource(platformItem.iconRes),
                     contentDescription = platformItem.platform.displayName,
-                    modifier = Modifier.size(32.dp),
-                    colorFilter = ColorFilter.tint(platformItem.color)
+                    modifier = Modifier.size(28.dp),
+                    colorFilter = if (platformItem.platform == ShareUtils.SharePlatform.SNAPCHAT) null else ColorFilter.tint(platformItem.color)
                 )
             }
         }
-        Spacer(Modifier.height(6.dp))
-        Text(platformItem.platform.displayName, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, maxLines = 1, fontSize = 11.sp)
+        Text(platformItem.platform.displayName, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
     }
 }
 

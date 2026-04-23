@@ -39,7 +39,7 @@ object ShareUtils {
         INSTAGRAM("Instagram", "com.instagram.android"),
         FACEBOOK("Facebook", "com.facebook.katana"),
         WHATSAPP("WhatsApp", "com.whatsapp"),
-        TWITTER("X", "com.twitter.android"),
+        X("X", "com.twitter.android"),
         TELEGRAM("Telegram", "org.telegram.messenger"),
         SNAPCHAT("Snapchat", "com.snapchat.android"),
         TIKTOK("TikTok", "com.zhiliaoapp.musically"),
