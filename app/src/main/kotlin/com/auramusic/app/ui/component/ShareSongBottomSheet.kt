@@ -31,7 +31,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.background
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -82,11 +81,11 @@ fun ShareSongBottomSheet(
                 Text(stringResource(R.string.share_song), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(16.dp))
 
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     AsyncImage(
                         model = songData.thumbnailUrl,
                         contentDescription = null,
-                        modifier = Modifier.size(64.dp).clip(RoundedCornerShape(8.dp)),
+                        modifier = Modifier.size(64.dp).then(androidx.compose.foundation.layout.clip(RoundedCornerShape(8.dp))),
                         contentScale = ContentScale.Crop
                     )
                     Spacer(Modifier.width(12.dp))
@@ -125,7 +124,7 @@ fun ShareSongBottomSheet(
 fun SharePlatformButton(platformItem: SharePlatformItem, isGenerating: Boolean = false, onClick: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable(enabled = !isGenerating) { onClick() }) {
         Box(
-            modifier = Modifier.size(56.dp).background(color = platformItem.color.copy(alpha = 0.15f), shape = CircleShape).padding(12.dp),
+            modifier = Modifier.size(56.dp).then(androidx.compose.ui.background(platformItem.color.copy(alpha = 0.15f), shape = CircleShape)).padding(12.dp),
             contentAlignment = Alignment.Center
         ) {
             if (isGenerating) {

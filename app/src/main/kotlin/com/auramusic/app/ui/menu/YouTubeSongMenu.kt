@@ -316,7 +316,7 @@ fun YouTubeSongMenu(
                                         album = song.album?.name,
                                         thumbnailUrl = song.thumbnail
                                     ),
-                                    onDismiss = { bottomSheetPageState.hide() }
+                                    onDismiss = { bottomSheetPageState.dismiss() }
                                 )
                             }
                         }
