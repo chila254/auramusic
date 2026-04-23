@@ -134,11 +134,14 @@ object ShareUtils {
             }
             canvas.drawText("Now Playing", 60f, (cardHeight * 0.72).toFloat(), nowPlayingPaint)
 
-            val playIconPaint = Paint().apply {
+            // Add "Tap to play" text at bottom
+            val tapPaint = Paint().apply {
                 color = Color.parseColor("#1DB954")
+                textSize = 44f
+                typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
                 isAntiAlias = true
             }
-            canvas.drawCircle((cardWidth - 120).toFloat(), (cardHeight - 120).toFloat(), 50f, playIconPaint)
+            canvas.drawText("Tap to play in AuraMusic", 60f, (cardHeight * 0.93).toFloat(), tapPaint)
 
             val cacheDir = File(context.cacheDir, "share_cards")
             if (!cacheDir.exists()) cacheDir.mkdirs()
@@ -160,8 +163,13 @@ object ShareUtils {
         platform: SharePlatform,
         cardFile: File? = null
     ) {
-        val shareLink = "https://music.youtube.com/watch?v=${songData.id}"
-        val shareText = "🎵 ${songData.title} - ${songData.artist}\nListen on AuraMusic: $shareLink"
+        // Use AuraMusic deep link that opens the app directly
+        val deepLink = "https://www.auramusic.site/play/${songData.id}"
+        
+        val shareText = buildString {
+            append("🎵 ${songData.title} - ${songData.artist}\n")
+            append("Tap to play in AuraMusic: $deepLink")
+        }
 
         val intent = Intent().apply {
             action = Intent.ACTION_SEND

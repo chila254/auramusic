@@ -221,6 +221,41 @@ class MainActivity : ComponentActivity() {
         private const val ACTION_LIBRARY = "com.auramusic.app.action.LIBRARY"
     }
 
+    private fun handleDeepLinkIntent(intent: Intent?, navController: NavHostController) {
+        if (intent == null) return
+        
+        val data = intent.data
+        if (data != null && data.host == "www.auramusic.site" && data.pathSegments.firstOrNull() == "play") {
+            // Deep link: auramusic.site/play/{videoId}
+            val videoId = data.pathSegments.getOrNull(1)
+            if (videoId != null) {
+                lifecycleScope.launch {
+                    try {
+                        // Try to get song from local database first
+                        val database = this@MainActivity.database
+                        val localSong = database.song(videoId).first()
+                        
+                        if (localSong != null) {
+                            // Song exists locally, play it directly
+                            val playerConnection = this@MainActivity.playerConnection
+                            playerConnection?.playQueue(YouTubeQueue.radio(localSong.toMediaMetadata()))
+                        } else {
+                            // Fetch from YouTube Music and play
+                            YouTube.search(listOf(videoId)).onSuccess { songs ->
+                                val song = songs.firstOrNull()
+                                if (song != null) {
+                                    playerConnection?.playQueue(YouTubeQueue.radio(song.toMediaMetadata()))
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        }
+    }
+
     @Inject
     lateinit var database: MusicDatabase
 
