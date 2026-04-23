@@ -309,7 +309,8 @@ fun YouTubeSongMenu(
                             onDismiss()
                             showShareDialog = true
                         }
-                    )
+
+
                 if (showShareDialog) {
                     ShareSongBottomSheet(
                         songData = ShareUtils.SongShareData(
@@ -322,6 +323,7 @@ fun YouTubeSongMenu(
                         onDismiss = { showShareDialog = false }
                     )
                 }
+
             ),
                 columns = if (isGuest) 2 else 3,
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 16.dp)

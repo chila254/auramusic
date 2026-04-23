@@ -120,6 +120,7 @@ fun SongMenu(
     val syncUtils = LocalSyncUtils.current
     val listenTogetherManager = LocalListenTogetherManager.current
     val scope = rememberCoroutineScope()
+    var refetchIconDegree by remember { mutableFloatStateOf(0f) }
     var showShareDialog by remember { mutableStateOf(false) }
 
     val cacheViewModel = hiltViewModel<CachePlaylistViewModel>()
@@ -380,22 +381,24 @@ fun SongMenu(
                             showShareDialog = true
                         }
                     )
-                if (showShareDialog) {
-                    ShareSongBottomSheet(
-                        songData = ShareUtils.SongShareData(
-                            id = song.id,
-                            title = song.song.title,
-                            artist = orderedArtists.joinToString(", ") { it.name },
-                            album = song.song.albumName,
-                            thumbnailUrl = song.thumbnailUrl
-                        ),
-                        onDismiss = { showShareDialog = false }
-                    )
-                }
-            ),
+                ),
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 16.dp)
             )
         }
+
+        if (showShareDialog) {
+            ShareSongBottomSheet(
+                songData = ShareUtils.SongShareData(
+                    id = song.id,
+                    title = song.song.title,
+                    artist = orderedArtists.joinToString(", ") { it.name },
+                    album = song.song.albumName,
+                    thumbnailUrl = song.thumbnailUrl
+                ),
+                onDismiss = { showShareDialog = false }
+            )
+        }
+
         item {
             Material3MenuGroup(
                 items = listOfNotNull(
