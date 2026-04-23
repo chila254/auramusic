@@ -386,17 +386,19 @@ fun SongMenu(
             )
         }
 
-        if (showShareDialog) {
-            ShareSongBottomSheet(
-                songData = ShareUtils.SongShareData(
-                    id = song.id,
-                    title = song.song.title,
-                    artist = orderedArtists.joinToString(", ") { it.name },
-                    album = song.song.albumName,
-                    thumbnailUrl = song.thumbnailUrl
-                ),
-                onDismiss = { showShareDialog = false }
-            )
+        item {
+            if (showShareDialog) {
+                ShareSongBottomSheet(
+                    songData = ShareUtils.SongShareData(
+                        id = song.id,
+                        title = song.song.title,
+                        artist = orderedArtists.joinToString(", ") { it.name },
+                        album = song.song.albumName,
+                        thumbnailUrl = song.thumbnailUrl
+                    ),
+                    onDismiss = { showShareDialog = false }
+                )
+            }
         }
 
         item {

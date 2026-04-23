@@ -316,17 +316,24 @@ fun YouTubeSongMenu(
             )
         }
 
-        if (showShareDialog) {
-            ShareSongBottomSheet(
-                songData = ShareUtils.SongShareData(
-                    id = song.id,
-                    title = song.title,
-                    artist = song.artists.joinToString(", ") { it.name },
-                    album = song.album?.name,
-                    thumbnailUrl = song.thumbnail
-                ),
-                onDismiss = { showShareDialog = false }
-            )
+        item {
+            if (showShareDialog) {
+                ShareSongBottomSheet(
+                    songData = ShareUtils.SongShareData(
+                        id = song.id,
+                        title = song.title,
+                        artist = song.artists.joinToString(", ") { it.name },
+                        album = song.album?.name,
+                        thumbnailUrl = song.thumbnail
+                    ),
+                    onDismiss = { showShareDialog = false }
+                )
+            }
+        }
+        
+        item {
+            Spacer(modifier = Modifier.padding(horizontal = 4.dp, vertical = 16.dp))
+        }
         }
 
         item {
