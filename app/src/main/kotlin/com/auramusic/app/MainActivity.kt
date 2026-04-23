@@ -1313,6 +1313,7 @@ class MainActivity : ComponentActivity() {
                     path == "watch" -> uri.getQueryParameter("v")
                     uri.host == "youtu.be" -> uri.pathSegments.firstOrNull()
                     path == "play" && uri.host == "www.auramusic.site" -> uri.pathSegments.getOrNull(1)
+                    uri.scheme == "auramusic" && uri.host == "play" -> uri.pathSegments.firstOrNull()
                     else -> null
                 }
 

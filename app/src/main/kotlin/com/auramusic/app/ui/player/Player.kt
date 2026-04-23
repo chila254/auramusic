@@ -163,6 +163,8 @@ import com.auramusic.app.ui.component.BottomSheet
 import com.auramusic.app.ui.component.BottomSheetState
 import com.auramusic.app.ui.component.LocalBottomSheetPageState
 import com.auramusic.app.ui.component.LocalMenuState
+import com.auramusic.app.ui.component.ShareSongBottomSheet
+import com.auramusic.app.utils.ShareUtils
 import com.auramusic.app.ui.component.Lyrics
 import com.auramusic.app.ui.component.PlayerSliderTrack
 import com.auramusic.app.ui.component.ResizableIconButton
@@ -1043,15 +1045,18 @@ fun BottomSheetPlayer(
                             } else {
                                 FilledIconButton(
                                     onClick = {
-                                        val intent = Intent().apply {
-                                            action = Intent.ACTION_SEND
-                                            type = "text/plain"
-                                            putExtra(
-                                                Intent.EXTRA_TEXT,
-                                                "https://music.youtube.com/watch?v=${mediaMetadata.id}"
+                                        bottomSheetPageState.show {
+                                            ShareSongBottomSheet(
+                                                songData = ShareUtils.SongShareData(
+                                                    id = mediaMetadata.id,
+                                                    title = mediaMetadata.title,
+                                                    artist = mediaMetadata.artists.joinToString(", ") { it.name },
+                                                    album = mediaMetadata.album?.title,
+                                                    thumbnailUrl = mediaMetadata.thumbnailUrl
+                                                ),
+                                                onDismiss = { bottomSheetPageState.dismiss() }
                                             )
                                         }
-                                        context.startActivity(Intent.createChooser(intent, null))
                                     },
                                     shape = shareShape,
                                     colors = IconButtonDefaults.filledIconButtonColors(
@@ -1206,15 +1211,18 @@ fun BottomSheetPlayer(
                                     .clip(RoundedCornerShape(24.dp))
                                     .background(textButtonColor)
                                     .clickable {
-                                        val intent = Intent().apply {
-                                            action = Intent.ACTION_SEND
-                                            type = "text/plain"
-                                            putExtra(
-                                                Intent.EXTRA_TEXT,
-                                                "https://music.youtube.com/watch?v=${mediaMetadata.id}"
+                                        bottomSheetPageState.show {
+                                            ShareSongBottomSheet(
+                                                songData = ShareUtils.SongShareData(
+                                                    id = mediaMetadata.id,
+                                                    title = mediaMetadata.title,
+                                                    artist = mediaMetadata.artists.joinToString(", ") { it.name },
+                                                    album = mediaMetadata.album?.title,
+                                                    thumbnailUrl = mediaMetadata.thumbnailUrl
+                                                ),
+                                                onDismiss = { bottomSheetPageState.dismiss() }
                                             )
                                         }
-                                        context.startActivity(Intent.createChooser(intent, null))
                                     },
                             ) {
                                 Icon(

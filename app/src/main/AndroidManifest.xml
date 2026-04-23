@@ -156,6 +156,16 @@
                 <data android:host="www.auramusic.site" />
                 <data android:pathPrefix="/play/" />
             </intent-filter>
+
+            <!-- Custom scheme deep link: auramusic://play/{videoId} -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="auramusic" android:host="play" />
+            </intent-filter>
             
             <meta-data
                 android:name="android.app.shortcuts"

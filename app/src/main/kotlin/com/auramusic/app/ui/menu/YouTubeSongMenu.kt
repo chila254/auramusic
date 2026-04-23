@@ -306,7 +306,6 @@ fun YouTubeSongMenu(
                         text = stringResource(R.string.share),
                         onClick = {
                             onDismiss()
-                            val bottomSheetPageState = LocalBottomSheetPageState.current
                             bottomSheetPageState.show {
                                 ShareSongBottomSheet(
                                     songData = ShareUtils.SongShareData(

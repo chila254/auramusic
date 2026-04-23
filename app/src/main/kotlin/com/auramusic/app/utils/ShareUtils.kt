@@ -175,7 +175,7 @@ object ShareUtils {
             if (cardFile != null) {
                 val uri = androidx.core.content.FileProvider.getUriForFile(
                     context,
-                    "${context.packageName}.provider",
+                    "${context.packageName}.FileProvider",
                     cardFile
                 )
                 putExtra(Intent.EXTRA_STREAM, uri)
@@ -209,8 +209,8 @@ object ShareUtils {
         songData: SongShareData,
         cardFile: File? = null
     ) {
-        val shareLink = "https://music.youtube.com/watch?v=${songData.id}"
-        val shareText = "🎵 ${songData.title} - ${songData.artist}\nListen on AuraMusic: $shareLink"
+        val shareLink = "https://www.auramusic.site/play/${songData.id}"
+        val shareText = "🎵 ${songData.title} - ${songData.artist}\nTap to play in AuraMusic: $shareLink"
 
         val intent = Intent().apply {
             action = Intent.ACTION_SEND
@@ -219,7 +219,7 @@ object ShareUtils {
             if (cardFile != null) {
                 val uri = androidx.core.content.FileProvider.getUriForFile(
                     context,
-                    "${context.packageName}.provider",
+                    "${context.packageName}.FileProvider",
                     cardFile
                 )
                 putExtra(Intent.EXTRA_STREAM, uri)
