@@ -94,11 +94,11 @@ object ShareUtils {
             canvas.drawRect(0f, 0f, cardWidth.toFloat(), cardHeight.toFloat(), overlayPaint)
 
             // Draw album art with modern styling
-            val albumArtSize = (cardWidth * 0.65).toInt()
+            val albumArtSize = (cardWidth * 0.50).toInt()
             if (albumArtBitmap != null) {
                 val scaledArt = Bitmap.createScaledBitmap(albumArtBitmap, albumArtSize, albumArtSize, true)
                 val albumLeft = ((cardWidth - albumArtSize) / 2).toFloat()
-                val albumTop = (cardHeight * 0.18).toFloat()
+                val albumTop = (cardHeight * 0.15).toFloat()
 
                 // Draw shadow effect
                 val shadowPaint = Paint().apply {
@@ -172,7 +172,7 @@ object ShareUtils {
             }
             canvas.drawText("AuraMusic", 140f, brandingY + 8, logoPaint)
 
-            // Modern "Now Playing" badge
+            // "Listen To" badge - positioned below album art
             val badgeWidth = 280f
             val badgeHeight = 60f
             val badgeX = 60f
@@ -212,18 +212,18 @@ object ShareUtils {
                 typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
                 isAntiAlias = true
             }
-            val badgeText = "♪ Now Playing"
+            val badgeText = "♪ Listen To"
             val badgeTextWidth = badgeTextPaint.measureText(badgeText)
             canvas.drawText(badgeText, badgeX + (badgeWidth - badgeTextWidth)/2, badgeY - badgeHeight/2 + 8, badgeTextPaint)
 
-            // Song information with modern typography
-            val contentY = cardHeight * 0.82f
+            // Song information with modern typography - below album art and badge
+            val contentY = cardHeight * 0.80f
             val maxTextWidth = cardWidth - 120
 
             // Song title with drop shadow effect
             val titleShadowPaint = Paint().apply {
                 color = Color.parseColor("#000000")
-                textSize = 76f
+                textSize = 64f
                 typeface = Typeface.create("sans-serif-bold", Typeface.BOLD)
                 alpha = 100
                 isAntiAlias = true
@@ -236,7 +236,7 @@ object ShareUtils {
 
             val titlePaint = Paint().apply {
                 color = Color.WHITE
-                textSize = 76f
+                textSize = 64f
                 typeface = Typeface.create("sans-serif-bold", Typeface.BOLD)
                 isAntiAlias = true
                 setShadowLayer(8f, 0f, 4f, Color.parseColor("#40000000"))
@@ -245,7 +245,7 @@ object ShareUtils {
             canvas.drawText(titleText, 60f, contentY, titlePaint)
 
             // Artist name with modern styling
-            val artistY = contentY + 90
+            val artistY = contentY + 70
             val artistPaint = Paint().apply {
                 color = Color.parseColor("#E2E8F0")
                 textSize = 48f

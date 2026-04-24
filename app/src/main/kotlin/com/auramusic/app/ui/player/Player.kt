@@ -627,6 +627,7 @@ fun BottomSheetPlayer(
     // Auto-show lyrics when video starts playing - DISABLED
     // Videos now have their own screen with native controls
     var hasUserToggledLyrics by remember { mutableStateOf(false) }
+    var showShareSheet by remember { mutableStateOf(false) }
     
     // Reset hasUserToggledLyrics when song changes
     LaunchedEffect(mediaMetadata?.id) {
@@ -1045,18 +1046,7 @@ fun BottomSheetPlayer(
                             } else {
                                 FilledIconButton(
                                     onClick = {
-                                        bottomSheetPageState.show {
-                                            ShareSongBottomSheet(
-                                                songData = ShareUtils.SongShareData(
-                                                    id = mediaMetadata.id,
-                                                    title = mediaMetadata.title,
-                                                    artist = mediaMetadata.artists.joinToString(", ") { it.name },
-                                                    album = mediaMetadata.album?.title,
-                                                    thumbnailUrl = mediaMetadata.thumbnailUrl
-                                                ),
-                                                onDismiss = { bottomSheetPageState.dismiss() }
-                                            )
-                                        }
+                                        showShareSheet = true
                                     },
                                     shape = shareShape,
                                     colors = IconButtonDefaults.filledIconButtonColors(
@@ -1211,18 +1201,7 @@ fun BottomSheetPlayer(
                                     .clip(RoundedCornerShape(24.dp))
                                     .background(textButtonColor)
                                     .clickable {
-                                        bottomSheetPageState.show {
-                                            ShareSongBottomSheet(
-                                                songData = ShareUtils.SongShareData(
-                                                    id = mediaMetadata.id,
-                                                    title = mediaMetadata.title,
-                                                    artist = mediaMetadata.artists.joinToString(", ") { it.name },
-                                                    album = mediaMetadata.album?.title,
-                                                    thumbnailUrl = mediaMetadata.thumbnailUrl
-                                                ),
-                                                onDismiss = { bottomSheetPageState.dismiss() }
-                                            )
-                                        }
+                                        showShareSheet = true
                                     },
                             ) {
                                 Icon(
@@ -2046,6 +2025,19 @@ fun BottomSheetPlayer(
             },
             )
         }
+    }
+
+    if (showShareSheet && mediaMetadata != null) {
+        ShareSongBottomSheet(
+            songData = ShareUtils.SongShareData(
+                id = mediaMetadata.id,
+                title = mediaMetadata.title,
+                artist = mediaMetadata.artists.joinToString(", ") { it.name },
+                album = mediaMetadata.album?.title,
+                thumbnailUrl = mediaMetadata.thumbnailUrl
+            ),
+            onDismiss = { showShareSheet = false }
+        )
     }
 }
 
