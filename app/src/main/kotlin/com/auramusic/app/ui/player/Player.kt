@@ -2027,14 +2027,15 @@ fun BottomSheetPlayer(
         }
     }
 
-    if (showShareSheet && mediaMetadata != null) {
+    val currentMetadata = mediaMetadata
+    if (showShareSheet && currentMetadata != null) {
         ShareSongBottomSheet(
             songData = ShareUtils.SongShareData(
-                id = mediaMetadata.id,
-                title = mediaMetadata.title,
-                artist = mediaMetadata.artists.joinToString(", ") { it.name },
-                album = mediaMetadata.album?.title,
-                thumbnailUrl = mediaMetadata.thumbnailUrl
+                id = currentMetadata.id,
+                title = currentMetadata.title,
+                artist = currentMetadata.artists.joinToString(", ") { it.name },
+                album = currentMetadata.album?.title,
+                thumbnailUrl = currentMetadata.thumbnailUrl
             ),
             onDismiss = { showShareSheet = false }
         )
