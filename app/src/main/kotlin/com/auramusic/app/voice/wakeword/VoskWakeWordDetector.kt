@@ -47,7 +47,7 @@ class VoskWakeWordDetector @Inject constructor(
     private val detectorDispatcher = detectorExecutor.asCoroutineDispatcher()
     private val detectorScope = CoroutineScope(SupervisorJob() + detectorDispatcher)
     
-    private val WAKE_WORD_COOLDOWN_MS = 3000
+    private val WAKE_WORD_COOLDOWN_MS = 2000
 
     companion object {
         private const val SAMPLE_RATE = 16000
@@ -407,14 +407,6 @@ class VoskWakeWordDetector @Inject constructor(
             while (isRunning.get()) {
                 val read = audioRecord?.read(buffer, 0, BUFFER_SIZE) ?: -1
                 if (read > 0) {
-                    // Skip silent/low-amplitude buffers to reduce false positives
-                    var maxAmplitude: Short = 0
-                    for (i in 0 until read) {
-                        val sample = buffer[i]
-                        if (sample > maxAmplitude) maxAmplitude = sample
-                    }
-                    if (maxAmplitude < 500) continue
-
                     try {
                         val isFinal = recognizer?.acceptWaveForm(buffer, read)
 
