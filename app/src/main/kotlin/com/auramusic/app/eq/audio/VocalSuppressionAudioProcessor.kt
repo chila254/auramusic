@@ -191,20 +191,20 @@ class VocalSuppressionAudioProcessor : BaseAudioProcessor() {
             val alpha = sin(omega) / (2.0f * q)
             val cosOmega = cos(omega)
 
-            // Notch filter coefficients
-            b0 = 1.0f
-            b1 = -2.0f * cosOmega
-            b2 = 1.0f
+            // Notch filter coefficients (unnormalized)
+            val b0Unnormalized = 1.0f
+            val b1Unnormalized = -2.0f * cosOmega
+            val b2Unnormalized = 1.0f
             val a0 = 1.0f + alpha
-            a1 = -2.0f * cosOmega
-            a2 = 1.0f - alpha
+            val a1Unnormalized = -2.0f * cosOmega
+            val a2Unnormalized = 1.0f - alpha
 
             // Normalize by a0
-            b0 /= a0
-            b1 /= a0
-            b2 /= a0
-            a1 /= a0
-            a2 /= a0
+            b0 = b0Unnormalized / a0
+            b1 = b1Unnormalized / a0
+            b2 = b2Unnormalized / a0
+            a1 = a1Unnormalized / a0
+            a2 = a2Unnormalized / a0
         }
 
         fun process(input: FloatArray): FloatArray {
