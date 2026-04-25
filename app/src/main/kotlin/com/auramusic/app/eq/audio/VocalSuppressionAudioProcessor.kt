@@ -10,227 +10,210 @@ import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.audio.BaseAudioProcessor
 import androidx.media3.common.util.UnstableApi
 import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
- * Audio processor that suppresses vocals by applying notch filters in the vocal frequency range.
- * This creates a karaoke effect by reducing vocal frequencies while preserving instrumental tracks.
+ * Audio processor that produces an Apple-Music-style "Sing"/karaoke effect
+ * by attenuating the centre channel of a stereo signal.
  *
- * Uses biquad notch filters targeting male (80-300Hz) and female (200-800Hz) vocal ranges,
- * plus harmonics and formants (800-2000Hz).
+ * Technique (Center-Channel Extraction, a.k.a. OOPS — Out-Of-Phase Stereo):
+ *   Vocals in commercial music are almost always panned dead-centre, so they
+ *   appear with equal amplitude in the L and R channels. Bass and kick drums
+ *   are usually centred too, while most other instruments have stereo width.
+ *
+ *   We split the signal into:
+ *      mid  = (L + R) / 2     (centre — vocals, bass, kick)
+ *      side = (L - R) / 2     (stereo content — guitars, keys, reverb tails)
+ *
+ *   We then high-pass the mid signal so kick/bass survive, low-pass it so
+ *   air/cymbal centre information survives, and only attenuate the vocal
+ *   band (~200 Hz–6 kHz). The remaining mid is recombined with the full side.
+ *
+ * This avoids the "buzz" / "silence" failure mode of stacked notch filters,
+ * which is what the previous implementation suffered from.
  */
 @UnstableApi
 class VocalSuppressionAudioProcessor : BaseAudioProcessor() {
 
-    private var vocalSuppressionEnabled = false
-    private var suppressionStrength = 0.6f // 0.0 to 1.0, higher = more suppression
+    @Volatile private var vocalSuppressionEnabled = false
+    // 0.0 = no suppression, 1.0 = fully cancel vocal band of the centre channel
+    @Volatile private var suppressionStrength = 0.85f
+
     private var sampleRate = 44100
     private var channelCount = 2
 
-    // Biquad notch filters for vocal frequency suppression
-    private val vocalFilters = mutableListOf<BiquadNotchFilter>()
+    // Per-channel filters used to isolate the vocal band of the mid signal.
+    private var midHighPass: BiquadFilter? = null
+    private var midLowPass: BiquadFilter? = null
 
-    override fun onConfigure(inputAudioFormat: AudioProcessor.AudioFormat): AudioProcessor.AudioFormat {
+    override fun onConfigure(
+        inputAudioFormat: AudioProcessor.AudioFormat
+    ): AudioProcessor.AudioFormat {
+        // We can only do centre-channel cancellation on 16-bit PCM stereo.
+        if (inputAudioFormat.encoding != C.ENCODING_PCM_16BIT) {
+            throw AudioProcessor.UnhandledAudioFormatException(inputAudioFormat)
+        }
         sampleRate = inputAudioFormat.sampleRate
         channelCount = inputAudioFormat.channelCount
 
-        // Initialize vocal suppression filters
-        initializeVocalFilters()
+        if (channelCount == 2) {
+            // High-pass at ~180 Hz keeps bass/kick out of the suppressed band.
+            midHighPass = BiquadFilter.highPass(180f, sampleRate, 0.707f)
+            // Low-pass at ~6 kHz keeps cymbal/air content intact.
+            midLowPass = BiquadFilter.lowPass(6000f, sampleRate, 0.707f)
+        } else {
+            midHighPass = null
+            midLowPass = null
+        }
 
         return inputAudioFormat
     }
 
     override fun queueInput(inputBuffer: ByteBuffer) {
-        if (!vocalSuppressionEnabled || vocalFilters.isEmpty()) {
-            // Pass through unchanged
-            replaceOutputBuffer(inputBuffer.remaining()).put(inputBuffer)
+        val remaining = inputBuffer.remaining()
+        if (remaining == 0) return
+
+        // Pass-through when disabled or when the source isn't stereo
+        // (centre cancellation requires two channels).
+        if (!vocalSuppressionEnabled || channelCount != 2) {
+            val out = replaceOutputBuffer(remaining)
+            out.put(inputBuffer)
+            out.flip()
             return
         }
 
-        // Process audio with vocal suppression
-        processAudioBuffer(inputBuffer)
+        processStereo(inputBuffer)
     }
 
-    private fun initializeVocalFilters() {
-        vocalFilters.clear()
+    private fun processStereo(inputBuffer: ByteBuffer) {
+        val byteCount = inputBuffer.remaining()
+        // 2 bytes/sample, 2 channels => 4 bytes per stereo frame.
+        val frameCount = byteCount / 4
 
-        // Create notch filters for vocal frequency ranges
-        // These target the fundamental frequencies and harmonics of human vocals
+        val output = replaceOutputBuffer(byteCount)
 
-        // Male vocal fundamental: ~85-180Hz (lower range)
-        vocalFilters.add(BiquadNotchFilter(130f, 1.5f, sampleRate))
+        // Read in little-endian (PCM 16-bit on Android is little-endian).
+        val srcOrder = inputBuffer.order()
+        inputBuffer.order(ByteOrder.LITTLE_ENDIAN)
+        output.order(ByteOrder.LITTLE_ENDIAN)
 
-        // Male vocal range: ~180-300Hz
-        vocalFilters.add(BiquadNotchFilter(240f, 2.0f, sampleRate))
+        val hp = midHighPass!!
+        val lp = midLowPass!!
+        val strength = suppressionStrength
 
-        // Female vocal fundamental: ~165-255Hz
-        vocalFilters.add(BiquadNotchFilter(210f, 1.8f, sampleRate))
+        for (i in 0 until frameCount) {
+            val l = inputBuffer.short.toFloat()
+            val r = inputBuffer.short.toFloat()
 
-        // Female vocal range: ~255-400Hz
-        vocalFilters.add(BiquadNotchFilter(330f, 2.2f, sampleRate))
+            val mid = (l + r) * 0.5f
+            val side = (l - r) * 0.5f
 
-        // Shared vocal range: ~400-800Hz (both male/female harmonics)
-        vocalFilters.add(BiquadNotchFilter(600f, 2.5f, sampleRate))
+            // Vocal band of the mid signal (HP -> LP cascaded).
+            val vocalBand = lp.process(hp.process(mid))
+            val nonVocalMid = mid - vocalBand
+            val suppressedMid = nonVocalMid + vocalBand * (1f - strength)
 
-        // Formants and harmonics: ~800-1500Hz
-        vocalFilters.add(BiquadNotchFilter(1200f, 3.0f, sampleRate))
+            // Recombine. Keep full stereo width from the side channel.
+            var outL = suppressedMid + side
+            var outR = suppressedMid - side
 
-        // Higher harmonics: ~1500-3000Hz
-        vocalFilters.add(BiquadNotchFilter(2200f, 4.0f, sampleRate))
-    }
+            // Soft clipping safety net (shouldn't trigger in practice, since
+            // suppression only removes energy, but guards against edge cases).
+            if (outL > 32767f) outL = 32767f else if (outL < -32768f) outL = -32768f
+            if (outR > 32767f) outR = 32767f else if (outR < -32768f) outR = -32768f
 
-    private fun processAudioBuffer(inputBuffer: ByteBuffer) {
-        val inputSize = inputBuffer.remaining()
-        val outputBuffer = replaceOutputBuffer(inputSize)
-
-        // Convert ByteBuffer to float samples for processing
-        val inputArray = ByteArray(inputSize)
-        inputBuffer.get(inputArray)
-        inputBuffer.rewind()
-
-        // Process each channel separately
-        val samplesPerChannel = inputSize / 2 / channelCount // 2 bytes per sample (16-bit)
-        val processedSamples = FloatArray(samplesPerChannel * channelCount)
-
-        for (channel in 0 until channelCount) {
-            val channelOffset = channel
-            val channelSamples = FloatArray(samplesPerChannel)
-
-            // Extract channel samples
-            for (i in 0 until samplesPerChannel) {
-                val sampleIndex = (i * channelCount + channel) * 2
-                val sample = (inputArray[sampleIndex].toInt() and 0xFF) or
-                            (inputArray[sampleIndex + 1].toInt() shl 8)
-                // Convert to float (-1.0 to 1.0 range)
-                channelSamples[i] = sample.toFloat() / 32768.0f
-            }
-
-            // Apply vocal suppression filters
-            var filteredSamples = channelSamples
-            for (filter in vocalFilters) {
-                filteredSamples = filter.process(filteredSamples)
-            }
-
-            // Apply suppression strength (blend original with filtered)
-            val dryWetMix = suppressionStrength
-            for (i in filteredSamples.indices) {
-                filteredSamples[i] = channelSamples[i] * (1.0f - dryWetMix) +
-                                   filteredSamples[i] * dryWetMix
-            }
-
-            // Put processed samples back
-            for (i in 0 until samplesPerChannel) {
-                val sampleIndex = i * channelCount + channel
-                processedSamples[sampleIndex] = filteredSamples[i]
-            }
+            output.putShort(outL.toInt().toShort())
+            output.putShort(outR.toInt().toShort())
         }
 
-        // Convert back to 16-bit PCM and write to output buffer
-        for (i in processedSamples.indices) {
-            val sampleInt = (processedSamples[i] * 32767.0f).toInt().coerceIn(-32768, 32767)
-            outputBuffer.put((sampleInt and 0xFF).toByte())
-            outputBuffer.put((sampleInt shr 8).toByte())
-        }
-
-        outputBuffer.flip()
+        // Restore caller's byte order on the input buffer to be polite.
+        inputBuffer.order(srcOrder)
+        output.flip()
     }
 
-    /**
-     * Enable vocal suppression with specified strength
-     */
-    fun enable(strength: Float = 0.6f) {
-        suppressionStrength = strength.coerceIn(0.1f, 1.0f) // Ensure minimum suppression
+    override fun onFlush() {
+        midHighPass?.reset()
+        midLowPass?.reset()
+    }
+
+    override fun onReset() {
+        midHighPass = null
+        midLowPass = null
+    }
+
+    /** Enable centre-channel vocal suppression. [strength] is clamped to 0..1. */
+    fun enable(strength: Float = 0.85f) {
+        suppressionStrength = strength.coerceIn(0f, 1f)
         vocalSuppressionEnabled = true
         flush()
     }
 
-    /**
-     * Disable vocal suppression
-     */
+    /** Disable vocal suppression (audio will pass through untouched). */
     fun disable() {
         vocalSuppressionEnabled = false
         flush()
     }
 
-    /**
-     * Check if vocal suppression is enabled
-     */
     fun isEnabled(): Boolean = vocalSuppressionEnabled
-
-    /**
-     * Get current suppression strength
-     */
     fun getSuppressionStrength(): Float = suppressionStrength
 
     /**
-     * Biquad notch filter implementation for frequency-specific suppression
+     * Generic biquad filter (RBJ cookbook). Used for high-pass + low-pass
+     * around the vocal band of the mid channel.
      */
-    private class BiquadNotchFilter(
-        centerFreq: Float,
-        q: Float,
-        sampleRate: Int
+    private class BiquadFilter(
+        private val b0: Float,
+        private val b1: Float,
+        private val b2: Float,
+        private val a1: Float,
+        private val a2: Float,
     ) {
-        private val a1: Float
-        private val a2: Float
-        private val b0: Float
-        private val b1: Float
-        private val b2: Float
-
-        // Filter state
         private var x1 = 0f
         private var x2 = 0f
         private var y1 = 0f
         private var y2 = 0f
 
-        init {
-            // Calculate filter coefficients for notch filter
-            val omega = 2.0f * PI.toFloat() * centerFreq / sampleRate
-            val alpha = sin(omega) / (2.0f * q)
-            val cosOmega = cos(omega)
-
-            // Notch filter coefficients (unnormalized)
-            val b0Unnormalized = 1.0f
-            val b1Unnormalized = -2.0f * cosOmega
-            val b2Unnormalized = 1.0f
-            val a0 = 1.0f + alpha
-            val a1Unnormalized = -2.0f * cosOmega
-            val a2Unnormalized = 1.0f - alpha
-
-            // Normalize by a0
-            b0 = b0Unnormalized / a0
-            b1 = b1Unnormalized / a0
-            b2 = b2Unnormalized / a0
-            a1 = a1Unnormalized / a0
-            a2 = a2Unnormalized / a0
-        }
-
-        fun process(input: FloatArray): FloatArray {
-            val output = FloatArray(input.size)
-
-            for (i in input.indices) {
-                val x0 = input[i]
-                val y0 = b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2
-
-                output[i] = y0
-
-                // Update filter state
-                x2 = x1
-                x1 = x0
-                y2 = y1
-                y1 = y0
-            }
-
-            return output
+        fun process(x0: Float): Float {
+            val y0 = b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2
+            x2 = x1; x1 = x0
+            y2 = y1; y1 = y0
+            return y0
         }
 
         fun reset() {
-            x1 = 0f
-            x2 = 0f
-            y1 = 0f
-            y2 = 0f
+            x1 = 0f; x2 = 0f; y1 = 0f; y2 = 0f
+        }
+
+        companion object {
+            fun highPass(freq: Float, sampleRate: Int, q: Float): BiquadFilter {
+                val w0 = 2f * PI.toFloat() * freq / sampleRate
+                val cosW = cos(w0)
+                val alpha = sin(w0) / (2f * q)
+                val a0 = 1f + alpha
+                val b0 = ((1f + cosW) / 2f) / a0
+                val b1 = (-(1f + cosW)) / a0
+                val b2 = ((1f + cosW) / 2f) / a0
+                val a1 = (-2f * cosW) / a0
+                val a2 = (1f - alpha) / a0
+                return BiquadFilter(b0, b1, b2, a1, a2)
+            }
+
+            fun lowPass(freq: Float, sampleRate: Int, q: Float): BiquadFilter {
+                val w0 = 2f * PI.toFloat() * freq / sampleRate
+                val cosW = cos(w0)
+                val alpha = sin(w0) / (2f * q)
+                val a0 = 1f + alpha
+                val b0 = ((1f - cosW) / 2f) / a0
+                val b1 = (1f - cosW) / a0
+                val b2 = ((1f - cosW) / 2f) / a0
+                val a1 = (-2f * cosW) / a0
+                val a2 = (1f - alpha) / a0
+                return BiquadFilter(b0, b1, b2, a1, a2)
+            }
         }
     }
 }
