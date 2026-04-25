@@ -153,6 +153,8 @@ import com.auramusic.app.constants.ThumbnailCornerRadius
 import com.auramusic.app.constants.UseNewPlayerDesignKey
 import com.auramusic.app.constants.VideoModeEnabledKey
 import com.auramusic.app.constants.ShowLyricsKey
+import com.auramusic.app.constants.KaraokeModeKey
+import com.auramusic.app.constants.KaraokeVocalSuppressionKey
 import com.auramusic.app.db.entities.LyricsEntity
 import com.auramusic.app.ui.player.Thumbnail
 import com.auramusic.app.extensions.togglePlayPause
