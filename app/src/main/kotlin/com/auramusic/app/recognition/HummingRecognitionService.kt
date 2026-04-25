@@ -19,7 +19,7 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import androidx.core.content.ContextCompat
 import com.auramusic.innertube.YouTube
-import com.auramusic.innertube.models.SearchFilter
+import com.auramusic.innertube.YouTube.SearchFilter
 import com.auramusic.shazamkit.models.RecognitionResult
 import com.auramusic.shazamkit.models.RecognitionStatus
 import kotlinx.coroutines.CompletableDeferred
