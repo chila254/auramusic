@@ -70,20 +70,6 @@ class VocalSuppressionAudioProcessor : BaseAudioProcessor() {
         outputBuffer.flip()
     }
 
-        // Process audio if vocal suppression is enabled
-        val inputSize = inputBuffer.remaining()
-        val channelCount = inputAudioFormat?.channelCount ?: 2
-        val sampleRate = inputAudioFormat?.sampleRate ?: 44100
-
-        // For simplicity, we'll apply a simple frequency-based vocal suppression
-        // This is a basic implementation - a more sophisticated approach would use
-        // stereo separation or machine learning models
-
-        val outputBuffer = replaceOutputBuffer(inputSize)
-        val processedBuffer = applySimpleVocalSuppression(inputBuffer, outputBuffer, channelCount, sampleRate)
-        processedBuffer.flip()
-    }
-
     /**
      * Enable vocal suppression with specified strength
      */

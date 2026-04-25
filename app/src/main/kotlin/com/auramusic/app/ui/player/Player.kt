@@ -2127,12 +2127,13 @@ fun InlineLyricsView(
             }
             else -> {
                 val lyricsContent: @Composable () -> Unit = {
+                    val currentKaraokeMode = karaokeModeEnabled
                     if (!videoModeEnabled) {
                         Lyrics(
                             sliderPositionProvider = positionProvider,
                             modifier = Modifier.padding(horizontal = 24.dp),
                             showLyrics = showLyrics,
-                            karaokeModeEnabled = karaokeModeEnabled
+                            karaokeModeEnabled = currentKaraokeMode
                         )
                     }
                 }
