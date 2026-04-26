@@ -65,6 +65,38 @@ class TvBrowseFragment : BrowseSupportFragment() {
     }
 
     private fun loadData() {
+        // Home screen personalized content
+        lifecycleScope.launch {
+            viewModel.quickPicks.collectLatest { songs ->
+                songs?.let { updateRow("Quick Picks", it) }
+            }
+        }
+
+        lifecycleScope.launch {
+            viewModel.forgottenFavorites.collectLatest { songs ->
+                songs?.let { updateRow("Forgotten Favorites", it) }
+            }
+        }
+
+        lifecycleScope.launch {
+            viewModel.keepListening.collectLatest { items ->
+                items?.let { updateRow("Keep Listening", it) }
+            }
+        }
+
+        lifecycleScope.launch {
+            viewModel.accountPlaylists.collectLatest { playlists ->
+                playlists?.let { updateRow("Your Playlists", it) }
+            }
+        }
+
+        lifecycleScope.launch {
+            viewModel.communityPlaylists.collectLatest { playlists ->
+                playlists?.let { updateRow("Community Playlists", it) }
+            }
+        }
+
+        // Library content
         lifecycleScope.launch {
             // Recently Played
             viewModel.recentlyPlayed.collectLatest { songs ->
@@ -223,6 +255,24 @@ class TvBrowseFragment : BrowseSupportFragment() {
                     .replace(android.R.id.content, albumFragment)
                     .addToBackStack(null)
                     .commit()
+            }
+            is com.auramusic.innertube.models.PlaylistItem -> {
+                // Handle YouTube playlist
+                // TODO: Implement playlist navigation
+            }
+            is com.auramusic.app.viewmodels.CommunityPlaylistItem -> {
+                // Handle community playlist
+                // TODO: Implement playlist navigation
+            }
+            is com.auramusic.app.db.entities.LocalItem -> {
+                // Handle local items (keep listening, etc.)
+                when (item) {
+                    is Song -> handleItemClick(item)
+                }
+            }
+            is com.auramusic.app.viewmodels.SpeedDialItem -> {
+                // Handle speed dial items
+                // TODO: Navigate to appropriate content
             }
         }
     }

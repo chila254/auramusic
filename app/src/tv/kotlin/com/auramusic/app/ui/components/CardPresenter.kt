@@ -66,6 +66,53 @@ class CardPresenter : Presenter() {
                     error(R.drawable.ic_album)
                 }
             }
+            is com.auramusic.innertube.models.PlaylistItem -> {
+                cardView.titleText = item.title
+                cardView.contentText = item.author?.name ?: ""
+                cardView.mainImageView.load(item.thumbnail) {
+                    crossfade(true)
+                    placeholder(R.drawable.ic_playlist)
+                    error(R.drawable.ic_playlist)
+                }
+            }
+            is com.auramusic.app.viewmodels.CommunityPlaylistItem -> {
+                cardView.titleText = item.playlist.title
+                cardView.contentText = "${item.songs.size} songs"
+                cardView.mainImageView.load(item.playlist.thumbnail) {
+                    crossfade(true)
+                    placeholder(R.drawable.ic_playlist)
+                    error(R.drawable.ic_playlist)
+                }
+            }
+            is com.auramusic.app.viewmodels.SimilarRecommendation -> {
+                cardView.titleText = item.title
+                cardView.contentText = item.subtitle ?: ""
+                cardView.mainImageView.load(item.thumbnail) {
+                    crossfade(true)
+                    placeholder(R.drawable.ic_music_note)
+                    error(R.drawable.ic_music_note)
+                }
+            }
+            is com.auramusic.app.db.entities.LocalItem -> {
+                cardView.titleText = when (item) {
+                    is Song -> item.song.title
+                    else -> item.toString()
+                }
+                cardView.contentText = when (item) {
+                    is Song -> item.artists.joinToString(", ") { it.name }
+                    else -> ""
+                }
+                cardView.mainImageView.setImageResource(R.drawable.ic_music_note)
+            }
+            is com.auramusic.app.viewmodels.SpeedDialItem -> {
+                cardView.titleText = item.title
+                cardView.contentText = ""
+                cardView.mainImageView.load(item.thumbnail) {
+                    crossfade(true)
+                    placeholder(R.drawable.ic_music_note)
+                    error(R.drawable.ic_music_note)
+                }
+            }
             else -> {
                 cardView.titleText = item.toString()
                 cardView.contentText = ""
