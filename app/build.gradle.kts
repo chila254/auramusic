@@ -345,6 +345,4 @@ dependencies {
 
     // Android TV support
     implementation("androidx.leanback:leanback:1.2.0-alpha04")
-    implementation("androidx.tv:tv-foundation:1.0.0-alpha12")
-    implementation("androidx.tv:tv-material:1.0.0-alpha12")
 }
