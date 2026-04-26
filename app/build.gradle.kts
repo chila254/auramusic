@@ -50,7 +50,7 @@ android {
         }
     }
 
-    flavorDimensions += listOf("variant", "abi")
+    flavorDimensions += listOf("variant", "ui", "abi")
     productFlavors {
         // FOSS variant (default) - F-Droid compatible, no Google Play Services
         create("foss") {
@@ -92,6 +92,15 @@ android {
             ndk { abiFilters += "x86_64" }
             buildConfigField("String", "ARCHITECTURE", "\"x86_64\"")
         }
+
+        create("mobile") {
+            dimension = "ui"
+            isDefault = true
+        }
+
+        create("tv") {
+            dimension = "ui"
+        }
     }
 
     sourceSets {
@@ -103,6 +112,10 @@ android {
         }
         getByName("gms") {
             kotlin.srcDirs("src/gms/kotlin")
+        }
+        getByName("tv") {
+            kotlin.srcDirs("src/tv/kotlin")
+            res.srcDirs("src/tv/res")
         }
     }
 
@@ -329,4 +342,9 @@ dependencies {
     coreLibraryDesugaring(libs.desugaring)
 
     implementation(libs.timber)
+
+    // Android TV support
+    implementation("androidx.leanback:leanback:1.2.0-alpha04")
+    implementation("androidx.tv:tv-foundation:1.0.0-alpha12")
+    implementation("androidx.tv:tv-material:1.0.0-alpha12")
 }

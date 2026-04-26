@@ -77,6 +77,15 @@ jobs:
         run: |
           ./gradlew assembleGmsUniversalRelease --no-daemon --no-configuration-cache
 
+      - name: Build FossTvUniversalRelease APK
+        run: |
+          sed -i 's|tinypinyin = "2.0.3"|tinypinyin = "2.0.1"|g' gradle/libs.versions.toml
+          ./gradlew assembleFossTvUniversalRelease --no-daemon --no-configuration-cache
+
+      - name: Build GmsTvUniversalRelease APK
+        run: |
+          ./gradlew assembleGmsTvUniversalRelease --no-daemon --no-configuration-cache
+
       - name: Upload FOSS APK
         uses: actions/upload-artifact@v4
         with:
@@ -88,3 +97,15 @@ jobs:
         with:
           name: GmsUniversalRelease
           path: app/build/outputs/apk/gmsUniversal/release/*.apk
+
+      - name: Upload FOSS TV APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: FossTvUniversalRelease
+          path: app/build/outputs/apk/fossTvUniversal/release/*.apk
+
+      - name: Upload GMS TV APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GmsTvUniversalRelease
+          path: app/build/outputs/apk/gmsTvUniversal/release/*.apk

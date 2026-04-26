@@ -12,6 +12,7 @@ import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
@@ -221,6 +222,12 @@ class MainActivity : ComponentActivity() {
         private const val ACTION_LIBRARY = "com.auramusic.app.action.LIBRARY"
     }
 
+    private fun isRunningOnTv(): Boolean {
+        val uiModeManager = getSystemService(UI_MODE_SERVICE) as android.app.UiModeManager
+        return uiModeManager.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION ||
+               packageManager.hasSystemFeature("android.software.leanback")
+    }
+
 
 
     @Inject
@@ -322,6 +329,15 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // For TV builds, use TV activity directly
+        if (BuildConfig.FLAVOR.contains("tv")) {
+            val intent = Intent(this, TvMainActivity::class.java)
+            startActivity(intent)
+            finish()
+            return
+        }
+
         window.decorView.layoutDirection = View.LAYOUT_DIRECTION_LTR
         WindowCompat.setDecorFitsSystemWindows(window, false)
         
