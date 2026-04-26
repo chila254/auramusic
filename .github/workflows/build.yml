@@ -68,44 +68,44 @@ jobs:
           debug.persistent.keyPassword=${{ secrets.DEBUG_KEY_PASSWORD }}
           EOF
 
-      - name: Build FossUniversalRelease APK
+      - name: Build Mobile FossUniversalRelease APK
         run: |
           sed -i 's|tinypinyin = "2.0.3"|tinypinyin = "2.0.1"|g' gradle/libs.versions.toml
-          ./gradlew assembleFossUniversalRelease --no-daemon --no-configuration-cache
+          ./gradlew assembleFossMobileUniversalRelease --no-daemon --no-configuration-cache
 
-      - name: Build GmsUniversalRelease APK
+      - name: Build Mobile GmsUniversalRelease APK
         run: |
-          ./gradlew assembleGmsUniversalRelease --no-daemon --no-configuration-cache
+          ./gradlew assembleGmsMobileUniversalRelease --no-daemon --no-configuration-cache
 
-      - name: Build FossTvUniversalRelease APK
+      - name: Build TV FossUniversalRelease APK
         run: |
           sed -i 's|tinypinyin = "2.0.3"|tinypinyin = "2.0.1"|g' gradle/libs.versions.toml
           ./gradlew assembleFossTvUniversalRelease --no-daemon --no-configuration-cache
 
-      - name: Build GmsTvUniversalRelease APK
+      - name: Build TV GmsUniversalRelease APK
         run: |
           ./gradlew assembleGmsTvUniversalRelease --no-daemon --no-configuration-cache
 
-      - name: Upload FOSS APK
+      - name: Upload Mobile FOSS APK
         uses: actions/upload-artifact@v4
         with:
-          name: FossUniversalRelease
-          path: app/build/outputs/apk/fossUniversal/release/*.apk
+          name: MobileFossUniversalRelease
+          path: app/build/outputs/apk/fossMobileUniversal/release/*.apk
 
-      - name: Upload GMS APK
+      - name: Upload Mobile GMS APK
         uses: actions/upload-artifact@v4
         with:
-          name: GmsUniversalRelease
-          path: app/build/outputs/apk/gmsUniversal/release/*.apk
+          name: MobileGmsUniversalRelease
+          path: app/build/outputs/apk/gmsMobileUniversal/release/*.apk
 
-      - name: Upload FOSS TV APK
+      - name: Upload TV FOSS APK
         uses: actions/upload-artifact@v4
         with:
-          name: FossTvUniversalRelease
+          name: TvFossUniversalRelease
           path: app/build/outputs/apk/fossTvUniversal/release/*.apk
 
-      - name: Upload GMS TV APK
+      - name: Upload TV GMS APK
         uses: actions/upload-artifact@v4
         with:
-          name: GmsTvUniversalRelease
+          name: TvGmsUniversalRelease
           path: app/build/outputs/apk/gmsTvUniversal/release/*.apk
