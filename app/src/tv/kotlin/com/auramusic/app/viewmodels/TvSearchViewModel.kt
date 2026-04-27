@@ -5,20 +5,48 @@
 
 package com.auramusic.app.viewmodels
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import com.auramusic.app.constants.HideExplicitKey
+import com.auramusic.app.constants.HideVideoSongsKey
 import com.auramusic.app.db.MusicDatabase
-import com.auramusic.app.db.entities.*
+import com.auramusic.app.db.entities.Album
+import com.auramusic.app.db.entities.Artist
+import com.auramusic.app.db.entities.LocalItem
+import com.auramusic.app.db.entities.Playlist
+import com.auramusic.app.db.entities.Song
+import com.auramusic.innertube.YouTube
+import com.auramusic.innertube.models.YTItem
+import com.auramusic.innertube.models.filterExplicit
+import com.auramusic.innertube.models.filterVideoSongs
+import com.auramusic.app.utils.dataStore
+import com.auramusic.app.utils.get
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class TvSearchViewModel
 @Inject
 constructor(
+    @ApplicationContext val context: Context,
     private val database: MusicDatabase,
 ) : ViewModel() {
     val query = MutableStateFlow("")
@@ -31,6 +59,33 @@ constructor(
 
     private val _recentSearches = MutableStateFlow<List<String>>(emptyList())
     val recentSearches: StateFlow<List<String>> = _recentSearches
+
+    val localSearchResults = combine(
+        query,
+        context.dataStore.data.map { it[HideVideoSongsKey] ?: false }.distinctUntilChanged()
+    ) { query, hideVideoSongs ->
+        Pair(query, hideVideoSongs)
+    }.flatMapLatest { (query, hideVideoSongs) ->
+        if (query.isBlank()) {
+            flowOf(emptyList())
+        } else {
+            combine(
+                database.searchSongs(query),
+                database.searchAlbums(query),
+                database.searchArtists(query),
+                database.searchPlaylists(query),
+            ) { songs, albums, artists, playlists ->
+                val filteredSongs = if (hideVideoSongs) songs.filter { !it.song.isVideo } else songs
+                (filteredSongs + albums + artists + playlists).take(20)
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    val ytSearchResults = MutableStateFlow<List<YTItem>>(emptyList())
+
+    init {
+        loadRecentSearches()
+    }
 
     fun updateQuery(newQuery: String) {
         query.value = newQuery
@@ -48,201 +103,42 @@ constructor(
         }
 
         _isLoading.value = true
-        query.value = searchQuery
 
-        viewModelScope.launch {
-            try {
-                // Perform local database search
-                val localResults = mutableListOf<LocalItem>()
-
-                // Search songs
-                database.searchSongs("%$searchQuery%", 10).collect { songList ->
-                    localResults.addAll(songList)
-                }
-
-                // Search artists
-                database.searchArtists("%$searchQuery%", 5).collect { artistList ->
-                    localResults.addAll(artistList)
-                }
-
-                // Search albums
-                database.searchAlbums("%$searchQuery%", 5).collect { albumList ->
-                    localResults.addAll(albumList)
-                }
-
-                // Search playlists
-                database.searchPlaylists("%$searchQuery%", 5).collect { playlistList ->
-                    localResults.addAll(playlistList)
-                }
-
-                _searchResults.value = CombinedSearchResult(
-                    localItems = localResults,
-                    ytItems = emptyList(), // For now, just local search
-                    isLoading = false
-                )
-            } catch (e: Exception) {
-                _searchResults.value = CombinedSearchResult(
-                    localItems = emptyList(),
-                    ytItems = emptyList(),
-                    isLoading = false
-                )
-            } finally {
-                _isLoading.value = false
-            }
-        }
-    }
-
-    private fun clearResults() {
-        _searchResults.value = CombinedSearchResult()
-    }
-
-    fun clearRecentSearches() {
-        _recentSearches.value = emptyList()
-    }
-}
-
-data class CombinedSearchResult(
-    val localItems: List<LocalItem> = emptyList(),
-    val ytItems: List<com.auramusic.innertube.models.YTItem> = emptyList(),
-    val isLoading: Boolean = false,
-)
-
-    private fun performSearch(query: String) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            // Perform local search
-            try {
-                val results = mutableListOf<Any>()
-
-                // Search songs
-                val songs = database.searchSongs("%$query%", 10).collect { songList ->
-                    results.addAll(songList)
-                }
-
-                // Search artists
-                val artists = database.searchArtists("%$query%", 5).collect { artistList ->
-                    results.addAll(artistList)
-                }
-
-                // Search albums
-                val albums = database.searchAlbums("%$query%", 5).collect { albumList ->
-                    results.addAll(albumList)
-                }
-
-                // Search playlists
-                val playlists = database.searchPlaylists("%$query%", 5).collect { playlistList ->
-                    results.addAll(playlistList)
-                }
-
-                _searchResults.value = results
-            } catch (e: Exception) {
-                _searchResults.value = emptyList()
-            } finally {
-                _isLoading.value = false
-            }
-        }
-    }
-
-    private fun clearResults() {
-        _searchResults.value = emptyList()
-    }
-}
-    }
-
-    private fun performSearch(query: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            _isSearching.value = true
             try {
-                // Local database search
-                val localResults = performLocalSearch(query)
-                updateLocalResults(localResults)
+                // Save to recent searches
+                saveRecentSearch(searchQuery)
+
+                val hideExplicit = context.dataStore.get(HideExplicitKey, false)
+                val hideVideoSongs = context.dataStore.get(HideVideoSongsKey, false)
 
                 // YouTube search
-                val ytResults = performYouTubeSearch(query)
-                updateYTResults(ytResults)
+                val ytResults = try {
+                    YouTube.search(searchQuery, YouTube.SearchFilter.FILTER_SONG).getOrNull()?.items?.filterExplicit(hideExplicit)?.filterVideoSongs(hideVideoSongs).orEmpty()
+                } catch (e: Exception) {
+                    emptyList()
+                }
 
-                // Update combined results
-                updateCombinedResults()
+                ytSearchResults.value = ytResults.take(20)
+
+                _searchResults.value = CombinedSearchResult(
+                    localItems = localSearchResults.value,
+                    ytItems = ytSearchResults.value,
+                    isLoading = false
+                )
+            } catch (e: Exception) {
+                _searchResults.value = CombinedSearchResult(
+                    localItems = localSearchResults.value,
+                    ytItems = ytSearchResults.value,
+                    isLoading = false
+                )
             } finally {
-                _isSearching.value = false
+                _isLoading.value = false
             }
         }
     }
 
-    private suspend fun performLocalSearch(query: String): Map<String, List<LocalItem>> {
-        val results = mutableMapOf<String, List<LocalItem>>()
-
-        try {
-            val songs = database.searchSongs("%$query%", 20).first()
-            results["songs"] = songs
-        } catch (e: Exception) {
-            results["songs"] = emptyList()
-        }
-
-        try {
-            val artists = database.searchArtists("%$query%", 10).first()
-            results["artists"] = artists
-        } catch (e: Exception) {
-            results["artists"] = emptyList()
-        }
-
-        try {
-            val albums = database.searchAlbums("%$query%", 10).first()
-            results["albums"] = albums
-        } catch (e: Exception) {
-            results["albums"] = emptyList()
-        }
-
-        try {
-            val playlists = database.searchPlaylists("%$query%", 10).first()
-            results["playlists"] = playlists
-        } catch (e: Exception) {
-            results["playlists"] = emptyList()
-        }
-
-        return results
-    }
-
-    private suspend fun performYouTubeSearch(query: String): SearchResult? {
-        return try {
-            YouTube.search(query, YouTube.SearchFilter.SONG)
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    private fun updateLocalResults(results: Map<String, List<LocalItem>>) {
-        localSongs.value = results["songs"]?.filterIsInstance<Song>() ?: emptyList()
-        localArtists.value = results["artists"]?.filterIsInstance<Artist>() ?: emptyList()
-        localAlbums.value = results["albums"]?.filterIsInstance<Album>() ?: emptyList()
-        localPlaylists.value = results["playlists"]?.filterIsInstance<Playlist>() ?: emptyList()
-    }
-
-    private fun updateYTResults(result: SearchResult?) {
-        ytSongs.value = result?.songs?.filterExplicit()?.filterVideoSongs() ?: emptyList()
-        ytAlbums.value = result?.albums ?: emptyList()
-        ytArtists.value = result?.artists ?: emptyList()
-        ytPlaylists.value = result?.playlists ?: emptyList()
-    }
-
-    private fun updateCombinedResults() {
-        val combined = CombinedSearchResult(
-            localItems = (localSongs.value + localArtists.value + localAlbums.value + localPlaylists.value),
-            ytItems = (ytSongs.value + ytAlbums.value + ytArtists.value + ytPlaylists.value),
-            isLoading = false
-        )
-        _searchResults.value = combined
-    }
-
     private fun clearResults() {
-        localSongs.value = emptyList()
-        localArtists.value = emptyList()
-        localAlbums.value = emptyList()
-        localPlaylists.value = emptyList()
-        ytSongs.value = emptyList()
-        ytAlbums.value = emptyList()
-        ytArtists.value = emptyList()
-        ytPlaylists.value = emptyList()
         _searchResults.value = CombinedSearchResult()
     }
 
@@ -253,9 +149,9 @@ data class CombinedSearchResult(
             current.add(0, query) // Add to front
             if (current.size > 10) current.removeAt(current.lastIndex)
             _recentSearches.value = current
+            saveRecentSearch(query)
         }
     }
-}
 
     private fun loadRecentSearches() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -265,71 +161,6 @@ data class CombinedSearchResult(
                 .collect { searches ->
                     _recentSearches.value = searches
                 }
-        }
-    }
-
-    fun setQuery(newQuery: String) {
-        query.value = newQuery
-        if (newQuery.isNotEmpty()) {
-            performSearch(newQuery)
-        } else {
-            clearResults()
-        }
-    }
-
-    fun performSearch(searchQuery: String) {
-        if (searchQuery.isBlank()) {
-            clearResults()
-            return
-        }
-
-        _isSearching.value = true
-        query.value = searchQuery
-
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                // Save to recent searches
-                saveRecentSearch(searchQuery)
-
-                val hideExplicit = context.dataStore.get(HideExplicitKey, false)
-                val hideVideoSongs = context.dataStore.get(HideVideoSongsKey, false)
-
-                // Perform local database search
-                val localResults = combine(
-                    database.searchSongs(searchQuery),
-                    database.searchAlbums(searchQuery),
-                    database.searchArtists(searchQuery),
-                    database.searchPlaylists(searchQuery),
-                ) { songs, albums, artists, playlists ->
-                    val filteredSongs = if (hideVideoSongs) songs.filter { !it.song.isVideo } else songs
-                    filteredSongs + albums + artists + playlists
-                }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
-
-                localSearchResults.value = localResults.value
-
-                // Perform YouTube search if user has internet
-                val ytResults = try {
-                    YouTube.search(searchQuery, YouTube.SearchFilter.FILTER_SONG).getOrNull()?.items?.filterExplicit(hideExplicit)?.filterVideoSongs(hideVideoSongs).orEmpty()
-                } catch (e: Exception) {
-                    emptyList()
-                }
-
-                ytSearchResults.value = ytResults
-
-                _searchResults.value = CombinedSearchResult(
-                    localItems = localSearchResults.value,
-                    ytItems = ytSearchResults.value,
-                    isLoading = false
-                )
-            } catch (e: Exception) {
-                _searchResults.value = CombinedSearchResult(
-                    localItems = localSearchResults.value,
-                    ytItems = ytSearchResults.value,
-                    isLoading = false
-                )
-            } finally {
-                _isSearching.value = false
-            }
         }
     }
 
@@ -343,14 +174,6 @@ data class CombinedSearchResult(
         }
     }
 
-    fun clearResults() {
-        query.value = ""
-        localSearchResults.value = emptyList()
-        ytSearchResults.value = emptyList()
-        _searchResults.value = CombinedSearchResult()
-        _isSearching.value = false
-    }
-
     fun clearRecentSearches() {
         viewModelScope.launch(Dispatchers.IO) {
             context.dataStore.edit { settings ->
@@ -361,6 +184,12 @@ data class CombinedSearchResult(
     }
 
     companion object {
-        private const val RecentSearchesKey = "recent_searches_tv"
+        private val RecentSearchesKey = stringPreferencesKey("recent_searches_tv")
     }
 }
+
+data class CombinedSearchResult(
+    val localItems: List<LocalItem> = emptyList(),
+    val ytItems: List<YTItem> = emptyList(),
+    val isLoading: Boolean = false,
+)
