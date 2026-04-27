@@ -62,8 +62,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.MediaItem
 import coil3.compose.AsyncImage
 import com.auramusic.app.R
 import com.auramusic.app.db.entities.Song
@@ -71,7 +70,6 @@ import com.auramusic.app.playback.PlayerConnection
 import com.auramusic.app.playback.queues.YouTubeQueue
 import com.auramusic.app.utils.formatAsDuration
 import com.auramusic.innertube.models.WatchEndpoint
-import com.auramusic.app.viewmodels.QueueViewModel
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
@@ -83,14 +81,10 @@ fun TvPlayerScreen(
     playerConnection: PlayerConnection?,
     onBackClick: () -> Unit,
 ) {
-    val queueViewModel: QueueViewModel = hiltViewModel()
-    val queue by queueViewModel.queue.collectAsState()
-    val currentSongIndex by queueViewModel.currentSongIndex.collectAsState()
-
-    val currentSong = queue.getOrNull(currentSongIndex)
-    val isPlaying by (playerConnection?.isPlaying ?: remember { mutableStateOf(false) }).collectAsStateWithLifecycle()
-    val currentPosition by (playerConnection?.currentPosition ?: remember { mutableStateOf(0L) }).collectAsStateWithLifecycle()
-    val duration by (playerConnection?.currentDuration ?: remember { mutableStateOf(0L) }).collectAsStateWithLifecycle()
+    val currentSong by (playerConnection?.currentSong?.collectAsState(null) ?: remember { mutableStateOf(null) })
+    val isPlaying by (playerConnection?.isPlaying?.collectAsState(false) ?: remember { mutableStateOf(false) })
+    val currentPosition by (playerConnection?.currentPosition?.collectAsState(0L) ?: remember { mutableStateOf(0L) })
+    val duration by (playerConnection?.currentDuration?.collectAsState(0L) ?: remember { mutableStateOf(0L) })
 
     val progress = if (duration > 0) currentPosition.toFloat() / duration.toFloat() else 0f
 
@@ -235,14 +229,14 @@ fun TvPlayerScreen(
                 ) {
                     // Previous
                     TvPlayerControlButton(
-                        onClick = { playerConnection?.previous() },
+                        onClick = { playerConnection?.seekToPrevious() },
                         icon = Icons.Filled.SkipPrevious,
                         contentDescription = "Previous song",
                     )
 
                     // Play/Pause (larger)
                     TvPlayerControlButton(
-                        onClick = { playerConnection?.playPause() },
+                        onClick = { playerConnection?.togglePlayPause() },
                         icon = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                         contentDescription = if (isPlaying) "Pause" else "Play",
                         size = 96.dp,
@@ -250,7 +244,7 @@ fun TvPlayerScreen(
 
                     // Next
                     TvPlayerControlButton(
-                        onClick = { playerConnection?.next() },
+                        onClick = { playerConnection?.seekToNext() },
                         icon = Icons.Filled.SkipNext,
                         contentDescription = "Next song",
                     )
@@ -323,9 +317,8 @@ fun TvQueueScreen(
     playerConnection: PlayerConnection?,
     onBackClick: () -> Unit,
 ) {
-    val queueViewModel: QueueViewModel = hiltViewModel()
-    val queue by queueViewModel.queue.collectAsState()
-    val currentSongIndex by queueViewModel.currentSongIndex.collectAsState()
+    val queueWindows by (playerConnection?.queueWindows?.collectAsState() ?: remember { mutableStateOf(emptyList()) })
+    val currentWindowIndex = playerConnection?.player?.currentMediaItemIndex ?: 0
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -333,6 +326,7 @@ fun TvQueueScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
+            // Back button and title
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -349,6 +343,58 @@ fun TvQueueScreen(
                         modifier = Modifier.size(32.dp)
                     )
                 }
+
+                Text(
+                    text = "Now Playing",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+
+                Spacer(modifier = Modifier.size(64.dp)) // Balance the back button
+            }
+        }
+
+        items(queueWindows.size) { index ->
+            val window = queueWindows.getOrNull(index)
+            val isCurrentSong = index == currentWindowIndex
+
+            if (window != null) {
+                TvQueueItem(
+                    mediaItem = window.mediaItem,
+                    isCurrentSong = isCurrentSong,
+                    onClick = {
+                        playerConnection?.player?.seekTo(index, 0)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+
+        if (queueWindows.isEmpty()) {
+            item {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 64.dp),
+                ) {
+                    Text(
+                        text = "No songs in queue",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = "Add some music to get started",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    )
+                }
+            }
+        }
+    }
+}
 
                 Text(
                     text = "Now Playing",
@@ -402,7 +448,7 @@ fun TvQueueScreen(
 
 @Composable
 private fun TvQueueItem(
-    song: Song,
+    mediaItem: androidx.media3.common.MediaItem,
     isCurrentSong: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -445,12 +491,45 @@ private fun TvQueueItem(
                 contentAlignment = Alignment.Center,
             ) {
                 AsyncImage(
-                    model = song.song.thumbnailUrl,
-                    contentDescription = song.song.title,
+                    model = mediaItem.mediaMetadata.artworkUri?.toString(),
+                    contentDescription = mediaItem.mediaMetadata.title?.toString(),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
+
+            // Song info
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = mediaItem.mediaMetadata.title?.toString() ?: "Unknown",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                )
+                Text(
+                    text = mediaItem.mediaMetadata.artist?.toString() ?: "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
+
+            // Playing indicator
+            if (isCurrentSong) {
+                Icon(
+                    Icons.Filled.PlayArrow,
+                    contentDescription = "Now playing",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+    }
+}
 
             // Song info
             Column(

@@ -45,8 +45,6 @@ import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOne
-import androidx.compose.material.icons.filled.Width
-import androidx.compose.material.icons.filled.YoutubeSearchedFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -175,7 +173,6 @@ private enum class TvSection(val label: String) {
 }
 
 @Composable
-@Composable
 private fun TvNavigationBar(current: TvSection, onSelect: (TvSection) -> Unit) {
     val firstButtonFocus = remember { FocusRequester() }
 
@@ -243,7 +240,6 @@ private fun TvNavButton(
 
 /* -------------------------- Home -------------------------- */
 
-@Composable
 @Composable
 private fun TvHomeScreen(playerConnection: PlayerConnection?) {
     val viewModel: HomeViewModel = hiltViewModel()
@@ -653,6 +649,7 @@ private fun YouTubeAlbumRow(
 }
 
 @Composable
+@Composable
 private fun YouTubeMediaCard(
     item: YTItem,
     onClick: () -> Unit,
@@ -748,6 +745,7 @@ private fun YouTubeMediaCard(
     }
 }
 
+@Composable
 @Composable
 private fun YouTubeAlbumCard(
     album: AlbumItem,
@@ -1012,6 +1010,7 @@ private fun TvSearchScreen(playerConnection: PlayerConnection?) {
     }
 }
 
+@Composable
 @Composable
 private fun TvRecentSearchItem(query: String, onClick: () -> Unit) {
     var isFocused by remember { mutableStateOf(false) }
@@ -1499,7 +1498,7 @@ private fun TvMiniPlayer(
             // Controls
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 IconButton(
-                    onClick = { playerConnection?.previous() },
+                    onClick = { playerConnection?.seekToPrevious() },
                     modifier = Modifier.size(48.dp),
                 ) {
                     Icon(
@@ -1511,7 +1510,7 @@ private fun TvMiniPlayer(
                 }
 
                 IconButton(
-                    onClick = { playerConnection?.playPause() },
+                    onClick = { playerConnection?.togglePlayPause() },
                     modifier = Modifier.size(48.dp),
                 ) {
                     Icon(
@@ -1523,7 +1522,7 @@ private fun TvMiniPlayer(
                 }
 
                 IconButton(
-                    onClick = { playerConnection?.next() },
+                    onClick = { playerConnection?.seekToNext() },
                     modifier = Modifier.size(48.dp),
                 ) {
                     Icon(
