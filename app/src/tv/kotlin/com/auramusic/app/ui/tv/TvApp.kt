@@ -42,6 +42,11 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.RepeatOne
+import androidx.compose.material.icons.filled.Width
+import androidx.compose.material.icons.filled.YoutubeSearchedFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -170,6 +175,7 @@ private enum class TvSection(val label: String) {
 }
 
 @Composable
+@Composable
 private fun TvNavigationBar(current: TvSection, onSelect: (TvSection) -> Unit) {
     val firstButtonFocus = remember { FocusRequester() }
 
@@ -238,11 +244,17 @@ private fun TvNavButton(
 /* -------------------------- Home -------------------------- */
 
 @Composable
+@Composable
 private fun TvHomeScreen(playerConnection: PlayerConnection?) {
     val viewModel: HomeViewModel = hiltViewModel()
     val quickPicks by viewModel.quickPicks.collectAsState()
     val forgottenFavorites by viewModel.forgottenFavorites.collectAsState()
+    val keepListening by viewModel.keepListening.collectAsState()
+    val similarRecommendations by viewModel.similarRecommendations.collectAsState()
+    val accountPlaylists by viewModel.accountPlaylists.collectAsState()
     val homePage by viewModel.homePage.collectAsState()
+    val explorePage by viewModel.explorePage.collectAsState()
+    val pinnedSpeedDialItems by viewModel.pinnedSpeedDialItems.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
@@ -252,7 +264,7 @@ private fun TvHomeScreen(playerConnection: PlayerConnection?) {
         verticalArrangement = Arrangement.spacedBy(32.dp),
     ) {
         // Mini player (show when music is playing)
-        val isPlaying by (playerConnection?.isPlaying ?: remember { mutableStateOf(false) }).collectAsStateWithLifecycle()
+        val isPlaying by (playerConnection?.isPlaying?.collectAsState() ?: remember { mutableStateOf(false) })
         if (isPlaying) {
             item {
                 TvMiniPlayer(
@@ -272,6 +284,220 @@ private fun TvHomeScreen(playerConnection: PlayerConnection?) {
                 )
             }
         }
+
+        // Hero Carousel - Trending content
+        homePage?.sections?.flatMap { it.items }
+            ?.distinctBy { it.id }
+            ?.take(6)
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { heroItems ->
+                item {
+                    YouTubeSectionRow(
+                        title = "Trending Now",
+                        items = heroItems,
+                        playerConnection = playerConnection,
+                        onYTItemClick = { item ->
+                            val navigator = rememberTvNavigator()
+                            when (item) {
+                                is com.auramusic.innertube.models.SongItem -> {
+                                    playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
+                                }
+                                is com.auramusic.innertube.models.AlbumItem -> {
+                                    item.browseId?.let { browseId ->
+                                        navigator.navigate(TvDestination.Album(browseId))
+                                    } ?: run {
+                                        playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
+                                    }
+                                }
+                                is com.auramusic.innertube.models.ArtistItem -> {
+                                    item.id?.let { artistId ->
+                                        navigator.navigate(TvDestination.Artist(artistId))
+                                    }
+                                }
+                                is com.auramusic.innertube.models.PlaylistItem -> {
+                                    item.browseId?.let { browseId ->
+                                        navigator.navigate(TvDestination.Playlist(browseId))
+                                    } ?: run {
+                                        playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
+                                    }
+                                }
+                                is com.auramusic.innertube.models.EpisodeItem -> {
+                                    playerConnection?.playQueue(YouTubeQueue.radio(item.toMediaMetadata()))
+                                }
+                                is com.auramusic.innertube.models.PodcastItem -> {
+                                    item.id?.let { podcastId ->
+                                        // Navigate to podcast detail (could reuse playlist destination)
+                                        navigator.navigate(TvDestination.Playlist(podcastId))
+                                    }
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+
+        // Speed Dial Section
+        pinnedSpeedDialItems.takeIf { it.isNotEmpty() }?.let { speedDialItems ->
+            item {
+                YouTubeSectionRow(
+                    title = "Speed Dial",
+                    items = speedDialItems.take(6).mapNotNull { speedDialItem ->
+                        // Convert SpeedDialItem to YTItem for display
+                        // This is a simplified conversion - you might need to adjust based on actual SpeedDialItem structure
+                        when (speedDialItem) {
+                            is com.auramusic.app.db.entities.SpeedDialItem.SongSpeedDial -> {
+                                // Create a SongItem from the speed dial item
+                                // This requires accessing the actual song data
+                                null // Placeholder - needs proper implementation
+                            }
+                            is com.auramusic.app.db.entities.SpeedDialItem.AlbumSpeedDial -> {
+                                // Create an AlbumItem
+                                null // Placeholder - needs proper implementation
+                            }
+                            is com.auramusic.app.db.entities.SpeedDialItem.ArtistSpeedDial -> {
+                                // Create an ArtistItem
+                                null // Placeholder - needs proper implementation
+                            }
+                            is com.auramusic.app.db.entities.SpeedDialItem.PlaylistSpeedDial -> {
+                                // Create a PlaylistItem
+                                null // Placeholder - needs proper implementation
+                            }
+                        }
+                    }.filterNotNull(),
+                    playerConnection = playerConnection,
+                    onYTItemClick = { item ->
+                        // Handle speed dial item clicks
+                        val navigator = rememberTvNavigator()
+                        when (item) {
+                            is com.auramusic.innertube.models.SongItem -> {
+                                playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
+                            }
+                            is com.auramusic.innertube.models.AlbumItem -> {
+                                item.browseId?.let { browseId ->
+                                    navigator.navigate(TvDestination.Album(browseId))
+                                }
+                            }
+                            is com.auramusic.innertube.models.ArtistItem -> {
+                                item.id?.let { artistId ->
+                                    navigator.navigate(TvDestination.Artist(artistId))
+                                }
+                            }
+                            is com.auramusic.innertube.models.PlaylistItem -> {
+                                item.browseId?.let { browseId ->
+                                    navigator.navigate(TvDestination.Playlist(browseId))
+                                }
+                            }
+                            else -> {}
+                        }
+                    }
+                )
+            }
+        }
+
+        if (!quickPicks.isNullOrEmpty()) {
+            item {
+                SongRow(
+                    title = "Quick picks",
+                    songs = quickPicks!!,
+                    onSongClick = { song -> playerConnection?.playSong(song) },
+                )
+            }
+        }
+
+        if (!forgottenFavorites.isNullOrEmpty()) {
+            item {
+                SongRow(
+                    title = "Forgotten favorites",
+                    songs = forgottenFavorites!!,
+                    onSongClick = { song -> playerConnection?.playSong(song) },
+                )
+            }
+        }
+
+        if (!keepListening.isNullOrEmpty()) {
+            item {
+                LocalItemRow(
+                    title = "Keep listening",
+                    items = keepListening!!,
+                )
+            }
+        }
+
+        // Similar recommendations
+        similarRecommendations?.takeIf { it.isNotEmpty() }?.let { recommendations ->
+            recommendations.forEach { recommendation ->
+                item {
+                    SongRow(
+                        title = "Similar to ${recommendation.title}",
+                        songs = recommendation.songs,
+                        onSongClick = { song -> playerConnection?.playSong(song) },
+                    )
+                }
+            }
+        }
+
+        // Account playlists
+        accountPlaylists?.takeIf { it.isNotEmpty() }?.let { playlists ->
+            item {
+                YouTubeSectionRow(
+                    title = "Your YouTube Playlists",
+                    items = playlists.take(10),
+                    playerConnection = playerConnection,
+                    onYTItemClick = { item ->
+                        when (item) {
+                            is com.auramusic.innertube.models.PlaylistItem -> {
+                                item.browseId?.let { browseId ->
+                                    rememberTvNavigator().navigate(TvDestination.Playlist(browseId))
+                                } ?: run {
+                                    playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
+                                }
+                            }
+                            else -> {}
+                        }
+                    }
+                )
+            }
+        }
+
+        // Display home page sections from YouTube
+        homePage?.sections?.forEachIndexed { index, section ->
+            if (section.items.isNotEmpty()) {
+                item {
+                    YouTubeSectionRow(
+                        title = section.title,
+                        items = section.items,
+                        playerConnection = playerConnection,
+                        onYTItemClick = { item ->
+                            val navigator = rememberTvNavigator()
+                            when (item) {
+                                is com.auramusic.innertube.models.SongItem -> {
+                                    playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
+                                }
+                                is com.auramusic.innertube.models.AlbumItem -> {
+                                    item.browseId?.let { browseId ->
+                                        navigator.navigate(TvDestination.Album(browseId))
+                                    } ?: run {
+                                        playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
+                                    }
+                                }
+                                is com.auramusic.innertube.models.ArtistItem -> {
+                                    item.id?.let { artistId ->
+                                        navigator.navigate(TvDestination.Artist(artistId))
+                                    }
+                                }
+                                is com.auramusic.innertube.models.PlaylistItem -> {
+                                    item.browseId?.let { browseId ->
+                                        navigator.navigate(TvDestination.Playlist(browseId))
+                                    } ?: run {
+                                        playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
+                                    }
+                                }
+                                else -> {}
+                            }
+                        }
+                    )
+                }
+            }
 
         if (!quickPicks.isNullOrEmpty()) {
             item {
@@ -314,7 +540,7 @@ private fun TvHomeScreen(playerConnection: PlayerConnection?) {
                                         } ?: run {
                                             // Fallback: play the album
                                             item.browseId?.let { browseId ->
-                                                playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(browseId = browseId)))
+                                                playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = browseId)))
                                             }
                                         }
                                     }
@@ -331,7 +557,7 @@ private fun TvHomeScreen(playerConnection: PlayerConnection?) {
                                         } ?: run {
                                             // Fallback: play the playlist
                                             item.browseId?.let { browseId ->
-                                                playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(browseId = browseId)))
+                                                playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = browseId)))
                                             }
                                         }
                                     }
@@ -986,11 +1212,11 @@ private fun TvYTSearchResultItem(item: YTItem, onClick: () -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    painterResource(R.drawable.youtube),
-                    contentDescription = "YouTube",
-                    tint = Color(0xFFFF0000),
-                    modifier = Modifier.size(20.dp)
+                Text(
+                    text = "YT",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFFF0000),
+                    fontWeight = FontWeight.Bold,
                 )
                 Text(
                     text = when (item) {
@@ -1029,9 +1255,7 @@ private fun handleYTSearchItemClick(item: YTItem, playerConnection: PlayerConnec
             item.browseId?.let { browseId ->
                 navigator.navigate(TvDestination.Album(browseId))
             } ?: run {
-                item.browseId?.let { browseId ->
-                    playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(browseId = browseId)))
-                }
+                playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
             }
         }
         is com.auramusic.innertube.models.ArtistItem -> {
@@ -1043,11 +1267,19 @@ private fun handleYTSearchItemClick(item: YTItem, playerConnection: PlayerConnec
             item.browseId?.let { browseId ->
                 navigator.navigate(TvDestination.Playlist(browseId))
             } ?: run {
-                item.browseId?.let { browseId ->
-                    playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(browseId = browseId)))
-                }
+                playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
             }
         }
+        is com.auramusic.innertube.models.EpisodeItem -> {
+            playerConnection?.playQueue(YouTubeQueue.radio(item.toMediaMetadata()))
+        }
+        is com.auramusic.innertube.models.PodcastItem -> {
+            item.id?.let { podcastId ->
+                navigator.navigate(TvDestination.Playlist(podcastId))
+            }
+        }
+    }
+}
     }
 }
 
@@ -1214,8 +1446,8 @@ private fun TvMiniPlayer(
     playerConnection: PlayerConnection?,
     onPlayerClick: () -> Unit,
 ) {
-    val currentSong by (playerConnection?.currentSong ?: remember { mutableStateOf(null) }).collectAsStateWithLifecycle()
-    val isPlaying by (playerConnection?.isPlaying ?: remember { mutableStateOf(false) }).collectAsStateWithLifecycle()
+    val currentSong by (playerConnection?.currentSong?.collectAsState(null) ?: remember { mutableStateOf(null) })
+    val isPlaying by (playerConnection?.isPlaying?.collectAsState(false) ?: remember { mutableStateOf(false) })
 
     Surface(
         onClick = onPlayerClick,
@@ -1240,8 +1472,8 @@ private fun TvMiniPlayer(
                 contentAlignment = Alignment.Center,
             ) {
                 AsyncImage(
-                    model = currentSong?.song?.thumbnailUrl,
-                    contentDescription = currentSong?.song?.title,
+                    model = currentSong?.thumbnailUrl,
+                    contentDescription = currentSong?.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -1249,19 +1481,19 @@ private fun TvMiniPlayer(
 
             // Song info
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = currentSong?.song?.title ?: "No song playing",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                )
-                Text(
-                    text = currentSong?.artists?.joinToString(", ") { it.name } ?: "",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                )
+                    Text(
+                        text = currentSong?.title ?: "No song playing",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                    )
+                    Text(
+                        text = currentSong?.artists?.joinToString(", ") { it.name } ?: "",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
             }
 
             // Controls
