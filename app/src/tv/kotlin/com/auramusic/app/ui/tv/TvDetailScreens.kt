@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.auramusic.app.LocalDatabase
 import com.auramusic.app.db.entities.Song
 import com.auramusic.app.extensions.toMediaItem
 import com.auramusic.app.playback.PlayerConnection
@@ -59,7 +60,7 @@ fun TvAlbumDetailScreen(albumId: String, playerConnection: PlayerConnection?) {
     val albums by albumsViewModel.allAlbums.collectAsStateWithLifecycle()
     val album = albums.find { it.album.id == albumId }
 
-    val songs by albumsViewModel.getAlbumSongs(albumId).collectAsStateWithLifecycle(emptyList())
+    val songs by remember(albumId) { database.albumSongs(albumId) }.collectAsStateWithLifecycle(emptyList())
 
     DetailLayout(
         title = album?.album?.title.orEmpty().ifEmpty { "Album" },
@@ -280,5 +281,4 @@ private fun PlayerConnection?.playAll(songs: List<Song>, title: String?) {
     )
 }
 
-// Lifecycle is in androidx.lifecycle.compose; importing here to keep file self-contained
-@Suppress("unused") private val placeholderImport = Download.STATE_QUEUED
+

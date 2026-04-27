@@ -586,7 +586,6 @@ private fun TvLibraryScreen(playerConnection: PlayerConnection?) {
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-@Composable
 private fun TvSearchScreen(playerConnection: PlayerConnection?) {
     val tvSearchViewModel: TvSearchViewModel = hiltViewModel()
     val query by tvSearchViewModel.query.collectAsState()
