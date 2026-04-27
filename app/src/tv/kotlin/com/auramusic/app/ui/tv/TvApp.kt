@@ -174,7 +174,7 @@ fun TvApp(playerConnection: PlayerConnection?) {
     }
 }
 
-private enum class TvSection(val label: String) {
+enum class TvSection(val label: String) {
     HOME("Home"),
     LIBRARY("Library"),
     SEARCH("Search"),
@@ -215,7 +215,7 @@ private fun TvNavigationBar(current: TvSection, onSelect: (TvSection) -> Unit) {
 }
 
 @Composable
-private fun TvNavButton(
+fun TvNavButton(
     label: String,
     isSelected: Boolean,
     focusRequester: FocusRequester?,
@@ -249,7 +249,7 @@ private fun TvNavButton(
 /* -------------------------- Home -------------------------- */
 
 @Composable
-private fun TvHomeScreen(playerConnection: PlayerConnection?) {
+fun TvHomeScreen(playerConnection: PlayerConnection?) {
     val viewModel: HomeViewModel = hiltViewModel()
     val quickPicks by viewModel.quickPicks.collectAsState()
     val forgottenFavorites by viewModel.forgottenFavorites.collectAsState()
@@ -780,7 +780,7 @@ fun YouTubeAlbumCard(
 /* -------------------------- Library -------------------------- */
 
 @Composable
-private fun TvLibraryScreen(playerConnection: PlayerConnection?) {
+fun TvLibraryScreen(playerConnection: PlayerConnection?) {
     val songsViewModel: LibrarySongsViewModel = hiltViewModel()
     val artistsViewModel: LibraryArtistsViewModel = hiltViewModel()
     val albumsViewModel: LibraryAlbumsViewModel = hiltViewModel()
@@ -842,7 +842,7 @@ private fun TvLibraryScreen(playerConnection: PlayerConnection?) {
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-private fun TvSearchScreen(playerConnection: PlayerConnection?) {
+fun TvSearchScreen(playerConnection: PlayerConnection?) {
     val tvSearchViewModel: TvSearchViewModel = hiltViewModel()
     val query by tvSearchViewModel.query.collectAsState()
     val searchResults by tvSearchViewModel.searchResults.collectAsState()
