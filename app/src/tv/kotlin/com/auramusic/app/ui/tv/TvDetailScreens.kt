@@ -39,8 +39,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Icon
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.auramusic.app.LocalDatabase
 import com.auramusic.app.db.entities.Song
@@ -54,7 +57,7 @@ import com.auramusic.app.viewmodels.LibraryPlaylistsViewModel
 /* ------------------------------ Album ------------------------------ */
 
 @Composable
-fun TvAlbumDetailScreen(albumId: String, playerConnection: PlayerConnection?) {
+fun TvAlbumDetailScreen(albumId: String, playerConnection: PlayerConnection?, onBackClick: () -> Unit) {
     val albumsViewModel: LibraryAlbumsViewModel = hiltViewModel()
     val database = LocalDatabase.current
 
@@ -63,7 +66,7 @@ fun TvAlbumDetailScreen(albumId: String, playerConnection: PlayerConnection?) {
 
     val songs by remember(albumId) { database.albumSongs(albumId) }.collectAsState(emptyList())
 
-    DetailLayout(
+    TvDetailLayout(
         title = album?.album?.title.orEmpty().ifEmpty { "Album" },
         subtitle = album?.artists?.joinToString(", ") { it.name }.orEmpty(),
         meta = "${songs.size} songs",
@@ -71,19 +74,20 @@ fun TvAlbumDetailScreen(albumId: String, playerConnection: PlayerConnection?) {
         songs = songs,
         playerConnection = playerConnection,
         playAllTitle = album?.album?.title,
+        onBackClick = onBackClick,
     )
 }
 
 /* ------------------------------ Artist ------------------------------ */
 
 @Composable
-fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?) {
+fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, onBackClick: () -> Unit) {
     val artistsViewModel: LibraryArtistsViewModel = hiltViewModel()
 
     val artists by artistsViewModel.allArtists.collectAsStateWithLifecycle()
     val artist = artists.find { it.artist.id == artistId }
 
-    DetailLayout(
+    TvDetailLayout(
         title = artist?.artist?.name.orEmpty().ifEmpty { "Artist" },
         subtitle = "Artist",
         meta = artist?.let { "${it.songCount} songs" }.orEmpty(),
@@ -91,13 +95,14 @@ fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?) 
         songs = emptyList(), // TODO: Implement artist songs loading
         playerConnection = playerConnection,
         playAllTitle = artist?.artist?.name,
+        onBackClick = onBackClick,
     )
 }
 
 /* ------------------------------ Playlist ------------------------------ */
 
 @Composable
-fun TvPlaylistDetailScreen(playlistId: String, playerConnection: PlayerConnection?) {
+fun TvPlaylistDetailScreen(playlistId: String, playerConnection: PlayerConnection?, onBackClick: () -> Unit) {
     val playlistsViewModel: LibraryPlaylistsViewModel = hiltViewModel()
 
     val playlists by playlistsViewModel.allPlaylists.collectAsStateWithLifecycle()
@@ -106,7 +111,7 @@ fun TvPlaylistDetailScreen(playlistId: String, playerConnection: PlayerConnectio
     // TODO: Implement playlist songs loading
     val songs = emptyList<Song>()
 
-    DetailLayout(
+    TvDetailLayout(
         title = playlist?.playlist?.name.orEmpty().ifEmpty { "Playlist" },
         subtitle = "",
         meta = playlist?.let { "${it.songCount} songs" }.orEmpty(),
@@ -114,13 +119,14 @@ fun TvPlaylistDetailScreen(playlistId: String, playerConnection: PlayerConnectio
         songs = songs,
         playerConnection = playerConnection,
         playAllTitle = playlist?.playlist?.name,
+        onBackClick = onBackClick,
     )
 }
 
 /* ------------------------------ Layout ------------------------------ */
 
 @Composable
-private fun DetailLayout(
+private fun TvDetailLayout(
     title: String,
     subtitle: String,
     meta: String,
@@ -128,6 +134,7 @@ private fun DetailLayout(
     songs: List<Song>,
     playerConnection: PlayerConnection?,
     playAllTitle: String?,
+    onBackClick: () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -135,6 +142,21 @@ private fun DetailLayout(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
+            // Back button
+            IconButton(
+                onClick = onBackClick,
+                modifier = Modifier
+                    .padding(bottom = 16.dp)
+                    .size(64.dp),
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+
             Row(
                 horizontalArrangement = Arrangement.spacedBy(24.dp),
                 verticalAlignment = Alignment.CenterVertically,

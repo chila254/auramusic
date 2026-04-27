@@ -31,10 +31,17 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -62,6 +69,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.auramusic.app.R
 import com.auramusic.app.db.entities.Album
@@ -120,6 +128,35 @@ fun TvApp(playerConnection: PlayerConnection?) {
                     TvSection.HOME -> TvHomeScreen(playerConnection = playerConnection)
                     TvSection.LIBRARY -> TvLibraryScreen(playerConnection = playerConnection)
                     TvSection.SEARCH -> TvSearchScreen(playerConnection = playerConnection)
+                }
+
+                // Overlay player/queue if needed
+                val currentDestination = rememberTvNavigator().current
+                when (currentDestination) {
+                    is TvDestination.Player -> TvPlayerScreen(
+                        playerConnection = playerConnection,
+                        onBackClick = { rememberTvNavigator().popBack() }
+                    )
+                    is TvDestination.Queue -> TvQueueScreen(
+                        playerConnection = playerConnection,
+                        onBackClick = { rememberTvNavigator().popBack() }
+                    )
+                    is TvDestination.Album -> TvAlbumDetailScreen(
+                        albumId = currentDestination.id,
+                        playerConnection = playerConnection,
+                        onBackClick = { rememberTvNavigator().popBack() }
+                    )
+                    is TvDestination.Artist -> TvArtistDetailScreen(
+                        artistId = currentDestination.id,
+                        playerConnection = playerConnection,
+                        onBackClick = { rememberTvNavigator().popBack() }
+                    )
+                    is TvDestination.Playlist -> TvPlaylistDetailScreen(
+                        playlistId = currentDestination.id,
+                        playerConnection = playerConnection,
+                        onBackClick = { rememberTvNavigator().popBack() }
+                    )
+                    else -> Unit
                 }
             }
         }
@@ -214,6 +251,17 @@ private fun TvHomeScreen(playerConnection: PlayerConnection?) {
         contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(32.dp),
     ) {
+        // Mini player (show when music is playing)
+        val isPlaying by (playerConnection?.isPlaying ?: remember { mutableStateOf(false) }).collectAsStateWithLifecycle()
+        if (isPlaying) {
+            item {
+                TvMiniPlayer(
+                    playerConnection = playerConnection,
+                    onPlayerClick = { rememberTvNavigator().navigate(TvDestination.Player) }
+                )
+            }
+        }
+
         // Refresh indicator
         if (isRefreshing) {
             item {
@@ -249,22 +297,47 @@ private fun TvHomeScreen(playerConnection: PlayerConnection?) {
         homePage?.sections?.forEachIndexed { index, section ->
             if (section.items.isNotEmpty()) {
                 item {
-                    YouTubeSectionRow(
-                        title = section.title,
-                        items = section.items,
-                        playerConnection = playerConnection,
-                        onYTItemClick = { item ->
-                            when (item) {
-                                is com.auramusic.innertube.models.SongItem -> {
-                                    playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
-                                }
-                                // Add other item types as needed
-                                else -> {
-                                    // Handle navigation to artist/album/playlist pages
+                        YouTubeSectionRow(
+                            title = section.title,
+                            items = section.items,
+                            playerConnection = playerConnection,
+                            onYTItemClick = { item ->
+                                val navigator = rememberTvNavigator()
+                                when (item) {
+                                    is com.auramusic.innertube.models.SongItem -> {
+                                        playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
+                                    }
+                                    is com.auramusic.innertube.models.AlbumItem -> {
+                                        // Navigate to album detail screen
+                                        item.browseId?.let { browseId ->
+                                            navigator.navigate(TvDestination.Album(browseId))
+                                        } ?: run {
+                                            // Fallback: play the album
+                                            item.browseId?.let { browseId ->
+                                                playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(browseId = browseId)))
+                                            }
+                                        }
+                                    }
+                                    is com.auramusic.innertube.models.ArtistItem -> {
+                                        // Navigate to artist detail screen
+                                        item.id?.let { artistId ->
+                                            navigator.navigate(TvDestination.Artist(artistId))
+                                        }
+                                    }
+                                    is com.auramusic.innertube.models.PlaylistItem -> {
+                                        // Navigate to playlist detail screen
+                                        item.browseId?.let { browseId ->
+                                            navigator.navigate(TvDestination.Playlist(browseId))
+                                        } ?: run {
+                                            // Fallback: play the playlist
+                                            item.browseId?.let { browseId ->
+                                                playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(browseId = browseId)))
+                                            }
+                                        }
+                                    }
                                 }
                             }
-                        }
-                    )
+                        )
                 }
             }
         }
@@ -593,26 +666,387 @@ private fun TvSearchScreen(playerConnection: PlayerConnection?) {
     val isLoading by tvSearchViewModel.isLoading.collectAsState()
     val recentSearches by tvSearchViewModel.recentSearches.collectAsState()
 
-    Column(
+    LazyColumn(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 48.dp, vertical = 16.dp),
+            .fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = { tvSearchViewModel.updateQuery(it) },
-            label = { Text("Search") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        item {
+            OutlinedTextField(
+                value = query,
+                onValueChange = { tvSearchViewModel.updateQuery(it) },
+                label = { Text("Search") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
 
         if (query.isEmpty()) {
-            Text("Enter search query")
+            // Show recent searches
+            if (recentSearches.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "Recent searches",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
+                items(recentSearches) { recentQuery ->
+                    TvRecentSearchItem(
+                        query = recentQuery,
+                        onClick = { tvSearchViewModel.updateQuery(recentQuery) },
+                    )
+                }
+            } else {
+                item {
+                    Text(
+                        text = "Enter search query",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
         } else if (isLoading) {
-            CircularProgressIndicator()
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = "Searching…",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
         } else {
-            Text("Search results: ${searchResults.localItems.size} local, ${searchResults.ytItems.size} YouTube")
+            // Show search results
+            if (searchResults.localItems.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "Local Results",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
+                items(searchResults.localItems.take(10)) { item ->
+                    TvSearchResultItem(
+                        item = item,
+                        onClick = { handleSearchItemClick(item, playerConnection) },
+                    )
+                }
+            }
+
+            if (searchResults.ytItems.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "YouTube Results",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
+                items(searchResults.ytItems.take(10)) { item ->
+                    TvYTSearchResultItem(
+                        item = item,
+                        onClick = { handleYTSearchItemClick(item, playerConnection) },
+                    )
+                }
+            }
+
+            if (searchResults.localItems.isEmpty() && searchResults.ytItems.isEmpty()) {
+                item {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 64.dp),
+                    ) {
+                        Text(
+                            text = "No results found",
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = "Try a different search term",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TvRecentSearchItem(query: String, onClick: () -> Unit) {
+    var isFocused by remember { mutableStateOf(false) }
+
+    Surface(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .onFocusChanged { isFocused = it.isFocused }
+            .border(
+                width = if (isFocused) 2.dp else 0.dp,
+                color = if (isFocused) MaterialTheme.colorScheme.primary else Color.Transparent,
+                shape = RoundedCornerShape(8.dp)
+            ),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 2.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(
+                painterResource(R.drawable.search),
+                contentDescription = "Search",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp)
+            )
+            Text(
+                text = query,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TvSearchResultItem(item: LocalItem, onClick: () -> Unit) {
+    var isFocused by remember { mutableStateOf(false) }
+
+    Surface(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .onFocusChanged { isFocused = it.isFocused }
+            .border(
+                width = if (isFocused) 2.dp else 0.dp,
+                color = if (isFocused) MaterialTheme.colorScheme.primary else Color.Transparent,
+                shape = RoundedCornerShape(8.dp)
+            ),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 2.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                AsyncImage(
+                    model = item.thumbnailUrl,
+                    contentDescription = item.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                )
+                Text(
+                    text = when (item) {
+                        is Artist -> "${item.songCount} songs"
+                        is Album -> item.artists.joinToString(", ") { it.name }
+                        is Playlist -> "${item.songCount} songs"
+                        is Song -> item.artists.joinToString(", ") { it.name }
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
+
+            Text(
+                text = when (item) {
+                    is Artist -> "Artist"
+                    is Album -> "Album"
+                    is Playlist -> "Playlist"
+                    is Song -> "Song"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TvYTSearchResultItem(item: YTItem, onClick: () -> Unit) {
+    var isFocused by remember { mutableStateOf(false) }
+
+    Surface(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .onFocusChanged { isFocused = it.isFocused }
+            .border(
+                width = if (isFocused) 2.dp else 0.dp,
+                color = if (isFocused) MaterialTheme.colorScheme.primary else Color.Transparent,
+                shape = RoundedCornerShape(8.dp)
+            ),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 2.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                AsyncImage(
+                    model = when (item) {
+                        is com.auramusic.innertube.models.SongItem -> item.thumbnail
+                        is com.auramusic.innertube.models.AlbumItem -> item.thumbnail
+                        is com.auramusic.innertube.models.ArtistItem -> item.thumbnail
+                        is com.auramusic.innertube.models.PlaylistItem -> item.thumbnail
+                        else -> ""
+                    },
+                    contentDescription = when (item) {
+                        is com.auramusic.innertube.models.SongItem -> item.title
+                        is com.auramusic.innertube.models.AlbumItem -> item.title
+                        is com.auramusic.innertube.models.ArtistItem -> item.title
+                        is com.auramusic.innertube.models.PlaylistItem -> item.title
+                        else -> ""
+                    },
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = when (item) {
+                        is com.auramusic.innertube.models.SongItem -> item.title
+                        is com.auramusic.innertube.models.AlbumItem -> item.title
+                        is com.auramusic.innertube.models.ArtistItem -> item.title
+                        is com.auramusic.innertube.models.PlaylistItem -> item.title
+                        else -> ""
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                )
+                Text(
+                    text = when (item) {
+                        is com.auramusic.innertube.models.SongItem -> item.artists?.joinToString(", ") { it.name } ?: ""
+                        is com.auramusic.innertube.models.AlbumItem -> item.artists?.joinToString(", ") { it.name } ?: ""
+                        is com.auramusic.innertube.models.ArtistItem -> "Artist"
+                        is com.auramusic.innertube.models.PlaylistItem -> item.author?.name ?: ""
+                        else -> ""
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    painterResource(R.drawable.youtube),
+                    contentDescription = "YouTube",
+                    tint = Color(0xFFFF0000),
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = when (item) {
+                        is com.auramusic.innertube.models.SongItem -> "Song"
+                        is com.auramusic.innertube.models.AlbumItem -> "Album"
+                        is com.auramusic.innertube.models.ArtistItem -> "Artist"
+                        is com.auramusic.innertube.models.PlaylistItem -> "Playlist"
+                        else -> ""
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFFF0000),
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+        }
+    }
+}
+
+private fun handleSearchItemClick(item: LocalItem, playerConnection: PlayerConnection?) {
+    val navigator = LocalTvNavigator.current
+    when (item) {
+        is Song -> playerConnection?.playSong(item)
+        is Album -> navigator.navigate(TvDestination.Album(item.id))
+        is Artist -> navigator.navigate(TvDestination.Artist(item.id))
+        is Playlist -> navigator.navigate(TvDestination.Playlist(item.id))
+    }
+}
+
+private fun handleYTSearchItemClick(item: YTItem, playerConnection: PlayerConnection?) {
+    val navigator = LocalTvNavigator.current
+    when (item) {
+        is com.auramusic.innertube.models.SongItem -> {
+            playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
+        }
+        is com.auramusic.innertube.models.AlbumItem -> {
+            item.browseId?.let { browseId ->
+                navigator.navigate(TvDestination.Album(browseId))
+            } ?: run {
+                item.browseId?.let { browseId ->
+                    playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(browseId = browseId)))
+                }
+            }
+        }
+        is com.auramusic.innertube.models.ArtistItem -> {
+            item.id?.let { artistId ->
+                navigator.navigate(TvDestination.Artist(artistId))
+            }
+        }
+        is com.auramusic.innertube.models.PlaylistItem -> {
+            item.browseId?.let { browseId ->
+                navigator.navigate(TvDestination.Playlist(browseId))
+            } ?: run {
+                item.browseId?.let { browseId ->
+                    playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(browseId = browseId)))
+                }
+            }
         }
     }
 }
@@ -650,6 +1084,8 @@ private fun SongRow(
 
 @Composable
 private fun LocalItemRow(title: String, items: List<LocalItem>) {
+    val navigator = LocalTvNavigator.current
+
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
             text = title,
@@ -667,25 +1103,25 @@ private fun LocalItemRow(title: String, items: List<LocalItem>) {
                         title = item.artist.name,
                         subtitle = "${item.songCount} songs",
                         thumbnailUrl = item.artist.thumbnailUrl,
-                        onClick = {},
+                        onClick = { navigator.navigate(TvDestination.Artist(item.id)) },
                     )
                     is Album -> MediaCard(
                         title = item.album.title,
                         subtitle = item.artists.joinToString(", ") { it.name },
                         thumbnailUrl = item.album.thumbnailUrl,
-                        onClick = {},
+                        onClick = { navigator.navigate(TvDestination.Album(item.id)) },
                     )
                     is Playlist -> MediaCard(
                         title = item.playlist.name,
                         subtitle = "${item.songCount} songs",
                         thumbnailUrl = item.playlist.thumbnailUrl,
-                        onClick = {},
+                        onClick = { navigator.navigate(TvDestination.Playlist(item.id)) },
                     )
                     is Song -> MediaCard(
                         title = item.song.title,
                         subtitle = item.artists.joinToString(", ") { it.name },
                         thumbnailUrl = item.song.thumbnailUrl,
-                        onClick = {},
+                        onClick = { playerConnection?.playSong(item as Song) },
                     )
                 }
             }
@@ -769,6 +1205,103 @@ private fun MediaCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
             )
+        }
+    }
+}
+
+@Composable
+private fun TvMiniPlayer(
+    playerConnection: PlayerConnection?,
+    onPlayerClick: () -> Unit,
+) {
+    val currentSong by (playerConnection?.currentSong ?: remember { mutableStateOf(null) }).collectAsStateWithLifecycle()
+    val isPlaying by (playerConnection?.isPlaying ?: remember { mutableStateOf(false) }).collectAsStateWithLifecycle()
+
+    Surface(
+        onClick = onPlayerClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 4.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            // Album art
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                AsyncImage(
+                    model = currentSong?.song?.thumbnailUrl,
+                    contentDescription = currentSong?.song?.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            // Song info
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = currentSong?.song?.title ?: "No song playing",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                )
+                Text(
+                    text = currentSong?.artists?.joinToString(", ") { it.name } ?: "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
+
+            // Controls
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                IconButton(
+                    onClick = { playerConnection?.previous() },
+                    modifier = Modifier.size(48.dp),
+                ) {
+                    Icon(
+                        Icons.Filled.SkipPrevious,
+                        contentDescription = "Previous",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                IconButton(
+                    onClick = { playerConnection?.playPause() },
+                    modifier = Modifier.size(48.dp),
+                ) {
+                    Icon(
+                        if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = if (isPlaying) "Pause" else "Play",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                IconButton(
+                    onClick = { playerConnection?.next() },
+                    modifier = Modifier.size(48.dp),
+                ) {
+                    Icon(
+                        Icons.Filled.SkipNext,
+                        contentDescription = "Next",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
         }
     }
 }
