@@ -22,8 +22,10 @@ import com.auramusic.app.playback.MusicService.MusicBinder
 import com.auramusic.app.playback.PlayerConnection
 import com.auramusic.app.ui.theme.AuraMusicTheme
 import com.auramusic.app.ui.tv.TvApp
+import com.auramusic.app.utils.SyncUtils
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -43,6 +45,9 @@ class TvMainActivity : ComponentActivity() {
 
     @Inject
     lateinit var listenTogetherManager: ListenTogetherManager
+
+    @Inject
+    lateinit var syncUtils: SyncUtils
 
     private val playerConnectionFlow = MutableStateFlow<PlayerConnection?>(null)
     private var serviceBound = false
@@ -72,6 +77,12 @@ class TvMainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Initialize sync on TV launch
+        lifecycleScope.launch {
+            syncUtils.tryAutoSync()
+        }
+        
         setContent {
             val playerConnection by playerConnectionFlow.collectAsState()
             AuraMusicTheme {

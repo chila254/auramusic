@@ -6,4 +6,10 @@
     <dimen name="text_size_small">12sp</dimen>
     <dimen name="text_size_medium">14sp</dimen>
     <dimen name="text_size_large">18sp</dimen>
+
+    <!-- Base defaults for TV-tuned dimensions; overridden in values-tv. -->
+    <dimen name="card_width">160dp</dimen>
+    <dimen name="card_height">120dp</dimen>
+    <dimen name="card_margin">8dp</dimen>
+    <dimen name="touch_target_size">48dp</dimen>
 </resources>
