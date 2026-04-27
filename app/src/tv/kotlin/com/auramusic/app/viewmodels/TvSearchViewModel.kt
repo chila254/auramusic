@@ -49,11 +49,10 @@ data class CombinedSearchResult(
 class TvSearchViewModel
 @Inject
 constructor(
-    @ApplicationContext context: Context,
-    database: MusicDatabase,
+    @ApplicationContext private val context: Context,
+    private val database: MusicDatabase,
 ) : ViewModel() {
-    private val query = MutableStateFlow("")
-    val queryFlow = query
+    val query = MutableStateFlow("")
 
     private val _searchResults = MutableStateFlow<CombinedSearchResult>(CombinedSearchResult())
     val searchResults: StateFlow<CombinedSearchResult> = _searchResults
@@ -65,15 +64,149 @@ constructor(
     val recentSearches: StateFlow<List<String>> = _recentSearches
 
     // Local database search results
-    private val localSearchResults = MutableStateFlow<List<LocalItem>>(emptyList())
-    
-    // YouTube search results
-    private val ytSearchResults = MutableStateFlow<List<YTItem>>(emptyList())
+    private val localSongs = MutableStateFlow<List<Song>>(emptyList())
+    private val localArtists = MutableStateFlow<List<Artist>>(emptyList())
+    private val localAlbums = MutableStateFlow<List<Album>>(emptyList())
+    private val localPlaylists = MutableStateFlow<List<Playlist>>(emptyList())
 
-    init {
-        // Load recent searches from DataStore
-        loadRecentSearches()
+    // YouTube search results
+    private val ytSongs = MutableStateFlow<List<SongItem>>(emptyList())
+    private val ytAlbums = MutableStateFlow<List<AlbumItem>>(emptyList())
+    private val ytArtists = MutableStateFlow<List<ArtistItem>>(emptyList())
+    private val ytPlaylists = MutableStateFlow<List<PlaylistItem>>(emptyList())
+
+    val result = combine(
+        localSongs,
+        localArtists,
+        localAlbums,
+        localPlaylists,
+        ytSongs,
+        ytAlbums,
+        ytArtists,
+        ytPlaylists,
+        _isSearching
+    ) { localSongs, localArtists, localAlbums, localPlaylists, ytSongs, ytAlbums, ytArtists, ytPlaylists, isSearching ->
+        val localItems = (localSongs + localArtists + localAlbums + localPlaylists)
+        val ytItems = (ytSongs + ytAlbums + ytArtists + ytPlaylists)
+        CombinedSearchResult(localItems, ytItems, isSearching)
+    }.stateIn(viewModelScope, SharingStarted.Lazily, CombinedSearchResult())
+
+    fun setQuery(newQuery: String) {
+        query.value = newQuery
+        if (newQuery.isNotEmpty()) {
+            performSearch(newQuery)
+        } else {
+            clearResults()
+        }
     }
+
+    private fun performSearch(query: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _isSearching.value = true
+            try {
+                // Local database search
+                val localResults = performLocalSearch(query)
+                updateLocalResults(localResults)
+
+                // YouTube search
+                val ytResults = performYouTubeSearch(query)
+                updateYTResults(ytResults)
+
+                // Update combined results
+                updateCombinedResults()
+            } finally {
+                _isSearching.value = false
+            }
+        }
+    }
+
+    private suspend fun performLocalSearch(query: String): Map<String, List<LocalItem>> {
+        val results = mutableMapOf<String, List<LocalItem>>()
+
+        try {
+            val songs = database.searchSongs("%$query%", 20).first()
+            results["songs"] = songs
+        } catch (e: Exception) {
+            results["songs"] = emptyList()
+        }
+
+        try {
+            val artists = database.searchArtists("%$query%", 10).first()
+            results["artists"] = artists
+        } catch (e: Exception) {
+            results["artists"] = emptyList()
+        }
+
+        try {
+            val albums = database.searchAlbums("%$query%", 10).first()
+            results["albums"] = albums
+        } catch (e: Exception) {
+            results["albums"] = emptyList()
+        }
+
+        try {
+            val playlists = database.searchPlaylists("%$query%", 10).first()
+            results["playlists"] = playlists
+        } catch (e: Exception) {
+            results["playlists"] = emptyList()
+        }
+
+        return results
+    }
+
+    private suspend fun performYouTubeSearch(query: String): SearchResult? {
+        return try {
+            YouTube.search(query, YouTube.SearchFilter.SONG)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun updateLocalResults(results: Map<String, List<LocalItem>>) {
+        localSongs.value = results["songs"]?.filterIsInstance<Song>() ?: emptyList()
+        localArtists.value = results["artists"]?.filterIsInstance<Artist>() ?: emptyList()
+        localAlbums.value = results["albums"]?.filterIsInstance<Album>() ?: emptyList()
+        localPlaylists.value = results["playlists"]?.filterIsInstance<Playlist>() ?: emptyList()
+    }
+
+    private fun updateYTResults(result: SearchResult?) {
+        ytSongs.value = result?.songs?.filterExplicit()?.filterVideoSongs() ?: emptyList()
+        ytAlbums.value = result?.albums ?: emptyList()
+        ytArtists.value = result?.artists ?: emptyList()
+        ytPlaylists.value = result?.playlists ?: emptyList()
+    }
+
+    private fun updateCombinedResults() {
+        val combined = CombinedSearchResult(
+            localItems = (localSongs.value + localArtists.value + localAlbums.value + localPlaylists.value),
+            ytItems = (ytSongs.value + ytAlbums.value + ytArtists.value + ytPlaylists.value),
+            isLoading = false
+        )
+        _searchResults.value = combined
+    }
+
+    private fun clearResults() {
+        localSongs.value = emptyList()
+        localArtists.value = emptyList()
+        localAlbums.value = emptyList()
+        localPlaylists.value = emptyList()
+        ytSongs.value = emptyList()
+        ytAlbums.value = emptyList()
+        ytArtists.value = emptyList()
+        ytPlaylists.value = emptyList()
+        _searchResults.value = CombinedSearchResult()
+    }
+
+    fun addToRecentSearches(query: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val current = _recentSearches.value.toMutableList()
+            current.remove(query) // Remove if exists
+            current.add(0, query) // Add to front
+            if (current.size > 10) current.removeAt(current.lastIndex)
+            _recentSearches.value = current
+        }
+    }
+}
 
     private fun loadRecentSearches() {
         viewModelScope.launch(Dispatchers.IO) {

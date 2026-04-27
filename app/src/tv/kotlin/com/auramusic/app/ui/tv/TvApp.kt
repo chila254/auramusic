@@ -8,6 +8,7 @@ package com.auramusic.app.ui.tv
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -57,6 +58,41 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import coil3.compose.AsyncImage
+import com.auramusic.app.R
+import com.auramusic.app.db.entities.Album
+import com.auramusic.app.db.entities.Artist
+import com.auramusic.app.db.entities.LocalItem
+import com.auramusic.app.db.entities.Playlist
+import com.auramusic.app.db.entities.Song
+import com.auramusic.app.playback.PlayerConnection
+import com.auramusic.app.playback.queues.YouTubeQueue
+import com.auramusic.app.viewmodels.HomeViewModel
+import com.auramusic.app.viewmodels.LibraryAlbumsViewModel
+import com.auramusic.app.viewmodels.LibraryArtistsViewModel
+import com.auramusic.app.viewmodels.LibraryPlaylistsViewModel
+import com.auramusic.app.viewmodels.LibrarySongsViewModel
+import com.auramusic.app.viewmodels.LocalFilter
+import com.auramusic.app.viewmodels.LocalSearchViewModel
+import com.auramusic.app.viewmodels.TvSearchViewModel
+import com.auramusic.innertube.models.WatchEndpoint
+import com.auramusic.innertube.models.EpisodeItem
+import com.auramusic.innertube.models.PodcastItem
+import com.auramusic.innertube.models.SimilarRecommendation
+import kotlinx.coroutines.launch
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -68,7 +104,7 @@ import com.auramusic.app.db.entities.Playlist
 import com.auramusic.app.db.entities.Song
 import com.auramusic.app.playback.PlayerConnection
 import com.auramusic.app.playback.queues.YouTubeQueue
-import com.auramusic.app.ui.component.SongRow
+
 import com.auramusic.app.viewmodels.HomeViewModel
 import com.auramusic.app.viewmodels.LocalFilter
 import com.auramusic.app.viewmodels.LocalSearchViewModel
@@ -231,7 +267,7 @@ private fun TvHomeScreen(playerConnection: PlayerConnection?) {
                 SongRow(
                     title = "Quick picks",
                     songs = quickPicks!!,
-                    onSongClick = { song -> playerConnection.playSong(song) },
+                    onSongClick = { song -> playerConnection?.playSong(song) },
                 )
             }
         }
@@ -241,7 +277,7 @@ private fun TvHomeScreen(playerConnection: PlayerConnection?) {
                 SongRow(
                     title = "Forgotten favorites",
                     songs = forgottenFavorites!!,
-                    onSongClick = { song -> playerConnection.playSong(song) },
+                    onSongClick = { song -> playerConnection?.playSong(song) },
                 )
             }
         }
@@ -256,12 +292,14 @@ private fun TvHomeScreen(playerConnection: PlayerConnection?) {
                     playerConnection = playerConnection,
                     onYTItemClick = { ytItem ->
                         when (ytItem) {
-                            is SongItem -> playerConnection.playQueue(
+                            is SongItem -> playerConnection?.playQueue(
                                 YouTubeQueue(endpoint = WatchEndpoint(videoId = ytItem.id))
                             )
                             is AlbumItem -> {}
                             is ArtistItem -> {}
                             is PlaylistItem -> {}
+                            is EpisodeItem -> {}
+                            is PodcastItem -> {}
                         }
                     }
                 )
@@ -283,10 +321,14 @@ private fun TvHomeScreen(playerConnection: PlayerConnection?) {
                     playerConnection = playerConnection,
                     onYTItemClick = { ytItem ->
                         when (ytItem) {
-                            is SongItem -> playerConnection.playQueue(
+                            is SongItem -> playerConnection?.playQueue(
                                 YouTubeQueue(endpoint = WatchEndpoint(videoId = ytItem.id))
                             )
-                            else -> {}
+                            is AlbumItem -> {}
+                            is ArtistItem -> {}
+                            is PlaylistItem -> {}
+                            is EpisodeItem -> {}
+                            is PodcastItem -> {}
                         }
                     }
                 )
@@ -605,7 +647,7 @@ private fun TvLibraryScreen(playerConnection: PlayerConnection?) {
                 SongRow(
                     title = "Songs",
                     songs = songs,
-                    onSongClick = { song -> playerConnection.playSong(song) },
+                    onSongClick = { song -> playerConnection?.playSong(song) },
                 )
             }
         }
@@ -770,7 +812,7 @@ private fun TvSearchScreen(playerConnection: PlayerConnection?) {
                             SongRow(
                                 title = "Songs",
                                 songs = localSongs,
-                                onSongClick = { song -> playerConnection.playSong(song) },
+                                onSongClick = { song -> playerConnection?.playSong(song) },
                             )
                         }
                     }
@@ -809,7 +851,7 @@ private fun TvSearchScreen(playerConnection: PlayerConnection?) {
                                 playerConnection = playerConnection,
                                 onYTItemClick = { ytItem ->
                                     if (ytItem is SongItem) {
-                                        playerConnection.playQueue(
+                                        playerConnection?.playQueue(
                                             YouTubeQueue(endpoint = WatchEndpoint(videoId = ytItem.id))
                                         )
                                     }
