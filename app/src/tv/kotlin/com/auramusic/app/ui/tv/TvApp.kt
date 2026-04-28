@@ -407,9 +407,10 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
                             }
                             is ArtistItem -> item.id?.let { navigator.navigate(TvDestination.Artist(it)) }
                             is PlaylistItem -> navigator.navigate(TvDestination.Playlist(item.id))
-                            is EpisodeItem -> playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
-                            is PodcastItem -> item.id?.let { navigator.navigate(TvDestination.Playlist(it)) }
-                        }
+                    is EpisodeItem -> playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
+                    is PodcastItem -> item.id?.let { navigator.navigate(TvDestination.Playlist(it)) }
+                    else -> {}
+                }
                     }
                                  is AlbumItem -> {
                                      val browseId = item.browseId
@@ -561,9 +562,10 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
                                 }
                                 is ArtistItem -> item.id?.let { navigator.navigate(TvDestination.Artist(it)) }
                                 is PlaylistItem -> navigator.navigate(TvDestination.Playlist(item.id))
-                                is EpisodeItem -> playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
-                                is PodcastItem -> item.id?.let { navigator.navigate(TvDestination.Playlist(it)) }
-                            }
+                    is EpisodeItem -> playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
+                    is PodcastItem -> item.id?.let { navigator.navigate(TvDestination.Playlist(it)) }
+                    else -> {}
+                }
                         }
                     )
                 }
