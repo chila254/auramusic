@@ -380,7 +380,6 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
                                 }
                                 else -> {}
                             }
-                        }
     }
 
                     )
@@ -417,6 +416,14 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
                             }
                             is PlaylistItem -> {
                                 navigator.navigate(TvDestination.Playlist(item.id))
+                            }
+                            is EpisodeItem -> {
+                                playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
+                            }
+                            is PodcastItem -> {
+                                item.id?.let { podcastId ->
+                                    navigator.navigate(TvDestination.Playlist(podcastId))
+                                }
                             }
                             else -> {}
                         }
@@ -485,6 +492,14 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
                                 is PlaylistItem -> {
                                     navigator.navigate(TvDestination.Playlist(item.id))
                                 }
+                                is EpisodeItem -> {
+                                    playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
+                                }
+                                is PodcastItem -> {
+                                    item.id?.let { podcastId ->
+                                        navigator.navigate(TvDestination.Playlist(podcastId))
+                                    }
+                                }
                                 else -> {}
                             }
                         }
@@ -550,27 +565,6 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
                 }
             }
         }
-                                 is AlbumItem -> {
-                                     item.browseId?.let { browseId ->
-                                         navigator.navigate(TvDestination.Album(browseId))
-                                     } ?: run {
-                                         playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
-                                     }
-                                 }
-                                 is ArtistItem -> {
-                                     item.id?.let { artistId ->
-                                         navigator.navigate(TvDestination.Artist(artistId))
-                                     }
-                                 }
-                                 is PlaylistItem -> {
-                                     navigator.navigate(TvDestination.Playlist(item.id))
-                                 }
-                                 else -> {}
-                             }
-                         }
-                    )
-                }
-            }
 
         if (quickPicks.isNullOrEmpty() && forgottenFavorites.isNullOrEmpty() && homePage?.sections.isNullOrEmpty() != false) {
             item {
