@@ -86,6 +86,7 @@ import com.auramusic.app.db.entities.Song
 import com.auramusic.app.db.entities.SpeedDialItem
 import com.auramusic.app.playback.PlayerConnection
 import com.auramusic.app.playback.queues.YouTubeQueue
+import com.auramusic.app.playback.queues.ListQueue
 import com.auramusic.app.viewmodels.HomeViewModel
 import com.auramusic.app.viewmodels.LibraryAlbumsViewModel
 import com.auramusic.app.viewmodels.LibraryArtistsViewModel
@@ -1276,53 +1277,6 @@ fun SongRow(
     }
 }
 
-@Composable
-fun LocalItemRow(title: String, items: List<LocalItem>, playerConnection: PlayerConnection?) {
-    val navigator = LocalTvNavigator.current
-
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(20.dp),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            items(items) { item ->
-                when (item) {
-                    is Artist -> MediaCard(
-                        title = item.artist.name,
-                        subtitle = "${item.songCount} songs",
-                        thumbnailUrl = item.artist.thumbnailUrl,
-                        onClick = { navigator.navigate(TvDestination.Artist(item.id)) },
-                    )
-                    is Album -> MediaCard(
-                        title = item.album.title,
-                        subtitle = item.artists.joinToString(", ") { it.name },
-                        thumbnailUrl = item.album.thumbnailUrl,
-                        onClick = { navigator.navigate(TvDestination.Album(item.id)) },
-                    )
-                    is Playlist -> MediaCard(
-                        title = item.playlist.name,
-                        subtitle = "${item.songCount} songs",
-                        thumbnailUrl = item.playlist.thumbnailUrl,
-                        onClick = { navigator.navigate(TvDestination.Playlist(item.id)) },
-                    )
-                    is Song -> MediaCard(
-                        title = item.song.title,
-                        subtitle = item.artists.joinToString(", ") { it.name },
-                        thumbnailUrl = item.song.thumbnailUrl,
-                        onClick = { playerConnection?.playSong(item) },
-                    )
-                }
-            }
-        }
-    }
-}
-
 /**
  * TV-friendly card. Visually responds to D-pad focus with a colored border,
  * a subtle scale-up, and asks the parent lazy row/column to scroll it into
@@ -1402,6 +1356,54 @@ fun MediaCard(
         }
     }
 }
+
+@Composable
+fun LocalItemRow(title: String, items: List<LocalItem>, playerConnection: PlayerConnection?) {
+    val navigator = LocalTvNavigator.current
+
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            items(items) { item ->
+                when (item) {
+                    is Artist -> MediaCard(
+                        title = item.artist.name,
+                        subtitle = "${item.songCount} songs",
+                        thumbnailUrl = item.artist.thumbnailUrl,
+                        onClick = { navigator.navigate(TvDestination.Artist(item.id)) },
+                    )
+                    is Album -> MediaCard(
+                        title = item.album.title,
+                        subtitle = item.artists.joinToString(", ") { it.name },
+                        thumbnailUrl = item.album.thumbnailUrl,
+                        onClick = { navigator.navigate(TvDestination.Album(item.id)) },
+                    )
+                    is Playlist -> MediaCard(
+                        title = item.playlist.name,
+                        subtitle = "${item.songCount} songs",
+                        thumbnailUrl = item.playlist.thumbnailUrl,
+                        onClick = { navigator.navigate(TvDestination.Playlist(item.id)) },
+                    )
+                    is Song -> MediaCard(
+                        title = item.song.title,
+                        subtitle = item.artists.joinToString(", ") { it.name },
+                        thumbnailUrl = item.song.thumbnailUrl,
+                        onClick = { playerConnection?.playSong(item.song) },
+                    )
+                }
+            }
+        }
+    }
+}
+
 
 @Composable
 fun TvMiniPlayer(
@@ -1661,7 +1663,12 @@ fun TvSettingsScreen(onBackClick: () -> Unit) {
 }
 
 fun PlayerConnection?.playSong(song: Song) {
-    this?.playQueue(
-        YouTubeQueue(endpoint = WatchEndpoint(videoId = song.song.id)),
+    if (this == null) return
+    playQueue(
+        ListQueue(
+            title = song.title,
+            items = listOf(song.toMediaItem()),
+            startIndex = 0,
+        ),
     )
 }

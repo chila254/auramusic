@@ -117,7 +117,7 @@ fun TvPlaylistDetailScreen(playlistId: String, playerConnection: PlayerConnectio
     val playlist = playlists.find { it.playlist.id == playlistId }
 
     val songs by remember(playlistId) {
-        database.playlistSongs(playlistId).map { playlistSongs ->
+        database.playlistSongs(playlistId).map<List<PlaylistSongCrossRef>, List<Song>> { playlistSongs ->
             playlistSongs.map { it.song }
         }
     }.collectAsState(emptyList<Song>())

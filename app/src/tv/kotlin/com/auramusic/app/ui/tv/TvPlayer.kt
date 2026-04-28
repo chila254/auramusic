@@ -31,8 +31,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.FastForward
-import androidx.compose.material.icons.automirrored.filled.FastRewind
+import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
@@ -331,7 +331,7 @@ fun TvPlayerScreen(
                             val newPos = maxOf(0L, currentPos - 10000L) // 10 seconds back
                             playerConnection?.player?.seekTo(newPos)
                         },
-                        icon = Icons.AutoMirrored.Filled.FastRewind,
+                        icon = Icons.Filled.FastRewind,
                         contentDescription = "Rewind 10 seconds",
                     )
 
@@ -351,7 +351,7 @@ fun TvPlayerScreen(
                             val newPos = minOf(duration, currentPos + 10000L) // 10 seconds forward
                             playerConnection?.player?.seekTo(newPos)
                         },
-                        icon = Icons.AutoMirrored.Filled.FastForward,
+                        icon = Icons.Filled.FastForward,
                         contentDescription = "Fast forward 10 seconds",
                     )
 
