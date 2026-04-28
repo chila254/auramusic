@@ -78,8 +78,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.auramusic.app.R
 import com.auramusic.app.utils.makeTimeString
-import com.auramusic.app.models.toMediaMetadata
-import com.auramusic.app.db.entities.LocalItem
 import com.auramusic.app.db.entities.Artist
 import com.auramusic.app.db.entities.Album
 import com.auramusic.app.db.entities.Playlist
