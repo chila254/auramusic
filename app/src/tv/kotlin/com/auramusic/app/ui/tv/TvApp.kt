@@ -354,9 +354,10 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
                                     playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
                                 }
                                 is AlbumItem -> {
-                                    item.browseId?.let { browseId ->
+                                    val browseId = item.browseId
+                                    if (browseId != null) {
                                         navigator.navigate(TvDestination.Album(browseId))
-                                    } ?: run {
+                                    } else {
                                         playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
                                     }
                                 }
@@ -400,10 +401,14 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
                             is SongItem -> {
                                 playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
                             }
-                            is AlbumItem -> {
-                                item.browseId?.let { browseId ->
-                                    navigator.navigate(TvDestination.Album(browseId))
-                                }
+                                 is AlbumItem -> {
+                                     val browseId = item.browseId
+                                     if (browseId != null) {
+                                         navigator.navigate(TvDestination.Album(browseId))
+                                     } else {
+                                         playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
+                                     }
+                                 }
                             }
                             is ArtistItem -> {
                                 item.id?.let { artistId ->
@@ -465,9 +470,10 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
                                     playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
                                 }
                                 is AlbumItem -> {
-                                    item.browseId?.let { browseId ->
+                                    val browseId = item.browseId
+                                    if (browseId != null) {
                                         navigator.navigate(TvDestination.Album(browseId))
-                                    } ?: run {
+                                    } else {
                                         playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
                                     }
                                 }
@@ -522,9 +528,10 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
                                      playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
                                  }
                                  is AlbumItem -> {
-                                     item.browseId?.let { browseId ->
+                                     val browseId = item.browseId
+                                     if (browseId != null) {
                                          navigator.navigate(TvDestination.Album(browseId))
-                                     } ?: run {
+                                     } else {
                                          playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
                                      }
                                  }
@@ -1250,13 +1257,14 @@ fun handleYTSearchItemClick(item: YTItem, playerConnection: PlayerConnection?) {
         is SongItem -> {
             playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
         }
-        is AlbumItem -> {
-            item.browseId?.let { browseId ->
-                navigator.navigate(TvDestination.Album(browseId))
-            } ?: run {
-                playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
-            }
-        }
+                                is AlbumItem -> {
+                                    val browseId = item.browseId
+                                    if (browseId != null) {
+                                        navigator.navigate(TvDestination.Album(browseId))
+                                    } else {
+                                        playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
+                                    }
+                                }
         is ArtistItem -> {
             item.id?.let { artistId ->
                 navigator.navigate(TvDestination.Artist(artistId))
