@@ -49,7 +49,7 @@ import coil3.compose.AsyncImage
 import com.auramusic.app.LocalDatabase
 import com.auramusic.app.constants.ArtistSongSortType
 import com.auramusic.app.db.entities.Song
-import com.auramusic.app.db.entities.PlaylistSongCrossRef
+import com.auramusic.app.db.entities.PlaylistSong
 import com.auramusic.app.extensions.toMediaItem
 import com.auramusic.app.playback.PlayerConnection
 import com.auramusic.app.playback.queues.ListQueue
@@ -117,11 +117,8 @@ fun TvPlaylistDetailScreen(playlistId: String, playerConnection: PlayerConnectio
     val playlists by playlistsViewModel.allPlaylists.collectAsStateWithLifecycle()
     val playlist = playlists.find { it.playlist.id == playlistId }
 
-    val songs by remember(playlistId) {
-        database.playlistSongs(playlistId).map { playlistSongs ->
-            playlistSongs.map { it.song }
-        }
-    }.collectAsState(emptyList())
+    val playlistSongs by database.playlistSongs(playlistId).collectAsState(emptyList())
+    val songs = playlistSongs.map { it.song }
 
     TvDetailLayout(
         title = playlist?.playlist?.name.orEmpty().ifEmpty { "Playlist" },

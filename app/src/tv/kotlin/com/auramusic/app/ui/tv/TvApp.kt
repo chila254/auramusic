@@ -85,6 +85,7 @@ import com.auramusic.app.db.entities.Album
 import com.auramusic.app.db.entities.Playlist
 import com.auramusic.app.db.entities.Song
 import com.auramusic.app.db.entities.SpeedDialItem
+import com.auramusic.app.extensions.toMediaItem
 import com.auramusic.app.playback.PlayerConnection
 import com.auramusic.app.playback.queues.YouTubeQueue
 import com.auramusic.app.playback.queues.ListQueue
@@ -180,7 +181,7 @@ fun TvApp(playerConnection: PlayerConnection?) {
         Column(modifier = Modifier.fillMaxSize()) {
             TvNavigationBar(
                 current = section,
-                onSelect = { selectedSection -> section = selectedSection },
+                onSelect = { selectedSection: TvSection -> section = selectedSection },
             )
             Box(modifier = Modifier.fillMaxSize()) {
                 when (section) {
@@ -387,53 +388,31 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
             item {
                 YouTubeSectionRow(
                     title = "Speed Dial",
-                    items = speedDialItems.take(6).mapNotNull { speedDialItem ->
-                        // Convert SpeedDialItem to YTItem for display
-                        // This is a simplified conversion - you might need to adjust based on actual SpeedDialItem structure
-                        when (speedDialItem) {
-                            is com.auramusic.app.db.entities.SpeedDialItem.SongSpeedDial -> {
-                                // Create a SongItem from the speed dial item
-                                // This requires accessing the actual song data
-                                null // Placeholder - needs proper implementation
-                            }
-                            is com.auramusic.app.db.entities.SpeedDialItem.AlbumSpeedDial -> {
-                                // Create an AlbumItem
-                                null // Placeholder - needs proper implementation
-                            }
-                            is com.auramusic.app.db.entities.SpeedDialItem.ArtistSpeedDial -> {
-                                // Create an ArtistItem
-                                null // Placeholder - needs proper implementation
-                            }
-                            is com.auramusic.app.db.entities.SpeedDialItem.PlaylistSpeedDial -> {
-                                // Create a PlaylistItem
-                                null // Placeholder - needs proper implementation
-                            }
-                        }
-                    }.filterNotNull(),
+                    items = speedDialItems.take(6).map { it.toYTItem() },
                     playerConnection = playerConnection,
-                     onYTItemClick = { item: YTItem ->
-                          // Handle speed dial item clicks
-                         val navigator = rememberTvNavigator()
-                         when (item) {
-                             is SongItem -> {
-                                 playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
-                             }
-                             is AlbumItem -> {
-                                 item.browseId?.let { browseId ->
-                                     navigator.navigate(TvDestination.Album(browseId))
-                                 }
-                             }
-                             is ArtistItem -> {
-                                 item.id?.let { artistId ->
-                                     navigator.navigate(TvDestination.Artist(artistId))
-                                 }
-                             }
-                             is PlaylistItem -> {
-                                 navigator.navigate(TvDestination.Playlist(item.id))
-                             }
-                             else -> {}
-                         }
-                     }
+                    onYTItemClick = { item: YTItem ->
+                        // Handle speed dial item clicks
+                        val navigator = rememberTvNavigator()
+                        when (item) {
+                            is SongItem -> {
+                                playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
+                            }
+                            is AlbumItem -> {
+                                item.browseId?.let { browseId ->
+                                    navigator.navigate(TvDestination.Album(browseId))
+                                }
+                            }
+                            is ArtistItem -> {
+                                item.id?.let { artistId ->
+                                    navigator.navigate(TvDestination.Artist(artistId))
+                                }
+                            }
+                            is PlaylistItem -> {
+                                navigator.navigate(TvDestination.Playlist(item.id))
+                            }
+                            else -> {}
+                        }
+                    }
                 )
             }
         }
@@ -475,7 +454,7 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
                     SongRow(
                         title = "Similar to ${recommendation.title}",
                         songs = recommendation.songs,
-                        onSongClick = { song -> playerConnection?.playSong(song) },
+                        onSongClick = { song: Song -> playerConnection?.playSong(song) },
                     )
                 }
             }
@@ -812,7 +791,7 @@ fun TvLibraryScreen(playerConnection: PlayerConnection?) {
                 SongRow(
                     title = "Songs",
                     songs = songs,
-                    onSongClick = { song -> playerConnection?.playSong(song) },
+                    onSongClick = { song: Song -> playerConnection?.playSong(song) },
                 )
             }
         }
@@ -1672,5 +1651,4 @@ fun PlayerConnection?.playSong(song: Song) {
             startIndex = 0,
         ),
     )
-}
 }
