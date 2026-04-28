@@ -89,6 +89,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import com.auramusic.app.utils.makeTimeString
 
 @Composable
 private fun TvPlayerControlButton(
@@ -376,7 +377,17 @@ fun TvPlayerScreen(
                     )
 
                     TvPlayerControlButton(
-                        onClick = { playerConnection?.player?.toggleRepeatMode() },
+                        onClick = {
+                            playerConnection?.player?.let { player ->
+                                val currentMode = player.repeatMode
+                                val newMode = when (currentMode) {
+                                    androidx.media3.common.Player.REPEAT_MODE_OFF -> androidx.media3.common.Player.REPEAT_MODE_ALL
+                                    androidx.media3.common.Player.REPEAT_MODE_ALL -> androidx.media3.common.Player.REPEAT_MODE_ONE
+                                    else -> androidx.media3.common.Player.REPEAT_MODE_OFF
+                                }
+                                player.repeatMode = newMode
+                            }
+                        },
                         icon = when (playerConnection?.repeatMode?.value) {
                             androidx.media3.common.Player.REPEAT_MODE_ONE -> Icons.Filled.RepeatOne
                             else -> Icons.Filled.Repeat
@@ -497,7 +508,7 @@ fun TvQueueItem(
                 mediaItem.mediaMetadata.artworkUri?.let { uri ->
                     AsyncImage(
                         model = uri,
-                        contentDescription = mediaItem.mediaMetadata.title,
+                        contentDescription = mediaItem.mediaMetadata.title?.toString(),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
                     )
