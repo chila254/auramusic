@@ -31,6 +31,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.FastForward
+import androidx.compose.material.icons.automirrored.filled.FastRewind
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
@@ -38,6 +40,9 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Bedtime
+import androidx.compose.material.icons.filled.Lyrics
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -79,6 +84,11 @@ import com.auramusic.innertube.models.WatchEndpoint
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 /**
  * TV-compatible full-screen player with large controls optimized for remote control navigation.
@@ -94,12 +104,31 @@ fun TvPlayerScreen(
     val currentPosition by (playerConnection?.currentPosition?.collectAsState(0L) ?: remember { mutableStateOf(0L) })
 
     var duration by remember { mutableStateOf(0L) }
+    var sleepTimerMinutes by remember { mutableStateOf<Int?>(null) }
+    var sleepTimerEndTime by remember { mutableStateOf<Long?>(null) }
+    var showLyrics by remember { mutableStateOf(false) }
+
     LaunchedEffect(playerConnection?.player) {
         while (true) {
             playerConnection?.player?.let { player ->
                 duration = player.duration.takeIf { it != C.TIME_UNSET } ?: 0L
             }
             delay(1000) // Update every second
+        }
+    }
+
+    // Sleep timer countdown
+    LaunchedEffect(sleepTimerEndTime) {
+        sleepTimerEndTime?.let { endTime ->
+            while (System.currentTimeMillis() < endTime) {
+                val remaining = endTime - System.currentTimeMillis()
+                sleepTimerMinutes = (remaining / (1000 * 60)).toInt()
+                delay(60000) // Update every minute
+            }
+            // Timer expired - pause playback
+            playerConnection?.togglePlayPause()
+            sleepTimerMinutes = null
+            sleepTimerEndTime = null
         }
     }
 
@@ -200,6 +229,25 @@ fun TvPlayerScreen(
                     )
                 }
 
+                // Lyrics overlay
+                if (showLyrics) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .background(Color.Black.copy(alpha = 0.8f))
+                            .padding(horizontal = 48.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "Lyrics not available for this song",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.White.copy(alpha = 0.7f),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+
                 // Progress bar and time
                 Column(
                     modifier = Modifier.fillMaxWidth(0.8f),
@@ -235,14 +283,25 @@ fun TvPlayerScreen(
 
                 // Control buttons
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(32.dp),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    // Previous
+                    // Previous song
                     TvPlayerControlButton(
                         onClick = { playerConnection?.seekToPrevious() },
                         icon = Icons.Filled.SkipPrevious,
                         contentDescription = "Previous song",
+                    )
+
+                    // Rewind 10 seconds
+                    TvPlayerControlButton(
+                        onClick = {
+                            val currentPos = playerConnection?.currentPosition?.value ?: 0L
+                            val newPos = maxOf(0L, currentPos - 10000L) // 10 seconds back
+                            playerConnection?.player?.seekTo(newPos)
+                        },
+                        icon = Icons.AutoMirrored.Filled.FastRewind,
+                        contentDescription = "Rewind 10 seconds",
                     )
 
                     // Play/Pause (larger)
@@ -253,7 +312,19 @@ fun TvPlayerScreen(
                         size = 96.dp,
                     )
 
-                    // Next
+                    // Fast forward 10 seconds
+                    TvPlayerControlButton(
+                        onClick = {
+                            val currentPos = playerConnection?.currentPosition?.value ?: 0L
+                            val duration = playerConnection?.player?.duration?.takeIf { it != C.TIME_UNSET } ?: Long.MAX_VALUE
+                            val newPos = minOf(duration, currentPos + 10000L) // 10 seconds forward
+                            playerConnection?.player?.seekTo(newPos)
+                        },
+                        icon = Icons.AutoMirrored.Filled.FastForward,
+                        contentDescription = "Fast forward 10 seconds",
+                    )
+
+                    // Next song
                     TvPlayerControlButton(
                         onClick = { playerConnection?.seekToNext() },
                         icon = Icons.Filled.SkipNext,
@@ -283,6 +354,59 @@ fun TvPlayerScreen(
                         contentDescription = "Repeat",
                         tint = if (playerConnection?.repeatMode?.value != androidx.media3.common.Player.REPEAT_MODE_OFF)
                             MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.7f),
+                    )
+
+                    TvPlayerControlButton(
+                        onClick = {
+                            playerConnection?.player?.let { player ->
+                                val currentSpeed = player.playbackParameters.speed
+                                val newSpeed = when (currentSpeed) {
+                                    1.0f -> 1.25f  // Normal -> 1.25x
+                                    1.25f -> 1.5f  // 1.25x -> 1.5x
+                                    1.5f -> 1.75f  // 1.5x -> 1.75x
+                                    1.75f -> 2.0f  // 1.75x -> 2x
+                                    2.0f -> 0.5f   // 2x -> 0.5x (slow)
+                                    0.5f -> 0.75f  // 0.5x -> 0.75x
+                                    else -> 1.0f   // Any other -> Normal
+                                }
+                                val params = androidx.media3.common.PlaybackParameters(newSpeed)
+                                player.setPlaybackParameters(params)
+                            }
+                        },
+                        icon = Icons.Filled.Speed,
+                        contentDescription = "Playback speed",
+                        tint = Color.White.copy(alpha = 0.7f),
+                    )
+
+                    TvPlayerControlButton(
+                        onClick = {
+                            val currentMinutes = sleepTimerMinutes
+                            val newMinutes = when (currentMinutes) {
+                                null -> 15     // Start with 15 minutes
+                                15 -> 30       // 15 -> 30 minutes
+                                30 -> 60       // 30 -> 60 minutes
+                                60 -> 120      // 60 -> 120 minutes
+                                else -> null   // Any other -> Cancel timer
+                            }
+
+                            if (newMinutes != null) {
+                                sleepTimerEndTime = System.currentTimeMillis() + (newMinutes * 60 * 1000L)
+                                sleepTimerMinutes = newMinutes
+                            } else {
+                                sleepTimerEndTime = null
+                                sleepTimerMinutes = null
+                            }
+                        },
+                        icon = Icons.Filled.Bedtime,
+                        contentDescription = if (sleepTimerMinutes != null) "Cancel sleep timer (${sleepTimerMinutes} min)" else "Set sleep timer",
+                        tint = if (sleepTimerMinutes != null) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.7f),
+                    )
+
+                    TvPlayerControlButton(
+                        onClick = { showLyrics = !showLyrics },
+                        icon = Icons.Filled.Lyrics,
+                        contentDescription = if (showLyrics) "Hide lyrics" else "Show lyrics",
+                        tint = if (showLyrics) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.7f),
                     )
                 }
             }
@@ -434,7 +558,7 @@ fun TvQueueScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            // Back button and title
+            // Back button, title, and clear queue button
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -459,7 +583,34 @@ fun TvQueueScreen(
                     color = MaterialTheme.colorScheme.onBackground,
                 )
 
-                Spacer(modifier = Modifier.size(64.dp)) // Balance the back button
+                // Clear queue button
+                IconButton(
+                    onClick = {
+                        playerConnection?.player?.let { player ->
+                            // Keep only the current song, remove all others
+                            if (player.mediaItemCount > 1) {
+                                val currentIndex = player.currentMediaItemIndex
+                                // Remove all items after current
+                                for (i in player.mediaItemCount - 1 downTo currentIndex + 1) {
+                                    player.removeMediaItem(i)
+                                }
+                                // Remove all items before current
+                                for (i in currentIndex - 1 downTo 0) {
+                                    player.removeMediaItem(i)
+                                }
+                            }
+                        }
+                    },
+                    modifier = Modifier.size(64.dp),
+                    enabled = queueWindows.size > 1,
+                ) {
+                    Icon(
+                        painterResource(R.drawable.clear_all),
+                        contentDescription = "Clear queue",
+                        tint = if (queueWindows.size > 1) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
             }
         }
 

@@ -109,6 +109,7 @@ enum class TvSection(val label: String) {
     HOME("Home"),
     LIBRARY("Library"),
     SEARCH("Search"),
+    SETTINGS("Settings"),
 }
 
 /**
@@ -130,9 +131,48 @@ fun TvApp(playerConnection: PlayerConnection?) {
     var section by remember { mutableStateOf<TvSection>(TvSection.HOME) }
     val navigator = rememberTvNavigator()
 
+    // Handle keyboard shortcuts for TV remote
+    val onPreviewKeyEvent: (androidx.compose.ui.input.key.KeyEvent) -> Boolean = { event ->
+        if (event.type == KeyEventType.KeyDown) {
+            when (event.key) {
+                Key.VolumeUp -> {
+                    playerConnection?.player?.let { player ->
+                        val currentVolume = player.volume
+                        player.volume = (currentVolume + 0.1f).coerceAtMost(1f)
+                    }
+                    true
+                }
+                Key.VolumeDown -> {
+                    playerConnection?.player?.let { player ->
+                        val currentVolume = player.volume
+                        player.volume = (currentVolume - 0.1f).coerceAtLeast(0f)
+                    }
+                    true
+                }
+                Key.MediaPlayPause -> {
+                    playerConnection?.togglePlayPause()
+                    true
+                }
+                Key.MediaNext -> {
+                    playerConnection?.seekToNext()
+                    true
+                }
+                Key.MediaPrevious -> {
+                    playerConnection?.seekToPrevious()
+                    true
+                }
+                else -> false
+            }
+        } else {
+            false
+        }
+    }
+
     CompositionLocalProvider(LocalTvNavigator provides navigator) {
         Surface(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .onPreviewKeyEvent(onPreviewKeyEvent),
             color = MaterialTheme.colorScheme.background,
         ) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -145,6 +185,7 @@ fun TvApp(playerConnection: PlayerConnection?) {
                     TvSection.HOME -> TvHomeScreen(playerConnection = playerConnection)
                     TvSection.LIBRARY -> TvLibraryScreen(playerConnection = playerConnection)
                     TvSection.SEARCH -> TvSearchScreen(playerConnection = playerConnection)
+                    TvSection.SETTINGS -> TvSettingsScreen(onBackClick = { section = TvSection.HOME })
                 }
 
                 // Overlay player/queue if needed
@@ -1455,6 +1496,166 @@ fun TvMiniPlayer(
                     )
                 }
             }
+        }
+    }
+}
+
+/* -------------------------- Settings -------------------------- */
+
+@Composable
+fun TvSettingsScreen(onBackClick: () -> Unit) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        item {
+            // Back button and title
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(
+                    onClick = onBackClick,
+                    modifier = Modifier.size(64.dp),
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                Text(
+                    text = "Settings",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+
+                Spacer(modifier = Modifier.size(64.dp)) // Balance the back button
+            }
+        }
+
+        item {
+            Text(
+                text = "App Settings",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+        }
+
+        // Settings categories
+        item {
+            TvSettingsCategoryItem(
+                title = "Appearance",
+                subtitle = "Theme, colors, and display settings",
+                onClick = { /* TODO: Navigate to appearance settings */ }
+            )
+        }
+
+        item {
+            TvSettingsCategoryItem(
+                title = "Playback",
+                subtitle = "Audio quality, playback behavior",
+                onClick = { /* TODO: Navigate to playback settings */ }
+            )
+        }
+
+        item {
+            TvSettingsCategoryItem(
+                title = "Content",
+                subtitle = "Sync settings, content filters",
+                onClick = { /* TODO: Navigate to content settings */ }
+            )
+        }
+
+        item {
+            TvSettingsCategoryItem(
+                title = "Account",
+                subtitle = "YouTube account, sync preferences",
+                onClick = { /* TODO: Navigate to account settings */ }
+            )
+        }
+
+        item {
+            TvSettingsCategoryItem(
+                title = "About",
+                subtitle = "App version, licenses, and information",
+                onClick = { /* TODO: Navigate to about screen */ }
+            )
+        }
+    }
+}
+
+@Composable
+fun TvSettingsCategoryItem(
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+) {
+    var isFocused by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
+    val scale by animateFloatAsState(
+        targetValue = if (isFocused) 1.06f else 1f,
+        label = "tvSettingsItemScale",
+    )
+    val borderColor = if (isFocused) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        Color.Transparent
+    }
+
+    Surface(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .bringIntoViewRequester(bringIntoViewRequester)
+            .onFocusChanged { focusState ->
+                isFocused = focusState.isFocused
+                if (focusState.isFocused) {
+                    scope.launch { bringIntoViewRequester.bringIntoView() }
+                }
+            }
+            .border(width = 3.dp, color = borderColor, shape = RoundedCornerShape(12.dp)),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 4.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = "Navigate to $title",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp)
+            )
         }
     }
 }

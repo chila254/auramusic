@@ -47,6 +47,7 @@ import androidx.compose.material3.Icon
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.auramusic.app.LocalDatabase
+import com.auramusic.app.constants.ArtistSongSortType
 import com.auramusic.app.db.entities.Song
 import com.auramusic.app.extensions.toMediaItem
 import com.auramusic.app.playback.PlayerConnection
@@ -84,16 +85,21 @@ fun TvAlbumDetailScreen(albumId: String, playerConnection: PlayerConnection?, on
 @Composable
 fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, onBackClick: () -> Unit) {
     val artistsViewModel: LibraryArtistsViewModel = hiltViewModel()
+    val database = LocalDatabase.current
 
     val artists by artistsViewModel.allArtists.collectAsStateWithLifecycle()
     val artist = artists.find { it.artist.id == artistId }
 
+    val songs by remember(artistId) {
+        database.artistSongs(artistId, ArtistSongSortType.CREATE_DATE, true)
+    }.collectAsState(emptyList())
+
     TvDetailLayout(
         title = artist?.artist?.name.orEmpty().ifEmpty { "Artist" },
         subtitle = "Artist",
-        meta = artist?.let { "${it.songCount} songs" }.orEmpty(),
+        meta = "${songs.size} songs",
         thumbnailUrl = artist?.artist?.thumbnailUrl,
-        songs = emptyList(), // TODO: Implement artist songs loading
+        songs = songs,
         playerConnection = playerConnection,
         playAllTitle = artist?.artist?.name,
         onBackClick = onBackClick,
@@ -105,17 +111,21 @@ fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, 
 @Composable
 fun TvPlaylistDetailScreen(playlistId: String, playerConnection: PlayerConnection?, onBackClick: () -> Unit) {
     val playlistsViewModel: LibraryPlaylistsViewModel = hiltViewModel()
+    val database = LocalDatabase.current
 
     val playlists by playlistsViewModel.allPlaylists.collectAsStateWithLifecycle()
     val playlist = playlists.find { it.playlist.id == playlistId }
 
-    // TODO: Implement playlist songs loading
-    val songs = emptyList<Song>()
+    val songs by remember(playlistId) {
+        database.playlistSongs(playlistId).map { playlistSongs ->
+            playlistSongs.map { it.song }
+        }
+    }.collectAsState(emptyList())
 
     TvDetailLayout(
         title = playlist?.playlist?.name.orEmpty().ifEmpty { "Playlist" },
         subtitle = "",
-        meta = playlist?.let { "${it.songCount} songs" }.orEmpty(),
+        meta = "${songs.size} songs",
         thumbnailUrl = playlist?.playlist?.thumbnailUrl,
         songs = songs,
         playerConnection = playerConnection,
