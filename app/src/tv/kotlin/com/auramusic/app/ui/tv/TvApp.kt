@@ -407,118 +407,89 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
                             }
                             is ArtistItem -> item.id?.let { navigator.navigate(TvDestination.Artist(it)) }
                             is PlaylistItem -> navigator.navigate(TvDestination.Playlist(item.id))
-                    is EpisodeItem -> playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
-                    is PodcastItem -> item.id?.let { navigator.navigate(TvDestination.Playlist(it)) }
-                    else -> {}
-                }
-                    }
-                                 is AlbumItem -> {
-                                     val browseId = item.browseId
-                                     if (browseId != null) {
-                                         navigator.navigate(TvDestination.Album(browseId))
-                                     } else {
-                                         playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
-                                     }
-                                 }
-                            }
-                            is ArtistItem -> {
-                                item.id?.let { artistId ->
-                                    navigator.navigate(TvDestination.Artist(artistId))
-                                }
-                            }
-                            is PlaylistItem -> {
-                                navigator.navigate(TvDestination.Playlist(item.id))
-                            }
-                            is EpisodeItem -> {
-                                playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
-                            }
-                            is PodcastItem -> {
-                                item.id?.let { podcastId ->
-                                    navigator.navigate(TvDestination.Playlist(podcastId))
-                                }
-                            }
+                            is EpisodeItem -> playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
+                            is PodcastItem -> item.id?.let { navigator.navigate(TvDestination.Playlist(it)) }
                             else -> {}
                         }
                     }
                 )
             }
-        }
 
-        if (!quickPicks.isNullOrEmpty()) {
-            item {
-                SongRow(
-                    title = "Quick picks",
-                    songs = quickPicks!!,
-                    onSongClick = { song: Song -> playerConnection?.playSong(song) },
-                )
-            }
-        }
-
-        if (!forgottenFavorites.isNullOrEmpty()) {
-            item {
-                SongRow(
-                    title = "Forgotten favorites",
-                    songs = forgottenFavorites!!,
-                    onSongClick = { song: Song -> playerConnection?.playSong(song) },
-                )
-            }
-        }
-
-        if (!keepListening.isNullOrEmpty()) {
-            item {
-                LocalItemRow(
-                    title = "Keep listening",
-                    items = keepListening!!,
-                    playerConnection = playerConnection,
-                )
-            }
-        }
-
-        // Similar recommendations
-        similarRecommendations?.takeIf { it.isNotEmpty() }?.let { recommendations ->
-            recommendations.forEach { recommendation ->
+            if (!quickPicks.isNullOrEmpty()) {
                 item {
-                    YouTubeSectionRow(
-                        title = "Similar to ${recommendation.title}",
-                        items = recommendation.items,
-                        playerConnection = playerConnection,
-                        onYTItemClick = { item: YTItem ->
-                            val navigator = rememberTvNavigator()
-                            when (item) {
-                                is SongItem -> {
-                                    playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
-                                }
-                                is AlbumItem -> {
-                                    val browseId = item.browseId
-                                    if (browseId != null) {
-                                        navigator.navigate(TvDestination.Album(browseId))
-                                    } else {
-                                        playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
-                                    }
-                                }
-                                is ArtistItem -> {
-                                    item.id?.let { artistId ->
-                                        navigator.navigate(TvDestination.Artist(artistId))
-                                    }
-                                }
-                                is PlaylistItem -> {
-                                    navigator.navigate(TvDestination.Playlist(item.id))
-                                }
-                                is EpisodeItem -> {
-                                    playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
-                                }
-                                is PodcastItem -> {
-                                    item.id?.let { podcastId ->
-                                        navigator.navigate(TvDestination.Playlist(podcastId))
-                                    }
-                                }
-                                else -> {}
-                            }
-                        }
+                    SongRow(
+                        title = "Quick picks",
+                        songs = quickPicks!!,
+                        onSongClick = { song: Song -> playerConnection?.playSong(song) },
                     )
                 }
             }
+
+            if (!forgottenFavorites.isNullOrEmpty()) {
+                item {
+                    SongRow(
+                        title = "Forgotten favorites",
+                        songs = forgottenFavorites!!,
+                        onSongClick = { song: Song -> playerConnection?.playSong(song) },
+                    )
+                }
+            }
+
+            if (!keepListening.isNullOrEmpty()) {
+                item {
+                    LocalItemRow(
+                        title = "Keep listening",
+                        items = keepListening!!,
+                        playerConnection = playerConnection,
+                    )
+                }
+            }
+
+            // Similar recommendations
+            similarRecommendations?.takeIf { it.isNotEmpty() }?.let { recommendations ->
+                recommendations.forEach { recommendation ->
+                    item {
+                        YouTubeSectionRow(
+                            title = "Similar to ${recommendation.title}",
+                            items = recommendation.items,
+                            playerConnection = playerConnection,
+                            onYTItemClick = { item: YTItem ->
+                                val navigator = rememberTvNavigator()
+    when (item) {
+        is SongItem -> {
+            playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
         }
+        is AlbumItem -> {
+            val browseId = item.browseId
+            if (browseId != null) {
+                navigator.navigate(TvDestination.Album(browseId))
+            } else {
+                playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
+            }
+        }
+        is ArtistItem -> {
+            item.id?.let { artistId ->
+                navigator.navigate(TvDestination.Artist(artistId))
+            }
+        }
+        is PlaylistItem -> {
+            navigator.navigate(TvDestination.Playlist(item.id))
+        }
+        is EpisodeItem -> {
+            playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
+        }
+        is PodcastItem -> {
+            item.id?.let { podcastId ->
+                navigator.navigate(TvDestination.Playlist(podcastId))
+            }
+        }
+        else -> {}
+    }
+                            }
+                        )
+                    }
+                }
+            }
 
         // Account playlists
         accountPlaylists?.takeIf { it.isNotEmpty() }?.let { playlists ->
@@ -562,10 +533,10 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
                                 }
                                 is ArtistItem -> item.id?.let { navigator.navigate(TvDestination.Artist(it)) }
                                 is PlaylistItem -> navigator.navigate(TvDestination.Playlist(item.id))
-                    is EpisodeItem -> playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
-                    is PodcastItem -> item.id?.let { navigator.navigate(TvDestination.Playlist(it)) }
-                    else -> {}
-                }
+                                is EpisodeItem -> playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
+                                is PodcastItem -> item.id?.let { navigator.navigate(TvDestination.Playlist(it)) }
+                                else -> {}
+                            }
                         }
                     )
                 }
