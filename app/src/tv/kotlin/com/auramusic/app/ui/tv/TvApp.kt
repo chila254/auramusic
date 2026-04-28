@@ -507,7 +507,8 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
         }
 
         // Display home page sections from YouTube
-        homePage?.sections?.forEachIndexed { index, section ->
+        val sections = homePage?.sections.orEmpty()
+        for (section in sections) {
             if (section.items.isNotEmpty()) {
                 item {
                     YouTubeSectionRow(
@@ -520,6 +521,28 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
                                  is SongItem -> {
                                      playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
                                  }
+                                 is AlbumItem -> {
+                                     item.browseId?.let { browseId ->
+                                         navigator.navigate(TvDestination.Album(browseId))
+                                     } ?: run {
+                                         playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
+                                     }
+                                 }
+                                 is ArtistItem -> {
+                                     item.id?.let { artistId ->
+                                         navigator.navigate(TvDestination.Artist(artistId))
+                                     }
+                                 }
+                                 is PlaylistItem -> {
+                                     navigator.navigate(TvDestination.Playlist(item.id))
+                                 }
+                                 else -> {}
+                             }
+                         }
+                    )
+                }
+            }
+        }
                                  is AlbumItem -> {
                                      item.browseId?.let { browseId ->
                                          navigator.navigate(TvDestination.Album(browseId))
