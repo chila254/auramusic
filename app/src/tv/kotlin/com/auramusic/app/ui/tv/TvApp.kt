@@ -193,30 +193,30 @@ fun TvApp(playerConnection: PlayerConnection?) {
                 }
 
                 // Overlay player/queue if needed
-                val currentDestination = rememberTvNavigator().current
+                val currentDestination = navigator.current
                 when (currentDestination) {
                     is TvDestination.Player -> TvPlayerScreen(
                         playerConnection = playerConnection,
-                        onBackClick = { rememberTvNavigator().popBack() }
+                        onBackClick = { navigator.popBack() }
                     )
                     is TvDestination.Queue -> TvQueueScreen(
                         playerConnection = playerConnection,
-                        onBackClick = { rememberTvNavigator().popBack() }
+                        onBackClick = { navigator.popBack() }
                     )
                     is TvDestination.Album -> TvAlbumDetailScreen(
                         albumId = currentDestination.id,
                         playerConnection = playerConnection,
-                        onBackClick = { rememberTvNavigator().popBack() }
+                        onBackClick = { navigator.popBack() }
                     )
                     is TvDestination.Artist -> TvArtistDetailScreen(
                         artistId = currentDestination.id,
                         playerConnection = playerConnection,
-                        onBackClick = { rememberTvNavigator().popBack() }
+                        onBackClick = { navigator.popBack() }
                     )
                     is TvDestination.Playlist -> TvPlaylistDetailScreen(
                         playlistId = currentDestination.id,
                         playerConnection = playerConnection,
-                        onBackClick = { rememberTvNavigator().popBack() }
+                        onBackClick = { navigator.popBack() }
                     )
                     else -> Unit
                 }
@@ -298,6 +298,7 @@ fun TvNavButton(
 
 @Composable
 fun TvHomeScreen(playerConnection: PlayerConnection?) {
+    val navigator = LocalTvNavigator.current
     val viewModel: HomeViewModel = hiltViewModel()
     val quickPicks by viewModel.quickPicks.collectAsState()
     val forgottenFavorites by viewModel.forgottenFavorites.collectAsState()
@@ -321,7 +322,7 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
             item {
                 TvMiniPlayer(
                     playerConnection = playerConnection,
-                    onPlayerClick = { rememberTvNavigator().navigate(TvDestination.Player) }
+                    onPlayerClick = { navigator.navigate(TvDestination.Player) }
                 )
             }
         }
@@ -349,7 +350,6 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
                         items = heroItems,
                         playerConnection = playerConnection,
                         onYTItemClick = { item: YTItem ->
-                            val navigator = rememberTvNavigator()
                             when (item) {
                                 is SongItem -> {
                                     playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
@@ -395,7 +395,6 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
                     items = speedDialItems.take(6).map { it.toYTItem() },
                     playerConnection = playerConnection,
                     onYTItemClick = { item: YTItem ->
-                        val navigator = rememberTvNavigator()
                         when (item) {
                             is SongItem -> playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
                             is AlbumItem -> {
@@ -456,7 +455,6 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
                             items = recommendation.items,
                             playerConnection = playerConnection,
                             onYTItemClick = { item: YTItem ->
-                                val navigator = rememberTvNavigator()
     when (item) {
         is SongItem -> {
             playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
@@ -503,7 +501,7 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
                        onYTItemClick = { item: YTItem ->
                            when (item) {
                                is PlaylistItem -> {
-                                  rememberTvNavigator().navigate(TvDestination.Playlist(item.id))
+                                  navigator.navigate(TvDestination.Playlist(item.id))
                               }
                               else -> {}
                           }
@@ -522,7 +520,6 @@ fun TvHomeScreen(playerConnection: PlayerConnection?) {
                         items = section.items,
                          playerConnection = playerConnection,
                         onYTItemClick = { item: YTItem ->
-                            val navigator = rememberTvNavigator()
                             when (item) {
                                 is SongItem -> playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
                                 is AlbumItem -> {
@@ -863,6 +860,7 @@ fun TvLibraryScreen(playerConnection: PlayerConnection?) {
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun TvSearchScreen(playerConnection: PlayerConnection?) {
+    val navigator = LocalTvNavigator.current
     val tvSearchViewModel: TvSearchViewModel = hiltViewModel()
     val query by tvSearchViewModel.query.collectAsState()
     val searchResults by tvSearchViewModel.searchResults.collectAsState()
@@ -941,7 +939,7 @@ fun TvSearchScreen(playerConnection: PlayerConnection?) {
                 items(searchResults.localItems.take(10)) { item ->
                     TvSearchResultItem(
                         item = item,
-                        onClick = { handleSearchItemClick(item, playerConnection) },
+                        onClick = { handleSearchItemClick(item, playerConnection, navigator) },
                     )
                 }
             }
@@ -958,7 +956,7 @@ fun TvSearchScreen(playerConnection: PlayerConnection?) {
                 items(searchResults.ytItems.take(10)) { item ->
                     TvYTSearchResultItem(
                         item = item,
-                        onClick = { handleYTSearchItemClick(item, playerConnection) },
+                        onClick = { handleYTSearchItemClick(item, playerConnection, navigator) },
                     )
                 }
             }
@@ -1214,9 +1212,7 @@ fun TvYTSearchResultItem(item: YTItem, onClick: () -> Unit) {
     }
 }
 
-@Composable
-fun handleSearchItemClick(item: LocalItem, playerConnection: PlayerConnection?) {
-    val navigator = LocalTvNavigator.current
+fun handleSearchItemClick(item: LocalItem, playerConnection: PlayerConnection?, navigator: TvNavigator) {
     when (item) {
         is Song -> playerConnection?.playSong(item)
         is Album -> navigator.navigate(TvDestination.Album(item.id))
@@ -1225,9 +1221,7 @@ fun handleSearchItemClick(item: LocalItem, playerConnection: PlayerConnection?) 
     }
 }
 
-@Composable
-fun handleYTSearchItemClick(item: YTItem, playerConnection: PlayerConnection?) {
-    val navigator = LocalTvNavigator.current
+fun handleYTSearchItemClick(item: YTItem, playerConnection: PlayerConnection?, navigator: TvNavigator) {
     when (item) {
         is SongItem -> {
             playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
