@@ -200,7 +200,7 @@ fun TvApp(playerConnection: PlayerConnection?) {
                         onBackClick = { navigator.popBack() }
                     )
                     is TvDestination.Queue -> TvQueueScreen(
-                        playerConnection = playerConnection,
+                        playerConnection = playerConnection?,
                         onBackClick = { navigator.popBack() }
                     )
                     is TvDestination.Album -> TvAlbumDetailScreen(
