@@ -14,6 +14,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -72,9 +73,9 @@ jobs:
           sed -i 's|tinypinyin = "2.0.3"|tinypinyin = "2.0.1"|g' gradle/libs.versions.toml
           ./gradlew assembleFossMobileUniversalRelease --no-daemon --no-configuration-cache
 
-      - name: Build Mobile GmsUniversalRelease APK
-        run: |
-          ./gradlew assembleGmsMobileUniversalRelease --no-daemon --no-configuration-cache
+       - name: Build Mobile GmsUniversalRelease APK
+         run: |
+           ./gradlew assembleGmsMobileUniversalRelease --no-daemon --no-configuration-cache
 
        - name: Build TV FossUniversalRelease APK
          run: |
@@ -82,10 +83,10 @@ jobs:
            ./gradlew assembleFossTvUniversalRelease --no-daemon --no-configuration-cache
 
        - name: Upload Mobile FOSS APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: MobileFossUniversalRelease
-          path: app/build/outputs/apk/fossMobileUniversal/release/*.apk
+         uses: actions/upload-artifact@v4
+         with:
+           name: MobileFossUniversalRelease
+           path: app/build/outputs/apk/fossMobileUniversal/release/*.apk
 
        - name: Upload Mobile GMS APK
          uses: actions/upload-artifact@v4
