@@ -24,6 +24,7 @@ import com.auramusic.app.playback.MusicService.MusicBinder
 import com.auramusic.app.playback.PlayerConnection
 import com.auramusic.app.ui.component.LocalMenuState
 import com.auramusic.app.ui.theme.AuraMusicTheme
+import com.auramusic.app.ui.tv.TvApp
 import com.auramusic.app.utils.SyncUtils
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.MutableStateFlow
