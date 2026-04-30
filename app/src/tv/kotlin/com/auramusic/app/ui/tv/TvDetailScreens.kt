@@ -349,8 +349,8 @@ private fun TvDetailLayout(
 
 @Composable
 private fun SongRowItem(displaySong: DisplaySong, onClick: () -> Unit) {
-    var isFocused by remember { mutableStateOf(false) }
-    val borderColor = if (isFocused) {
+    val isFocusedState = remember { mutableStateOf(false) }
+    val borderColor = if (isFocusedState.value) {
         MaterialTheme.colorScheme.primary
     } else {
         Color.Transparent
@@ -362,7 +362,7 @@ private fun SongRowItem(displaySong: DisplaySong, onClick: () -> Unit) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .border(2.dp, borderColor, RoundedCornerShape(8.dp))
-            .onFocusChanged { isFocused = it.isFocused }
+            .onFocusChanged { isFocusedState.value = it.isFocused }
             .clickable(onClick = onClick)
             .padding(12.dp),
     ) {
