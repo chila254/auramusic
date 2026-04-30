@@ -107,8 +107,8 @@ import com.auramusic.innertube.models.ArtistItem
 import com.auramusic.innertube.models.EpisodeItem
 import com.auramusic.innertube.models.PlaylistItem
 import com.auramusic.innertube.models.PodcastItem
-import com.auramusic.innertube.models.PodcastItem
 import com.auramusic.innertube.models.SongItem
+import com.auramusic.innertube.YouTube
 import com.auramusic.innertube.YouTube.SearchFilter.Companion.FILTER_ALBUM
 import com.auramusic.innertube.YouTube.SearchFilter.Companion.FILTER_ARTIST
 import com.auramusic.innertube.YouTube.SearchFilter.Companion.FILTER_COMMUNITY_PLAYLIST
@@ -1127,9 +1127,9 @@ fun TvSearchScreen(playerConnection: PlayerConnection?) {
                         Pair(FILTER_PODCAST, stringResource(R.string.podcasts)),
                     ),
                     currentValue = filter.value,
-                    onValueUpdate = {
-                        if (tvSearchViewModel.filter.value != it) {
-                            tvSearchViewModel.filter.value = it
+                    onValueUpdate = { newFilter: YouTube.SearchFilter? ->
+                        if (tvSearchViewModel.filter.value != newFilter) {
+                            tvSearchViewModel.filter.value = newFilter
                             // Re-perform search with new filter
                             if (query.isNotEmpty()) {
                                 tvSearchViewModel.updateQuery(query)
@@ -2153,26 +2153,26 @@ fun TvSettingsCategoryItem(
         Color.Transparent
     }
 
-     Surface(
-         onClick = onClick,
-         modifier = Modifier
-             .size(width = 220.dp, height = 280.dp)
-             .graphicsLayer {
-                 scaleX = scale
-                 scaleY = scale
-             }
-             .bringIntoViewRequester(bringIntoViewRequester)
-             .onFocusChanged { focusState ->
-                 isFocusedState.value = focusState.isFocused
-                 if (focusState.isFocused) {
-                     scope.launch { bringIntoViewRequester.bringIntoView() }
-                 }
-             }
-             .border(width = 3.dp, color = borderColor, shape = RoundedCornerShape(12.dp)),
-         shape = RoundedCornerShape(12.dp),
-         color = MaterialTheme.colorScheme.surfaceVariant,
-         tonalElevation = 4.dp,
-     ) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier
+            .size(width = 220.dp, height = 280.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .bringIntoViewRequester(bringIntoViewRequester)
+            .onFocusChanged { focusState ->
+                isFocusedState.value = focusState.isFocused
+                if (focusState.isFocused) {
+                    scope.launch { bringIntoViewRequester.bringIntoView() }
+                }
+            }
+            .border(width = 3.dp, color = borderColor, shape = RoundedCornerShape(12.dp)),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 4.dp,
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

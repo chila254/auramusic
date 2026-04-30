@@ -139,7 +139,10 @@ constructor(
                         YouTube.search(searchQuery, searchFilter).getOrNull()?.items?.filterExplicit(hideExplicit)?.filterVideoSongs(hideVideoSongs).orEmpty()
                     } else {
                         // For "all" filter, get summary results like mobile app
-                        YouTube.searchSummary(searchQuery).getOrNull()?.items?.filterExplicit(hideExplicit)?.filterVideoSongs(hideVideoSongs).orEmpty()
+                        val summaryPage = YouTube.searchSummary(searchQuery).getOrNull()
+                        summaryPage?.summaries?.flatMap { summary -> 
+                            summary.items.filterExplicit(hideExplicit).filterVideoSongs(hideVideoSongs)
+                        }.orEmpty()
                     }
                 } catch (e: Exception) {
                     emptyList()

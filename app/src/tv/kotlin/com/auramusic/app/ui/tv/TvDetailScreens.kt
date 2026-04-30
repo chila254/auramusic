@@ -26,10 +26,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsStateWithLifecycle
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,6 +62,12 @@ import com.auramusic.app.viewmodels.LibraryAlbumsViewModel
 import com.auramusic.app.viewmodels.LibraryArtistsViewModel
 import com.auramusic.app.viewmodels.LibraryPlaylistsViewModel
 import com.auramusic.innertube.YouTube
+import com.auramusic.innertube.models.AlbumItem
+import com.auramusic.innertube.models.ArtistItem
+import com.auramusic.innertube.models.EpisodeItem
+import com.auramusic.innertube.models.PlaylistItem
+import com.auramusic.innertube.models.PodcastItem
+import com.auramusic.innertube.models.SongItem
 import com.auramusic.innertube.pages.ArtistPage
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
