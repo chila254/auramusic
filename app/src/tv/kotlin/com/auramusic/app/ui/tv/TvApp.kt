@@ -807,6 +807,7 @@ fun YouTubeMediaCard(
                             )
                         }
                     }
+                    else -> {} // No additional metadata for ArtistItem, EpisodeItem, PodcastItem
                 }
             }
         }
