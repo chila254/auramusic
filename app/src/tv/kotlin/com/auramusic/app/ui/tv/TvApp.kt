@@ -2295,6 +2295,14 @@ fun TvSettingsScreen(onBackClick: () -> Unit, onAppearanceClick: () -> Unit = {}
 
         item {
             TvSettingsCategoryItem(
+                title = "Check for Updates",
+                subtitle = "Check for new AuraMusic Tv versions",
+                onClick = { /* TODO: Implement update check */ }
+            )
+        }
+
+        item {
+            TvSettingsCategoryItem(
                 title = "About",
                 subtitle = "App version, licenses, and information",
                 onClick = { /* TODO: Navigate to about screen */ }
