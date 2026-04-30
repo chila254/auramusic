@@ -6,6 +6,8 @@
 package com.auramusic.app.ui.tv
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -49,12 +51,15 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -189,15 +194,15 @@ enum class TvSection(val label: String) {
  */
  @Composable
 fun TvApp(playerConnection: PlayerConnection?) {
-    var section by remember { mutableStateOf<TvSection>(TvSection.HOME) }
+    val sectionState = remember { mutableStateOf<TvSection>(TvSection.HOME) }
     val navigator = rememberTvNavigator()
-    val isPlaying by (playerConnection?.isPlaying?.collectAsState() ?: remember { mutableStateOf(false) })
+    val isPlayingState = playerConnection?.isPlaying?.collectAsState() ?: remember { mutableStateOf(false) }
 
     // Keep screen on when music is playing
     val view = LocalView.current
-    DisposableEffect(isPlaying) {
+    DisposableEffect(isPlayingState.value) {
         val window = (view.context as? android.app.Activity)?.window
-        if (isPlaying) {
+        if (isPlayingState.value) {
             window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         } else {
             window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -253,15 +258,15 @@ fun TvApp(playerConnection: PlayerConnection?) {
         ) {
         Column(modifier = Modifier.fillMaxSize()) {
             TvNavigationBar(
-                current = section,
-                onSelect = { selectedSection: TvSection -> section = selectedSection },
+                current = sectionState.value,
+                onSelect = { selectedSection: TvSection -> sectionState.value = selectedSection },
             )
             Box(modifier = Modifier.fillMaxSize()) {
-                when (section) {
+                when (sectionState.value) {
                     TvSection.HOME -> TvHomeScreen(playerConnection = playerConnection)
                     TvSection.LIBRARY -> TvLibraryScreen(playerConnection = playerConnection)
                     TvSection.SEARCH -> TvSearchScreen(playerConnection = playerConnection)
-                    TvSection.SETTINGS -> TvSettingsScreen(onBackClick = { section = TvSection.HOME })
+                    TvSection.SETTINGS -> TvSettingsScreen(onBackClick = { sectionState.value = TvSection.HOME })
                 }
 
                 // Overlay player/queue/detail screens if needed
@@ -355,7 +360,7 @@ fun TvNavigationBar(current: TvSection, onSelect: (TvSection) -> Unit) {
             Spacer(modifier = Modifier.weight(1f))
 
             TvSection.entries.forEachIndexed { index, section ->
-                val isSelected = section == current
+                val isSelected = sectionState.value == current
                 TvNavButton(
                     label = section.label,
                     isSelected = isSelected,
@@ -374,8 +379,8 @@ fun TvNavButton(
     focusRequester: FocusRequester?,
     onClick: () -> Unit,
 ) {
-    var isFocused by remember { mutableStateOf(false) }
-    val borderColor = if (isFocused) {
+    val isFocusedState = remember { mutableStateOf(false) }
+    val borderColor = if (isFocusedState.value) {
         MaterialTheme.colorScheme.primary
     } else {
         Color.Transparent
@@ -392,7 +397,7 @@ fun TvNavButton(
         },
         modifier = Modifier
             .let { if (focusRequester != null) it.focusRequester(focusRequester) else it }
-            .onFocusChanged { isFocused = it.isFocused }
+            .onFocusChanged { isFocusedState.value = it.isFocused }
             .border(width = 3.dp, color = borderColor, shape = RoundedCornerShape(20.dp)),
     ) {
         Text(text = label)
@@ -405,17 +410,17 @@ fun TvNavButton(
 fun TvHomeScreen(playerConnection: PlayerConnection?) {
     val navigator = LocalTvNavigator.current
     val viewModel: HomeViewModel = hiltViewModel()
-    val quickPicks by viewModel.quickPicks.collectAsState()
-    val forgottenFavorites by viewModel.forgottenFavorites.collectAsState()
-    val keepListening by viewModel.keepListening.collectAsState()
-    val similarRecommendations by viewModel.similarRecommendations.collectAsState()
-    val accountPlaylists by viewModel.accountPlaylists.collectAsState()
-    val homePage by viewModel.homePage.collectAsState()
-    val explorePage by viewModel.explorePage.collectAsState()
-    val pinnedSpeedDialItems by viewModel.pinnedSpeedDialItems.collectAsState()
-    val isRefreshing by viewModel.isRefreshing.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val isPlaying by (playerConnection?.isPlaying?.collectAsState() ?: remember { mutableStateOf(false) })
+    val quickPicks = viewModel.quickPicks.collectAsState().value
+    val forgottenFavorites = viewModel.forgottenFavorites.collectAsState().value
+    val keepListening = viewModel.keepListening.collectAsState().value
+    val similarRecommendations = viewModel.similarRecommendations.collectAsState().value
+    val accountPlaylists = viewModel.accountPlaylists.collectAsState().value
+    val homePage = viewModel.homePage.collectAsState().value
+    val explorePage = viewModel.explorePage.collectAsState().value
+    val pinnedSpeedDialItems = viewModel.pinnedSpeedDialItems.collectAsState().value
+    val isRefreshing = viewModel.isRefreshing.collectAsState().value
+    val isLoading = viewModel.isLoading.collectAsState().value
+    val isPlaying = (playerConnection?.isPlaying?.collectAsState() ?: remember { mutableStateOf(false) }).value
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -760,14 +765,14 @@ fun YouTubeMediaCard(
     item: YTItem,
     onClick: () -> Unit,
 ) {
-    var isFocused by remember { mutableStateOf(false) }
+    val isFocusedState = remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
     val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.06f else 1f,
+        targetValue = if (isFocusedState.value) 1.06f else 1f,
         label = "tvYouTubeCardScale",
     )
-    val borderColor = if (isFocused) {
+    val borderColor = if (isFocusedState.value) {
         MaterialTheme.colorScheme.primary
     } else {
         Color.Transparent
@@ -898,14 +903,14 @@ fun YouTubeAlbumCard(
     album: AlbumItem,
     onClick: () -> Unit,
 ) {
-    var isFocused by remember { mutableStateOf(false) }
+    val isFocusedState = remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
     val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.06f else 1f,
+        targetValue = if (isFocusedState.value) 1.06f else 1f,
         label = "tvAlbumCardScale",
     )
-    val borderColor = if (isFocused) {
+    val borderColor = if (isFocusedState.value) {
         MaterialTheme.colorScheme.primary
     } else {
         Color.Transparent
@@ -1033,11 +1038,11 @@ fun TvLibraryScreen(playerConnection: PlayerConnection?) {
 fun TvSearchScreen(playerConnection: PlayerConnection?) {
     val navigator = LocalTvNavigator.current
     val tvSearchViewModel: TvSearchViewModel = hiltViewModel()
-    val query by tvSearchViewModel.query.collectAsState()
-    val filter by tvSearchViewModel.filter.collectAsState()
-    val searchResults by tvSearchViewModel.searchResults.collectAsState()
-    val isLoading by tvSearchViewModel.isLoading.collectAsState()
-    val recentSearches by tvSearchViewModel.recentSearches.collectAsState()
+    val query = tvSearchViewModel.query.collectAsState().value
+    val filter = tvSearchViewModel.filter.collectAsState().value
+    val searchResults = tvSearchViewModel.searchResults.collectAsState().value
+    val isLoading = tvSearchViewModel.isLoading.collectAsState().value
+    val recentSearches = tvSearchViewModel.recentSearches.collectAsState().value
 
     LazyColumn(
         modifier = Modifier
@@ -1938,13 +1943,13 @@ fun TvHeroCard(
             }
             .bringIntoViewRequester(bringIntoViewRequester)
             .onFocusChanged { focusState ->
-                isFocused = focusState.isFocused
+                isFocusedState.value = focusState.isFocused
                 if (focusState.isFocused) {
                     scope.launch { bringIntoViewRequester.bringIntoView() }
                 }
             }
-            .border(width = 3.dp, color = borderColor, shape = RoundedCornerShape(dimens.cornerRadius)),
-        shape = RoundedCornerShape(dimens.cornerRadius),
+            .border(width = 3.dp, color = borderColor, shape = RoundedCornerShape(12.dp)),
+        shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
         tonalElevation = 4.dp,
     ) {
@@ -2034,8 +2039,8 @@ fun TvMiniPlayer(
     onPlayerClick: () -> Unit,
 ) {
     val navigator = LocalTvNavigator.current
-    val currentSong by (playerConnection?.currentSong?.collectAsState(null) ?: remember { mutableStateOf(null) })
-    val isPlaying by (playerConnection?.isPlaying?.collectAsState(false) ?: remember { mutableStateOf(false) })
+    val currentSong = (playerConnection?.currentSong?.collectAsState(null) ?: remember { mutableStateOf(null) }).value
+    val isPlaying = (playerConnection?.isPlaying?.collectAsState(false) ?: remember { mutableStateOf(false) }).value
 
     Surface(
         onClick = onPlayerClick,
