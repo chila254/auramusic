@@ -36,6 +36,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -481,6 +483,12 @@ private fun TvDetailLayout(
     playAllTitle: String?,
     onBackClick: () -> Unit,
 ) {
+    val backButtonFocus = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        runCatching { backButtonFocus.requestFocus() }
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
@@ -488,11 +496,19 @@ private fun TvDetailLayout(
     ) {
         item {
             // Back button
+            var backButtonFocused by remember { mutableStateOf(false) }
             IconButton(
                 onClick = onBackClick,
                 modifier = Modifier
                     .padding(bottom = 16.dp)
-                    .size(64.dp),
+                    .size(64.dp)
+                    .focusRequester(backButtonFocus)
+                    .onFocusChanged { backButtonFocused = it.isFocused }
+                    .border(
+                        width = if (backButtonFocused) 3.dp else 0.dp,
+                        color = if (backButtonFocused) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        shape = RoundedCornerShape(12.dp)
+                    ),
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
@@ -593,6 +609,7 @@ private fun SongRowItem(displaySong: DisplaySong, onClick: () -> Unit) {
             .clip(RoundedCornerShape(8.dp))
             .border(2.dp, borderColor, RoundedCornerShape(8.dp))
             .onFocusChanged { isFocusedState.value = it.isFocused }
+            .focusable()
             .clickable(onClick = onClick)
             .padding(12.dp),
     ) {

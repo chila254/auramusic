@@ -117,6 +117,10 @@ import com.auramusic.innertube.YouTube.SearchFilter.Companion.FILTER_PODCAST
 import com.auramusic.innertube.YouTube.SearchFilter.Companion.FILTER_SONG
 import com.auramusic.innertube.YouTube.SearchFilter.Companion.FILTER_VIDEO
 import com.auramusic.innertube.pages.HomePage
+import com.auramusic.app.constants.DarkModeKey
+import com.auramusic.app.ui.screens.settings.DarkMode
+import com.auramusic.app.LocalDataStore
+import com.auramusic.app.utils.rememberEnumPreference
 import com.auramusic.innertube.pages.ExplorePage
 import androidx.compose.foundation.layout.width
 import com.auramusic.app.ui.component.ChipsRow
@@ -309,6 +313,13 @@ fun TvApp(playerConnection: PlayerConnection?) {
                             is TvDestination.Playlist -> TvPlaylistDetailScreen(
                                 playlistId = currentDestination.id,
                                 playerConnection = playerConnection,
+                                onBackClick = { navigator.popBack() }
+                            )
+                            TvDestination.Settings -> TvSettingsScreen(
+                                onBackClick = { navigator.popBack() },
+                                onAppearanceClick = { navigator.navigate(TvDestination.AppearanceSettings) }
+                            )
+                            TvDestination.AppearanceSettings -> TvAppearanceSettingsScreen(
                                 onBackClick = { navigator.popBack() }
                             )
                             else -> Unit
@@ -2204,7 +2215,7 @@ fun TvSettingsCategoryItem(
 }
 
 @Composable
-fun TvSettingsScreen(onBackClick: () -> Unit) {
+fun TvSettingsScreen(onBackClick: () -> Unit, onAppearanceClick: () -> Unit = {}) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
@@ -2254,7 +2265,7 @@ fun TvSettingsScreen(onBackClick: () -> Unit) {
             TvSettingsCategoryItem(
                 title = "Appearance",
                 subtitle = "Theme, colors, and display settings",
-                onClick = { /* TODO: Navigate to appearance settings */ }
+                onClick = onAppearanceClick
             )
         }
 
@@ -2288,6 +2299,100 @@ fun TvSettingsScreen(onBackClick: () -> Unit) {
                 subtitle = "App version, licenses, and information",
                 onClick = { /* TODO: Navigate to about screen */ }
             )
+        }
+    }
+}
+
+@Composable
+fun TvAppearanceSettingsScreen(onBackClick: () -> Unit) {
+    val context = LocalContext.current
+    val dataStore = LocalDataStore.current
+
+    val (darkMode, onDarkModeChange) = rememberEnumPreference(DarkModeKey, DarkMode.AUTO, dataStore)
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        item {
+            // Back button and title
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                var backFocused by remember { mutableStateOf(false) }
+                IconButton(
+                    onClick = onBackClick,
+                    modifier = Modifier
+                        .size(64.dp)
+                        .onFocusChanged { backFocused = it.isFocused }
+                        .border(
+                            width = if (backFocused) 3.dp else 0.dp,
+                            color = if (backFocused) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            shape = RoundedCornerShape(12.dp)
+                        ),
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                Text(
+                    text = "Appearance Settings",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+
+                Spacer(modifier = Modifier.size(64.dp)) // Balance the back button
+            }
+        }
+
+        item {
+            Text(
+                text = "Theme",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+        }
+
+        // Dark mode options
+        item {
+            TvSettingsCategoryItem(
+                title = "Dark Theme",
+                subtitle = when (darkMode) {
+                    DarkMode.ON -> "Always dark"
+                    DarkMode.OFF -> "Always light"
+                    DarkMode.AUTO -> "Follow system"
+                },
+                onClick = {
+                    val newMode = when (darkMode) {
+                        DarkMode.ON -> DarkMode.OFF
+                        DarkMode.OFF -> DarkMode.AUTO
+                        DarkMode.AUTO -> DarkMode.ON
+                    }
+                    onDarkModeChange(newMode)
+                }
+            )
+        }
+
+        // Dynamic theme if supported
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            item {
+                TvSettingsCategoryItem(
+                    title = "Dynamic Colors",
+                    subtitle = "Use wallpaper colors for theme",
+                    onClick = {
+                        // TODO: Implement dynamic theme toggle
+                    }
+                )
+            }
         }
     }
 }

@@ -20,6 +20,7 @@ sealed class TvDestination {
     data object Library : TvDestination()
     data object Search : TvDestination()
     data object Settings : TvDestination()
+    data object AppearanceSettings : TvDestination()
     data object Player : TvDestination()
     data object Queue : TvDestination()
     data class Album(val id: String) : TvDestination()
