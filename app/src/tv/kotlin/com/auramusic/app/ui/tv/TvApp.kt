@@ -119,8 +119,8 @@ import com.auramusic.innertube.YouTube.SearchFilter.Companion.FILTER_VIDEO
 import com.auramusic.innertube.pages.HomePage
 import com.auramusic.app.constants.DarkModeKey
 import com.auramusic.app.ui.screens.settings.DarkMode
-import com.auramusic.app.LocalDataStore
 import com.auramusic.app.utils.rememberEnumPreference
+import android.os.Build
 import com.auramusic.innertube.pages.ExplorePage
 import androidx.compose.foundation.layout.width
 import com.auramusic.app.ui.component.ChipsRow
@@ -2305,10 +2305,7 @@ fun TvSettingsScreen(onBackClick: () -> Unit, onAppearanceClick: () -> Unit = {}
 
 @Composable
 fun TvAppearanceSettingsScreen(onBackClick: () -> Unit) {
-    val context = LocalContext.current
-    val dataStore = LocalDataStore.current
-
-    val (darkMode, onDarkModeChange) = rememberEnumPreference(DarkModeKey, DarkMode.AUTO, dataStore)
+    val (darkMode, onDarkModeChange) = rememberEnumPreference(DarkModeKey, DarkMode.AUTO)
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -2383,7 +2380,7 @@ fun TvAppearanceSettingsScreen(onBackClick: () -> Unit) {
         }
 
         // Dynamic theme if supported
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
             item {
                 TvSettingsCategoryItem(
                     title = "Dynamic Colors",
