@@ -32,13 +32,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.focusable
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.focusable
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -496,16 +497,16 @@ private fun TvDetailLayout(
     ) {
         item {
             // Back button
-            var backButtonFocused by remember { mutableStateOf(false) }
+            val backButtonFocusedState = remember { mutableStateOf(false) }
             IconButton(
                 onClick = onBackClick,
                 modifier = Modifier
                     .padding(bottom = 16.dp)
                     .size(64.dp)
                     .focusRequester(backButtonFocus)
-                    .onFocusChanged { backButtonFocused = it.isFocused }
+                    .onFocusChanged { backButtonFocusedState.value = it.isFocused }
                     .border(
-                        width = if (backButtonFocused) 3.dp else 0.dp,
+                        width = if (backButtonFocusedState.value) 3.dp else 0.dp,
                         color = if (backButtonFocused) MaterialTheme.colorScheme.primary else Color.Transparent,
                         shape = RoundedCornerShape(12.dp)
                     ),
