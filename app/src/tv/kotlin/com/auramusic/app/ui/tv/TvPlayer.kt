@@ -243,6 +243,9 @@ fun TvPlayerScreen(
     var sleepTimerEndTime by remember { mutableStateOf<Long?>(null) }
     var showLyrics by remember { mutableStateOf(false) }
 
+    val playerConnection = LocalPlayerConnection.current ?: return
+    val currentLyrics by playerConnection.currentLyrics.collectAsState(initial = null)
+
     // Focus requesters for TV navigation
     val playButtonFocus = remember { FocusRequester() }
     val queueItemFocus = remember { FocusRequester() }
@@ -262,20 +265,21 @@ fun TvPlayerScreen(
         }
     }
 
-    // Sleep timer countdown
-    LaunchedEffect(sleepTimerEndTime) {
-        sleepTimerEndTime?.let { endTime ->
-            while (System.currentTimeMillis() < endTime) {
-                val remaining = endTime - System.currentTimeMillis()
-                sleepTimerMinutes = (remaining / (1000 * 60)).toInt()
-                delay(60000) // Update every minute
-            }
-            // Timer expired - pause playback
-            playerConnection?.togglePlayPause()
-            sleepTimerMinutes = null
-            sleepTimerEndTime = null
-        }
+    // Fetch lyrics when song changes
+    val mediaMetadata = currentSong?.let { song ->
+        // Create MediaMetadata from Song entity
+        com.auramusic.app.models.MediaMetadata(
+            id = song.song.id,
+            title = song.song.title,
+            artists = song.artists.map { com.auramusic.app.models.MediaMetadata.Artist(it.id, it.name) },
+            duration = song.song.duration,
+            thumbnailUrl = song.song.thumbnailUrl,
+            album = song.album?.let { com.auramusic.app.models.MediaMetadata.Album(it.id, it.title) }
+        )
     }
+
+    // Lyrics are fetched and persisted by the existing infrastructure on the
+    // mobile path; nothing extra to do here for the TV variant.
 
     val progress = if (duration > 0) currentPosition.toFloat() / duration.toFloat() else 0f
 
@@ -316,17 +320,19 @@ fun TvPlayerScreen(
                     .fillMaxSize()
                     .padding(24.dp),
                 horizontalArrangement = Arrangement.spacedBy(32.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
             ) {
                 // LEFT SIDE: Player controls (40% width)
                 Column(
-                    modifier = Modifier.weight(0.4f),
+                    modifier = Modifier
+                        .weight(0.4f)
+                        .fillMaxHeight(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
                     Spacer(modifier = Modifier.height(48.dp)) // Space for back button
 
-                    // Album art
+                    // Album art / Lyrics container
                     Box(
                         modifier = Modifier
                             .size(280.dp)
@@ -334,13 +340,57 @@ fun TvPlayerScreen(
                             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.1f)),
                         contentAlignment = Alignment.Center,
                     ) {
-                        currentSong?.let { song ->
-                            AsyncImage(
-                                model = song.thumbnailUrl,
-                                contentDescription = song.title,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize(),
-                            )
+                        if (showLyrics) {
+                            // Show lyrics behind thumbnail when enabled
+                            val positionProvider = { currentPosition }
+                            val karaokeModeEnabled = false
+
+                            val lyrics = remember(currentLyrics) { currentLyrics?.lyrics?.trim() }
+
+                            when {
+                                lyrics == null -> {
+                                    CircularProgressIndicator(
+                                        color = Color.White,
+                                        modifier = Modifier.size(48.dp)
+                                    )
+                                }
+                                lyrics == com.auramusic.app.db.entities.LyricsEntity.LYRICS_NOT_FOUND -> {
+                                    Text(
+                                        text = "Lyrics not found",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color.White.copy(alpha = 0.7f),
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                                else -> {
+                                    androidx.compose.material3.ProvideTextStyle(
+                                        value = MaterialTheme.typography.bodyMedium.copy(
+                                            fontSize = 18.sp,
+                                            textAlign = TextAlign.Center,
+                                            color = Color.White
+                                        )
+                                    ) {
+                                        com.auramusic.app.ui.component.Lyrics(
+                                            sliderPositionProvider = positionProvider,
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .padding(horizontal = 16.dp),
+                                            showLyrics = true,
+                                            karaokeModeEnabled = karaokeModeEnabled
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            // Show album art when lyrics are disabled
+                            currentSong?.let { song ->
+                                AsyncImage(
+                                    model = song.thumbnailUrl,
+                                    contentDescription = song.title,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
                         }
                     }
 
@@ -544,7 +594,7 @@ fun TvPlayerScreen(
                                     window = window,
                                     isCurrentSong = isCurrentSong,
                                     onClick = {
-                                        playerConnection?.player?.seekTo(index, 0)
+                                        playerConnection?.player?.seekTo(index, C.TIME_UNSET)
                                     },
                                     modifier = Modifier.fillMaxWidth(),
                                 )
@@ -594,55 +644,6 @@ fun TvPlayerScreen(
                     modifier = Modifier.size(32.dp)
                 )
             }
-
-            // Lyrics Overlay (when enabled)
-            if (showLyrics) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(end = 24.dp, bottom = 24.dp, top = 24.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color.Black.copy(alpha = 0.85f))
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    val positionProvider = { currentPosition }
-                    val karaokeModeEnabled = false
-
-                    androidx.compose.material3.ProvideTextStyle(
-                        value = MaterialTheme.typography.bodyMedium.copy(
-                            fontSize = 20.sp,
-                            textAlign = TextAlign.Center,
-                            color = Color.White
-                        )
-                    ) {
-                        com.auramusic.app.ui.component.Lyrics(
-                            sliderPositionProvider = positionProvider,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 16.dp),
-                            showLyrics = true,
-                            karaokeModeEnabled = karaokeModeEnabled
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-     // Auto-show lyrics when song changes if user hasn't manually toggled
-     var hasUserToggledLyrics by remember { mutableStateOf(false) }
-     LaunchedEffect(currentSong?.id) {
-         if (!hasUserToggledLyrics) {
-             showLyrics = true
-         }
-     }
-
-    // Reset flag when user manually toggles
-    LaunchedEffect(showLyrics) {
-        // If lyrics were shown by auto and user hides, mark as manually toggled
-        if (!showLyrics && currentSong != null) {
-            hasUserToggledLyrics = true
         }
     }
 }

@@ -106,7 +106,7 @@ sealed class DisplaySong {
 /* ------------------------------ Album ------------------------------ */
 
 @Composable
-fun TvAlbumDetailScreen(albumId: String, playerConnection: PlayerConnection?, onBackClick: () -> Unit) {
+fun TvAlbumDetailScreen(albumId: String, playerConnection: PlayerConnection?, onBackClick: () -> Unit, focusRequester: FocusRequester? = null) {
     val albumsViewModel: LibraryAlbumsViewModel = hiltViewModel()
     val database = LocalDatabase.current
 
@@ -149,13 +149,14 @@ fun TvAlbumDetailScreen(albumId: String, playerConnection: PlayerConnection?, on
         playerConnection = playerConnection,
         playAllTitle = displayTitle,
         onBackClick = onBackClick,
+        focusRequester = focusRequester,
     )
 }
 
 /* ------------------------------ Artist ------------------------------ */
 
 @Composable
-fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, onBackClick: () -> Unit) {
+fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, onBackClick: () -> Unit, focusRequester: FocusRequester? = null) {
     val artistsViewModel: LibraryArtistsViewModel = hiltViewModel()
     val database = LocalDatabase.current
 
@@ -194,7 +195,7 @@ fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, 
     ) {
         // Header section
         item {
-            val backButtonFocus = remember { FocusRequester() }
+            val backButtonFocus = focusRequester ?: remember { FocusRequester() }
 
             LaunchedEffect(Unit) {
                 runCatching { backButtonFocus.requestFocus() }
@@ -440,7 +441,7 @@ fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, 
 /* ------------------------------ Playlist ------------------------------ */
 
 @Composable
-fun TvPlaylistDetailScreen(playlistId: String, playerConnection: PlayerConnection?, onBackClick: () -> Unit) {
+fun TvPlaylistDetailScreen(playlistId: String, playerConnection: PlayerConnection?, onBackClick: () -> Unit, focusRequester: FocusRequester? = null) {
     val playlistsViewModel: LibraryPlaylistsViewModel = hiltViewModel()
     val database = LocalDatabase.current
 
@@ -483,6 +484,7 @@ fun TvPlaylistDetailScreen(playlistId: String, playerConnection: PlayerConnectio
         playerConnection = playerConnection,
         playAllTitle = displayTitle,
         onBackClick = onBackClick,
+        focusRequester = focusRequester,
     )
 }
 
@@ -498,8 +500,9 @@ private fun TvDetailLayout(
     playerConnection: PlayerConnection?,
     playAllTitle: String?,
     onBackClick: () -> Unit,
+    focusRequester: FocusRequester? = null,
 ) {
-    val backButtonFocus = remember { FocusRequester() }
+    val backButtonFocus = focusRequester ?: remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
         runCatching { backButtonFocus.requestFocus() }
