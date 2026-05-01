@@ -709,14 +709,22 @@ fun TvHomeScreen(
     val isLoading = viewModel.isLoading.collectAsState().value
     val isPlaying = (playerConnection?.isPlaying?.collectAsState() ?: remember { mutableStateOf(false) }).value
 
+    // Track which content section (row) is currently focused
+    var focusedItemIndex by remember { mutableStateOf(-1) }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .focusRequester(focusRequester ?: remember { FocusRequester() })
             .onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
-                    onNavigateUp?.invoke()
-                    true
+                    // Only navigate to top bar if focus is on the first item (hero carousel, index 0)
+                    if (focusedItemIndex == 0) {
+                        onNavigateUp?.invoke()
+                        true
+                    } else {
+                        false // Let LazyColumn handle normal focus movement
+                    }
                 } else {
                     false
                 }
@@ -741,7 +749,7 @@ fun TvHomeScreen(
             ?.take(6)
             ?.takeIf { it.isNotEmpty() }
             ?.let { heroItems ->
-                item {
+                item(key = "hero") {
                     TvHeroCarousel(
                         title = "Trending Now",
                         items = heroItems,
@@ -778,8 +786,8 @@ fun TvHomeScreen(
                                 }
                                 else -> {}
                             }
-    }
-
+                        },
+                        modifier = Modifier.onFocusChanged { focusedItemIndex = 0 }
                     )
                 }
             }
@@ -834,18 +842,19 @@ fun TvHomeScreen(
             }
 
             if (!keepListening.isNullOrEmpty()) {
-                item {
+                item(key = "keep_listening") {
                     LocalItemRow(
                         title = "Keep listening",
                         localItems = keepListening!!,
                         playerConnection = playerConnection,
+                        modifier = Modifier.onFocusChanged { focusedItemIndex = 4 }
                     )
                 }
             }
 
             // Similar recommendations
             similarRecommendations?.takeIf { it.isNotEmpty() }?.let { recommendations ->
-                recommendations.forEach { recommendation ->
+                recommendations.forEachIndexed { recIndex, recommendation ->
                     val titleName = when (recommendation.title) {
                         is com.auramusic.app.db.entities.Artist -> recommendation.title.artist.name
                         is com.auramusic.app.db.entities.Album -> recommendation.title.album.title
@@ -853,42 +862,47 @@ fun TvHomeScreen(
                         is com.auramusic.app.db.entities.Song -> recommendation.title.song.title
                         else -> recommendation.title.toString()
                     }
-                    item {
+                    item(key = "similar_$recIndex") {
                         YouTubeSectionRow(
                             title = "Similar to $titleName",
                             items = recommendation.items,
                             playerConnection = playerConnection,
                             onYTItemClick = { item: YTItem ->
-    when (item) {
-        is SongItem -> {
-            playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
-        }
-        is AlbumItem -> {
-            val browseId = item.browseId
-            if (browseId != null) {
-                navigator.navigate(TvDestination.Album(browseId))
-            } else {
-                playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
-            }
-        }
-        is ArtistItem -> {
-            item.id?.let { artistId ->
-                navigator.navigate(TvDestination.Artist(artistId))
-            }
-        }
-        is PlaylistItem -> {
-            navigator.navigate(TvDestination.Playlist(item.id))
-        }
-        is EpisodeItem -> {
-            playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
-        }
-        is PodcastItem -> {
-            item.id?.let { podcastId ->
-                navigator.navigate(TvDestination.Playlist(podcastId))
-            }
-        }
-        else -> {}
-    }
+                                when (item) {
+                                    is SongItem -> {
+                                        playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
+                                    }
+                                    is AlbumItem -> {
+                                        val browseId = item.browseId
+                                        if (browseId != null) {
+                                            navigator.navigate(TvDestination.Album(browseId))
+                                        } else {
+                                            playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
+                                        }
+                                    }
+                                    is ArtistItem -> {
+                                        item.id?.let { artistId ->
+                                            navigator.navigate(TvDestination.Artist(artistId))
+                                        }
+                                    }
+                                    is PlaylistItem -> {
+                                        navigator.navigate(TvDestination.Playlist(item.id))
+                                    }
+                                    is EpisodeItem -> {
+                                        playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
+                                    }
+                                    is PodcastItem -> {
+                                        item.id?.let { podcastId ->
+                                            navigator.navigate(TvDestination.Playlist(podcastId))
+                                        }
+                                    }
+                                    else -> {}
+                                }
+                            },
+                            modifier = Modifier.onFocusChanged {
+                                // Calculate dynamic index based on preceding items
+                                val baseIndex = 5 // hero(0) + speed_dial(1) + quick_picks(2) + forgotten(3) + keep_listening(4)
+                                focusedItemIndex = baseIndex + recIndex
                             }
                         )
                     }
@@ -897,32 +911,36 @@ fun TvHomeScreen(
 
         // Account playlists
         accountPlaylists?.takeIf { it.isNotEmpty() }?.let { playlists ->
-            item {
+            item(key = "account_playlists") {
                 YouTubeSectionRow(
                     title = "Your YouTube Playlists",
                     items = playlists.take(10),
-                     playerConnection = playerConnection,
-                       onYTItemClick = { item: YTItem ->
-                           when (item) {
-                               is PlaylistItem -> {
-                                  navigator.navigate(TvDestination.Playlist(item.id))
-                              }
-                              else -> {}
-                          }
-                      }
+                    playerConnection = playerConnection,
+                    onYTItemClick = { item: YTItem ->
+                        when (item) {
+                            is PlaylistItem -> {
+                                navigator.navigate(TvDestination.Playlist(item.id))
+                            }
+                            else -> {}
+                        }
+                    },
+                    modifier = Modifier.onFocusChanged {
+                        val baseIndex = 5 + (similarRecommendations?.size ?: 0)
+                        focusedItemIndex = baseIndex
+                    }
                 )
             }
         }
 
         // Display home page sections from YouTube
         val sections = homePage?.sections.orEmpty()
-        for (section in sections) {
+        sections.forEachIndexed { sectionIndex, section ->
             if (section.items.isNotEmpty()) {
-                item {
+                item(key = "yt_section_$sectionIndex") {
                     YouTubeSectionRow(
                         title = section.title,
                         items = section.items,
-                         playerConnection = playerConnection,
+                        playerConnection = playerConnection,
                         onYTItemClick = { item: YTItem ->
                             when (item) {
                                 is SongItem -> playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
@@ -940,6 +958,10 @@ fun TvHomeScreen(
                                 is PodcastItem -> item.id?.let { navigator.navigate(TvDestination.Playlist(it)) }
                                 else -> {}
                             }
+                        },
+                        modifier = Modifier.onFocusChanged {
+                            val baseIndex = 5 + (similarRecommendations?.size ?: 0) + 1 + sectionIndex
+                            focusedItemIndex = baseIndex
                         }
                     )
                 }
@@ -981,6 +1003,7 @@ fun YouTubeSectionRow(
     items: List<YTItem>,
     playerConnection: PlayerConnection?,
     onYTItemClick: (YTItem) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
         // Section header with underline
@@ -1297,14 +1320,22 @@ fun TvLibraryScreen(
         }
     }
 
+    // Track which content section (row) is currently focused
+    var focusedItemIndex by remember { mutableStateOf(-1) }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .focusRequester(focusRequester ?: remember { FocusRequester() })
             .onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
-                    onNavigateUp?.invoke()
-                    true
+                    // Only navigate to top bar if focus is on the first item (header, index 0)
+                    if (focusedItemIndex == 0) {
+                        onNavigateUp?.invoke()
+                        true
+                    } else {
+                        false // Let LazyColumn handle normal focus movement
+                    }
                 } else {
                     false
                 }
@@ -1312,38 +1343,55 @@ fun TvLibraryScreen(
         contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        item {
+        item(key = "header") {
             Text(
                 text = if (isLoggedIn) "Your YouTube Music library" else "Your library",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.onFocusChanged { focusedItemIndex = 0 }
             )
         }
 
         if (songs.isNotEmpty()) {
-            item {
+            item(key = "songs") {
                 SongRow(
                     title = "Liked songs",
                     songs = songs,
                     onSongClick = { song: Song -> playerConnection?.playSong(song) },
+                    modifier = Modifier.onFocusChanged { focusedItemIndex = 1 }
                 )
             }
         }
         if (playlists.isNotEmpty()) {
-            item { LocalItemRow(title = "Playlists", localItems = playlists, playerConnection = playerConnection) }
+            item(key = "playlists") { 
+                LocalItemRow(
+                    title = "Playlists", 
+                    localItems = playlists, 
+                    playerConnection = playerConnection,
+                    modifier = Modifier.onFocusChanged { focusedItemIndex = 2 }
+                ) 
+            }
         }
         if (artists.isNotEmpty()) {
-            item {
+            item(key = "artists") {
                 LocalItemRow(
                     title = "Subscribed artists",
                     localItems = artists,
                     playerConnection = playerConnection,
+                    modifier = Modifier.onFocusChanged { focusedItemIndex = 3 }
                 )
             }
         }
         if (albums.isNotEmpty()) {
-            item { LocalItemRow(title = "Albums", localItems = albums, playerConnection = playerConnection) }
+            item(key = "albums") { 
+                LocalItemRow(
+                    title = "Albums", 
+                    localItems = albums, 
+                    playerConnection = playerConnection,
+                    modifier = Modifier.onFocusChanged { focusedItemIndex = 4 }
+                ) 
+            }
         }
 
         if (songs.isEmpty() && playlists.isEmpty() && artists.isEmpty() && albums.isEmpty()) {
@@ -1389,14 +1437,22 @@ fun TvSearchScreen(
     val isLoading = tvSearchViewModel.isLoading.collectAsState().value
     val recentSearches = tvSearchViewModel.recentSearches.collectAsState().value
 
+    // Track which item is currently focused
+    var focusedItemIndex by remember { mutableStateOf(-1) }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .focusRequester(focusRequester ?: remember { FocusRequester() })
             .onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
-                    onNavigateUp?.invoke()
-                    true
+                    // Only navigate to top bar if focus is on the search bar (first item, index 0)
+                    if (focusedItemIndex == 0) {
+                        onNavigateUp?.invoke()
+                        true
+                    } else {
+                        false // Let LazyColumn handle normal focus movement
+                    }
                 } else {
                     false
                 }
@@ -1404,20 +1460,22 @@ fun TvSearchScreen(
         contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        item {
+        item(key = "search_bar") {
             OutlinedTextField(
                 value = query,
                 onValueChange = { tvSearchViewModel.updateQuery(it) },
                 label = { Text("Search") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { focusedItemIndex = 0 }
             )
         }
 
         if (query.isEmpty()) {
             // Show recent searches
             if (recentSearches.isNotEmpty()) {
-                item {
+                item(key = "recent_header") {
                     Text(
                         text = "Recent searches",
                         style = MaterialTheme.typography.titleLarge,
@@ -1425,14 +1483,15 @@ fun TvSearchScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 }
-                items(recentSearches) { recentQuery ->
+                items(recentSearches, key = { it }) { recentQuery ->
                     TvRecentSearchItem(
                         query = recentQuery,
                         onClick = { tvSearchViewModel.updateQuery(recentQuery) },
+                        modifier = Modifier.onFocusChanged { focusedItemIndex = 1 }
                     )
                 }
             } else {
-                item {
+                item(key = "empty_recent") {
                     Text(
                         text = "Enter search query",
                         style = MaterialTheme.typography.bodyLarge,
@@ -1441,7 +1500,7 @@ fun TvSearchScreen(
                 }
             }
         } else if (isLoading) {
-            item {
+            item(key = "loading") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
@@ -1458,7 +1517,7 @@ fun TvSearchScreen(
             }
         } else {
             // Filter chips like mobile search
-            item {
+            item(key = "filter_chips") {
                 ChipsRow(
                     chips = listOf(
                         Pair(null as YouTube.SearchFilter?, stringResource(R.string.filter_all)),
@@ -1480,7 +1539,7 @@ fun TvSearchScreen(
                             }
                         }
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.onFocusChanged { focusedItemIndex = 1 }
                 )
             }
 
@@ -1495,9 +1554,11 @@ fun TvSearchScreen(
             val ytAlbums = searchResults.ytItems.filterIsInstance<com.auramusic.innertube.models.AlbumItem>().take(5)
             val ytPlaylists = searchResults.ytItems.filterIsInstance<com.auramusic.innertube.models.PlaylistItem>().take(5)
 
+            var sectionIndex = 2 // Start after search bar(0) and filter chips(1)
+
             // Local Songs
             if (localSongs.isNotEmpty()) {
-                item {
+                item(key = "local_songs_header_$sectionIndex") {
                     Text(
                         text = "Local Songs",
                         style = MaterialTheme.typography.titleMedium,
@@ -1505,17 +1566,19 @@ fun TvSearchScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 }
-                items(localSongs) { item ->
+                items(localSongs, key = { "local_song_${it.id}" }) { item ->
                     TvSearchResultItem(
                         item = item,
                         onClick = { handleSearchItemClick(item, playerConnection, navigator) },
+                        modifier = Modifier.onFocusChanged { focusedItemIndex = 2 }
                     )
                 }
+                sectionIndex += 2 // header + items
             }
 
             // Local Artists
             if (localArtists.isNotEmpty()) {
-                item {
+                item(key = "local_artists_header_$sectionIndex") {
                     Text(
                         text = "Local Artists",
                         style = MaterialTheme.typography.titleMedium,
@@ -1523,17 +1586,19 @@ fun TvSearchScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 }
-                items(localArtists) { item ->
+                items(localArtists, key = { it.id }) { item ->
                     TvSearchResultItem(
                         item = item,
                         onClick = { handleSearchItemClick(item, playerConnection, navigator) },
+                        modifier = Modifier.onFocusChanged { focusedItemIndex = sectionIndex + 1 }
                     )
                 }
+                sectionIndex += 2
             }
 
             // Local Albums
             if (localAlbums.isNotEmpty()) {
-                item {
+                item(key = "local_albums_header_$sectionIndex") {
                     Text(
                         text = "Local Albums",
                         style = MaterialTheme.typography.titleMedium,
@@ -1541,17 +1606,19 @@ fun TvSearchScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 }
-                items(localAlbums) { item ->
+                items(localAlbums, key = { it.id }) { item ->
                     TvSearchResultItem(
                         item = item,
                         onClick = { handleSearchItemClick(item, playerConnection, navigator) },
+                        modifier = Modifier.onFocusChanged { focusedItemIndex = 2 }
                     )
                 }
+                sectionIndex += 2
             }
 
             // Local Playlists
             if (localPlaylists.isNotEmpty()) {
-                item {
+                item(key = "local_playlists_header_$sectionIndex") {
                     Text(
                         text = "Local Playlists",
                         style = MaterialTheme.typography.titleMedium,
@@ -1559,17 +1626,19 @@ fun TvSearchScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 }
-                items(localPlaylists) { item ->
+                items(localPlaylists, key = { it.id }) { item ->
                     TvSearchResultItem(
                         item = item,
                         onClick = { handleSearchItemClick(item, playerConnection, navigator) },
+                        modifier = Modifier.onFocusChanged { focusedItemIndex = 2 }
                     )
                 }
+                sectionIndex += 2
             }
 
             // YouTube Songs
             if (ytSongs.isNotEmpty()) {
-                item {
+                item(key = "yt_songs_header_$sectionIndex") {
                     Text(
                         text = "YouTube Songs",
                         style = MaterialTheme.typography.titleMedium,
@@ -1577,17 +1646,19 @@ fun TvSearchScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 }
-                items(ytSongs) { item ->
+                items(ytSongs, key = { it.id }) { item ->
                     TvYTSearchResultItem(
                         item = item,
                         onClick = { handleYTSearchItemClick(item, playerConnection, navigator) },
+                        modifier = Modifier.onFocusChanged { focusedItemIndex = 2 }
                     )
                 }
+                sectionIndex += 2
             }
 
             // YouTube Artists
             if (ytArtists.isNotEmpty()) {
-                item {
+                item(key = "yt_artists_header_$sectionIndex") {
                     Text(
                         text = "YouTube Artists",
                         style = MaterialTheme.typography.titleMedium,
@@ -1595,17 +1666,19 @@ fun TvSearchScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 }
-                items(ytArtists) { item ->
+                items(ytArtists, key = { it.id ?: it.title }) { item ->
                     TvYTSearchResultItem(
                         item = item,
                         onClick = { handleYTSearchItemClick(item, playerConnection, navigator) },
+                        modifier = Modifier.onFocusChanged { focusedItemIndex = 2 }
                     )
                 }
+                sectionIndex += 2
             }
 
             // YouTube Albums
             if (ytAlbums.isNotEmpty()) {
-                item {
+                item(key = "yt_albums_header_$sectionIndex") {
                     Text(
                         text = "YouTube Albums",
                         style = MaterialTheme.typography.titleMedium,
@@ -1613,17 +1686,19 @@ fun TvSearchScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 }
-                items(ytAlbums) { item ->
+                items(ytAlbums, key = { it.browseId ?: it.id }) { item ->
                     TvYTSearchResultItem(
                         item = item,
                         onClick = { handleYTSearchItemClick(item, playerConnection, navigator) },
+                        modifier = Modifier.onFocusChanged { focusedItemIndex = 2 }
                     )
                 }
+                sectionIndex += 2
             }
 
             // YouTube Playlists
             if (ytPlaylists.isNotEmpty()) {
-                item {
+                item(key = "yt_playlists_header_$sectionIndex") {
                     Text(
                         text = "YouTube Playlists",
                         style = MaterialTheme.typography.titleMedium,
@@ -1631,16 +1706,18 @@ fun TvSearchScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 }
-                items(ytPlaylists) { item ->
+                items(ytPlaylists, key = { it.id }) { item ->
                     TvYTSearchResultItem(
                         item = item,
                         onClick = { handleYTSearchItemClick(item, playerConnection, navigator) },
+                        modifier = Modifier.onFocusChanged { focusedItemIndex = 2 }
                     )
                 }
+                sectionIndex += 2
             }
 
             if (searchResults.localItems.isEmpty() && searchResults.ytItems.isEmpty()) {
-                item {
+                item(key = "no_results") {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -1666,12 +1743,12 @@ fun TvSearchScreen(
 }
 
 @Composable
-fun TvRecentSearchItem(query: String, onClick: () -> Unit) {
+fun TvRecentSearchItem(query: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val isFocusedState = remember { mutableStateOf(false) }
 
     Surface(
         onClick = onClick,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .onFocusChanged { isFocusedState.value = it.isFocused }
             .border(
@@ -1706,12 +1783,12 @@ fun TvRecentSearchItem(query: String, onClick: () -> Unit) {
 }
 
 @Composable
-fun TvSearchResultItem(item: LocalItem, onClick: () -> Unit) {
+fun TvSearchResultItem(item: LocalItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val isFocusedState = remember { mutableStateOf(false) }
 
     Surface(
         onClick = onClick,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .onFocusChanged { isFocusedState.value = it.isFocused }
             .border(
@@ -1784,12 +1861,12 @@ fun TvSearchResultItem(item: LocalItem, onClick: () -> Unit) {
 }
 
 @Composable
-fun TvYTSearchResultItem(item: YTItem, onClick: () -> Unit) {
+fun TvYTSearchResultItem(item: YTItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val isFocusedState = remember { mutableStateOf(false) }
 
     Surface(
         onClick = onClick,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .onFocusChanged { isFocusedState.value = it.isFocused }
             .border(
@@ -1939,8 +2016,12 @@ fun SongRow(
     title: String,
     songs: List<Song>,
     onSongClick: (Song) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
         // Section header with underline
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
@@ -2061,10 +2142,13 @@ fun MediaCard(
 }
 
 @Composable
-fun LocalItemRow(title: String, localItems: List<LocalItem>, playerConnection: PlayerConnection?) {
+fun LocalItemRow(title: String, localItems: List<LocalItem>, playerConnection: PlayerConnection?, modifier: Modifier = Modifier) {
     val navigator = LocalTvNavigator.current
 
-    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
         // Section header with underline
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
@@ -2132,24 +2216,15 @@ fun TvHeroCarousel(
     items: List<YTItem>,
     playerConnection: PlayerConnection?,
     onYTItemClick: (YTItem) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    if (items.isEmpty()) return
-
     val pagerState = rememberPagerState(pageCount = { items.size })
-
-    // Auto-scroll functionality like mobile hero carousel
-    LaunchedEffect(pagerState, items.size) {
-        if (items.size > 1) {
-            while (true) {
-                delay(4000L) // Auto-scroll every 4 seconds like mobile
-                val nextPage = (pagerState.currentPage + 1) % items.size
-                pagerState.animateScrollToPage(nextPage)
-            }
-        }
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
-        // Section header
+    
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        // Section header with underline
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
                 text = title,
@@ -2222,8 +2297,6 @@ fun TvHeroCarousel(
                 }
             }
         }
-
-
     }
 }
 
@@ -2354,6 +2427,7 @@ fun TvSettingsCategoryItem(
     title: String,
     subtitle: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val isFocusedState = remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -2436,35 +2510,46 @@ fun TvSettingsScreen(
     )
     val isLoggedIn = remember(innerTubeCookie) {
         "SAPISID" in com.auramusic.innertube.utils.parseCookieString(innerTubeCookie)
-     }
+    }
 
-     LazyColumn(
-         modifier = Modifier
-             .fillMaxSize()
-             .focusRequester(focusRequester ?: remember { FocusRequester() })
-             .onPreviewKeyEvent { event ->
-                 if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
-                     onNavigateUp?.invoke()
-                     true
-                 } else {
-                     false
-                 }
-             },
-         contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
-         verticalArrangement = Arrangement.spacedBy(24.dp),
-     ) {
-         item { TvSettingsHeader(title = "Settings", onBackClick = onBackClick) }
+    // Track which content section is currently focused
+    var focusedItemIndex by remember { mutableStateOf(-1) }
 
-        item {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .focusRequester(focusRequester ?: remember { FocusRequester() })
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
+                    // Only navigate to top bar if focus is on the first settings row (index 1 because header is index 0)
+                    if (focusedItemIndex == 1) {
+                        onNavigateUp?.invoke()
+                        true
+                    } else {
+                        false // Let LazyColumn handle normal focus movement
+                    }
+                } else {
+                    false
+                }
+            },
+        contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        item(key = "settings_header") {
+            TvSettingsHeader(title = "Settings", onBackClick = onBackClick)
+        }
+
+        item(key = "app_settings_header") {
             Text(
                 text = "App Settings",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.onFocusChanged { focusedItemIndex = 1 }
             )
         }
 
-        item {
+        item(key = "account_settings") {
             TvSettingsCategoryItem(
                 title = "Account",
                 subtitle = if (isLoggedIn)
@@ -2472,46 +2557,52 @@ fun TvSettingsScreen(
                 else
                     "Sign in to sync liked songs, playlists and subscriptions",
                 onClick = onAccountClick,
+                modifier = Modifier.onFocusChanged { focusedItemIndex = 2 }
             )
         }
 
-        item {
+        item(key = "appearance_settings") {
             TvSettingsCategoryItem(
                 title = "Appearance",
                 subtitle = "Theme, colors, and display settings",
                 onClick = onAppearanceClick,
+                modifier = Modifier.onFocusChanged { focusedItemIndex = 3 }
             )
         }
 
-        item {
+        item(key = "playback_settings") {
             TvSettingsCategoryItem(
                 title = "Playback",
                 subtitle = "Audio quality, playback behavior",
                 onClick = onPlaybackClick,
+                modifier = Modifier.onFocusChanged { focusedItemIndex = 4 }
             )
         }
 
-        item {
+        item(key = "content_settings") {
             TvSettingsCategoryItem(
                 title = "Content",
                 subtitle = "Sync settings, content filters",
                 onClick = onContentClick,
+                modifier = Modifier.onFocusChanged { focusedItemIndex = 5 }
             )
         }
 
-        item {
+        item(key = "updater_settings") {
             TvSettingsCategoryItem(
                 title = "Check for Updates",
                 subtitle = "Check for new AuraMusic TV versions",
                 onClick = onUpdaterClick,
+                modifier = Modifier.onFocusChanged { focusedItemIndex = 6 }
             )
         }
 
-        item {
+        item(key = "about_settings") {
             TvSettingsCategoryItem(
                 title = "About",
                 subtitle = "App version, licenses, and information",
                 onClick = onAboutClick,
+                modifier = Modifier.onFocusChanged { focusedItemIndex = 7 }
             )
         }
     }

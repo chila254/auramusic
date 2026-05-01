@@ -232,24 +232,27 @@ fun TvPlayerScreen(
     playerConnection: PlayerConnection?,
     onBackClick: () -> Unit,
 ) {
-    val currentSong by (playerConnection?.currentSong?.collectAsState(null) ?: remember { mutableStateOf(null) })
-    val isPlaying by (playerConnection?.isPlaying?.collectAsState(false) ?: remember { mutableStateOf(false) })
-    val queueWindows by (playerConnection?.queueWindows?.collectAsState() ?: remember { mutableStateOf(emptyList()) })
-    val currentWindowIndex = playerConnection?.player?.currentMediaItemIndex ?: 0
-
     var duration by remember { mutableStateOf(0L) }
     var currentPosition by remember { mutableStateOf(0L) }
     var sleepTimerMinutes by remember { mutableStateOf<Int?>(null) }
     var sleepTimerEndTime by remember { mutableStateOf<Long?>(null) }
     var showLyrics by remember { mutableStateOf(false) }
 
-    // Prefer the parameter; fall back to the composition local. Avoid an early
-    // return here because that produces a blank/white overlay when the player
-    // service hasn't fully initialised yet (e.g. right after tapping the mini
-    // player). The remainder of the screen uses null-safe calls already.
-    val playerConnection = playerConnection ?: LocalPlayerConnection.current
-    val currentLyrics by (playerConnection?.currentLyrics?.collectAsState(initial = null)
+    // Resolve player connection: prefer passed-in parameter, fall back to composition local.
+    // We avoid early return to show loading UI when service not ready.
+    val effectivePlayerConnection = playerConnection ?: LocalPlayerConnection.current
+
+    // Collect state from the resolved connection; if null, show loading/empty state
+    val currentSong by effectivePlayerConnection?.currentSong?.collectAsState(null) ?: remember { mutableStateOf(null) }
+    val isPlaying by effectivePlayerConnection?.isPlaying?.collectAsState(false) ?: remember { mutableStateOf(false) }
+    val queueWindows by effectivePlayerConnection?.queueWindows?.collectAsState() ?: remember { mutableStateOf(emptyList()) }
+    val currentWindowIndex = effectivePlayerConnection?.player?.currentMediaItemIndex ?: 0
+
+    val currentLyrics by (effectivePlayerConnection?.currentLyrics?.collectAsState(initial = null)
         ?: remember { mutableStateOf(null) })
+
+    // Local alias for concise usage throughout the composable
+    val pc = effectivePlayerConnection
 
     // Focus requesters for TV navigation
     val playButtonFocus = remember { FocusRequester() }
@@ -260,9 +263,9 @@ fun TvPlayerScreen(
         runCatching { playButtonFocus.requestFocus() }
     }
 
-    LaunchedEffect(playerConnection?.player) {
+    LaunchedEffect(pc?.player) {
         while (true) {
-            playerConnection?.player?.let { player ->
+            pc?.player?.let { player ->
                 duration = player.duration.takeIf { it != C.TIME_UNSET } ?: 0L
                 currentPosition = player.currentPosition
             }
@@ -463,7 +466,7 @@ fun TvPlayerScreen(
                         modifier = Modifier.padding(top = 16.dp)
                     ) {
                         TvPlayerControlButton(
-                            onClick = { playerConnection?.seekToPrevious() },
+                            onClick = { pc?.seekToPrevious() },
                             icon = Icons.Filled.SkipPrevious,
                             contentDescription = "Previous song",
                         )
@@ -471,14 +474,14 @@ fun TvPlayerScreen(
                         TvPlayerControlButton(
                             onClick = {
                                 val newPos = maxOf(0L, currentPosition - 10000L)
-                                playerConnection?.player?.seekTo(newPos)
+                                pc?.player?.seekTo(newPos)
                             },
                             icon = Icons.Filled.FastRewind,
                             contentDescription = "Rewind 10 seconds",
                         )
 
                         TvPlayerControlButton(
-                            onClick = { playerConnection?.togglePlayPause() },
+                            onClick = { pc?.togglePlayPause() },
                             icon = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                             contentDescription = if (isPlaying) "Pause" else "Play",
                             size = 80.dp,
@@ -487,16 +490,16 @@ fun TvPlayerScreen(
 
                         TvPlayerControlButton(
                             onClick = {
-                                val durationVal = playerConnection?.player?.duration?.takeIf { it != C.TIME_UNSET } ?: Long.MAX_VALUE
+                                val durationVal = pc?.player?.duration?.takeIf { it != C.TIME_UNSET } ?: Long.MAX_VALUE
                                 val newPos = minOf(durationVal, currentPosition + 10000L)
-                                playerConnection?.player?.seekTo(newPos)
+                                pc?.player?.seekTo(newPos)
                             },
                             icon = Icons.Filled.FastForward,
                             contentDescription = "Fast forward 10 seconds",
                         )
 
                         TvPlayerControlButton(
-                            onClick = { playerConnection?.seekToNext() },
+                            onClick = { pc?.seekToNext() },
                             icon = Icons.Filled.SkipNext,
                             contentDescription = "Next song",
                         )
@@ -509,16 +512,16 @@ fun TvPlayerScreen(
                         modifier = Modifier.padding(top = 16.dp)
                     ) {
                         TvPlayerControlButton(
-                            onClick = { playerConnection?.toggleShuffle() },
+                            onClick = { pc?.toggleShuffle() },
                             icon = Icons.Filled.Shuffle,
                             contentDescription = "Shuffle",
-                            tint = if (playerConnection?.shuffleModeEnabled?.value == true)
+                            tint = if (pc?.shuffleModeEnabled?.value == true)
                                 MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.7f),
                         )
 
                         TvPlayerControlButton(
                             onClick = {
-                                playerConnection?.player?.let { player ->
+                                pc?.player?.let { player ->
                                     val currentMode = player.repeatMode
                                     val newMode = when (currentMode) {
                                         androidx.media3.common.Player.REPEAT_MODE_OFF -> androidx.media3.common.Player.REPEAT_MODE_ALL
@@ -528,12 +531,12 @@ fun TvPlayerScreen(
                                     player.repeatMode = newMode
                                 }
                             },
-                            icon = when (playerConnection?.repeatMode?.value) {
+                            icon = when (pc?.repeatMode?.value) {
                                 androidx.media3.common.Player.REPEAT_MODE_ONE -> Icons.Filled.RepeatOne
                                 else -> Icons.Filled.Repeat
                             },
                             contentDescription = "Repeat",
-                            tint = if (playerConnection?.repeatMode?.value != androidx.media3.common.Player.REPEAT_MODE_OFF)
+                            tint = if (pc?.repeatMode?.value != androidx.media3.common.Player.REPEAT_MODE_OFF)
                                 MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.7f),
                         )
 
@@ -599,7 +602,7 @@ fun TvPlayerScreen(
                                     window = window,
                                     isCurrentSong = isCurrentSong,
                                     onClick = {
-                                        playerConnection?.player?.seekTo(index, C.TIME_UNSET)
+                                        pc?.player?.seekTo(index, C.TIME_UNSET)
                                     },
                                     modifier = Modifier.fillMaxWidth(),
                                 )

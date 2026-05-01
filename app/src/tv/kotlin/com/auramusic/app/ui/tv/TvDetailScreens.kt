@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -195,13 +196,20 @@ fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, 
     val displayThumbnail = localArtist?.artist?.thumbnailUrl ?: ytArtistPage.value?.artist?.thumbnail
 
     // Structure content similar to mobile app
+    var focusedItemIndex by remember { mutableStateOf(0) }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
-                    onNavigateUp?.invoke()
-                    true
+                    // Only navigate to top bar if focus is on the header (index 0)
+                    if (focusedItemIndex == 0) {
+                        onNavigateUp?.invoke()
+                        true
+                    } else {
+                        false // Let LazyColumn handle normal focus movement
+                    }
                 } else {
                     false
                 }
@@ -225,7 +233,10 @@ fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, 
                     .padding(bottom = 16.dp)
                     .size(64.dp)
                     .focusRequester(backButtonFocus)
-                    .onFocusChanged { backButtonFocusedState.value = it.isFocused }
+                    .onFocusChanged { 
+                        backButtonFocusedState.value = it.isFocused
+                        if (it.isFocused) focusedItemIndex = 0
+                    }
                     .border(
                         width = if (backButtonFocusedState.value) 3.dp else 0.dp,
                         color = if (backButtonFocusedState.value) MaterialTheme.colorScheme.primary else Color.Transparent,
@@ -347,10 +358,12 @@ fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, 
                     color = MaterialTheme.colorScheme.onBackground,
                 )
             }
-            items(localSongs) { song ->
-                SongRowItem(displaySong = DisplaySong.LocalSong(song)) {
-                    playerConnection?.playSong(song)
-                }
+            itemsIndexed(localSongs, key = { _, song -> song.id }) { index, song ->
+                SongRowItem(
+                    displaySong = DisplaySong.LocalSong(song),
+                    onClick = { playerConnection?.playSong(song) },
+                    modifier = Modifier.onFocusChanged { focusedItemIndex = 1 + index }
+                )
             }
         }
 
@@ -367,12 +380,18 @@ fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, 
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 }
-                items(ytSongs.value!!) { songItem ->
-                    SongRowItem(displaySong = DisplaySong.YouTubeSong(songItem)) {
-                        playerConnection?.playQueue(com.auramusic.app.playback.queues.YouTubeQueue(
-                            com.auramusic.innertube.models.WatchEndpoint(videoId = songItem.id)
-                        ))
-                    }
+                itemsIndexed(ytSongs.value!!, key = { _, songItem -> songItem.id }) { index, songItem ->
+                    SongRowItem(
+                        displaySong = DisplaySong.YouTubeSong(songItem),
+                        onClick = {
+                            playerConnection?.playQueue(com.auramusic.app.playback.queues.YouTubeQueue(
+                                com.auramusic.innertube.models.WatchEndpoint(videoId = songItem.id)
+                            ))
+                        },
+                        modifier = Modifier.onFocusChanged { 
+                            focusedItemIndex = 1 + localSongs.size + index
+                        }
+                    )
                 }
             }
 
@@ -526,13 +545,21 @@ private fun TvDetailLayout(
         runCatching { backButtonFocus.requestFocus() }
     }
 
+    // Track which item is currently focused
+    var focusedItemIndex by remember { mutableStateOf(0) }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
-                    onNavigateUp?.invoke()
-                    true
+                    // Only navigate to top bar if focus is on the header (index 0)
+                    if (focusedItemIndex == 0) {
+                        onNavigateUp?.invoke()
+                        true
+                    } else {
+                        false // Let LazyColumn handle normal focus movement
+                    }
                 } else {
                     false
                 }
@@ -540,7 +567,7 @@ private fun TvDetailLayout(
         contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        item {
+        item(key = "header") {
             // Back button
             val backButtonFocusedState = remember { mutableStateOf(false) }
             IconButton(
@@ -549,7 +576,10 @@ private fun TvDetailLayout(
                     .padding(bottom = 16.dp)
                     .size(64.dp)
                     .focusRequester(backButtonFocus)
-                    .onFocusChanged { backButtonFocusedState.value = it.isFocused }
+                    .onFocusChanged { 
+                        backButtonFocusedState.value = it.isFocused
+                        if (it.isFocused) focusedItemIndex = 0
+                    }
                     .border(
                         width = if (backButtonFocusedState.value) 3.dp else 0.dp,
                         color = if (backButtonFocusedState.value) MaterialTheme.colorScheme.primary else Color.Transparent,
@@ -623,8 +653,12 @@ private fun TvDetailLayout(
         }
         item { Spacer(modifier = Modifier.height(8.dp)) }
 
-        items(displaySongs) { displaySong ->
-            SongRowItem(displaySong = displaySong) { playerConnection?.playDisplaySong(displaySong) }
+        itemsIndexed(displaySongs, key = { index, displaySong -> displaySong.id }) { index, displaySong ->
+            SongRowItem(
+                displaySong = displaySong,
+                onClick = { playerConnection?.playDisplaySong(displaySong) },
+                modifier = Modifier.onFocusChanged { focusedItemIndex = 1 + index }
+            )
         }
 
         if (displaySongs.isEmpty()) {
@@ -640,7 +674,7 @@ private fun TvDetailLayout(
 }
 
 @Composable
-private fun SongRowItem(displaySong: DisplaySong, onClick: () -> Unit) {
+private fun SongRowItem(displaySong: DisplaySong, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val isFocusedState = remember { mutableStateOf(false) }
     val borderColor = if (isFocusedState.value) {
         MaterialTheme.colorScheme.primary
@@ -650,7 +684,7 @@ private fun SongRowItem(displaySong: DisplaySong, onClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .border(2.dp, borderColor, RoundedCornerShape(8.dp))
