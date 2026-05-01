@@ -1,7 +1,7 @@
 <div align="center">
 <img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png" width="160" height="160" style="display: block; margin: 0 auto"/>
 <h1>AuraMusic</h1>
-<p>A modern Android music player with YouTube Music integration, powerful audio features, Google Cast support, voice control, and a beautiful Material 3 interface.</p>
+<p>A modern Android music player with YouTube Music integration, powerful audio features, Google Cast support, voice control, and a beautiful Material 3 interface. Works seamlessly on **Android phones, Android TV, and Google TV**.</p>
 
 <h1>Screenshots</h1>
 
@@ -112,6 +112,7 @@
 
 ### Casting & Sharing
 - **Google Cast support** (Chromecast to TV, speakers, Android TV)
+- **Native Android TV / Google TV** app with D-pad navigation
 - Listen together with friends in real-time
 - Discord Rich Presence
 
@@ -174,7 +175,8 @@
 <h1>Requirements</h1>
 </div>
 
-- Android 8.0+ (API 26)
+- Android 8.0+ (API 26) for phone
+- Android 9.0+ (API 28) for Android TV / Google TV
 - Android Studio Ladybug
 - JDK 21
 
@@ -190,8 +192,12 @@ cd AuraMusic
 # Setup API keys (optional)
 cp local.properties.example local.properties
 
-# Build debug APK
+# Build for phone
+git checkout main
 ./gradlew assembleDebug
+
+# Build for TV (Android TV / Google TV)
+./gradlew assembleFossTvDebug
 ```
 
 <div align="center">
@@ -205,7 +211,18 @@ cp local.properties.example local.properties
 
 **ABI Variants:** universal, arm64, armeabi, x86, x86_64
 
-**Example:** `./gradlew assembleGmsUniversalRelease`
+**TV Build:** The `tv` flavor provides a native Android TV / Google TV experience with D-pad optimized navigation.
+
+**Example commands:**
+```bash
+# Phone universal builds
+./gradlew assembleFossUniversalRelease
+./gradlew assembleGmsUniversalRelease
+
+# TV universal builds  
+./gradlew assembleFossTvUniversalRelease
+./gradlew assembleGmsTvUniversalRelease
+```
 
 <div align="center">
 <h1>Support Me</h1>
