@@ -15,18 +15,17 @@ import androidx.compose.runtime.remember
  * Lightweight in-memory navigation for the TV variant. Avoids pulling in
  * androidx.navigation:navigation-compose just for a 1-activity TV shell.
  */
-sealed class TvDestination {
-    data object Home : TvDestination()
-    data object Library : TvDestination()
-    data object Search : TvDestination()
-    data object Settings : TvDestination()
-    data object AppearanceSettings : TvDestination()
-    data object Player : TvDestination()
-    data object Queue : TvDestination()
-    data class Album(val id: String) : TvDestination()
-    data class Artist(val id: String) : TvDestination()
-    data class Playlist(val id: String) : TvDestination()
-}
+ sealed class TvDestination {
+     data object Home : TvDestination()
+     data object Library : TvDestination()
+     data object Search : TvDestination()
+     data object Settings : TvDestination()
+     data object AppearanceSettings : TvDestination()
+     data object Player : TvDestination()
+     data class Album(val id: String) : TvDestination()
+     data class Artist(val id: String) : TvDestination()
+     data class Playlist(val id: String) : TvDestination()
+ }
 
 class TvNavigator(private val stack: MutableState<List<TvDestination>>) {
     val current: TvDestination get() = stack.value.last()

@@ -194,11 +194,26 @@ fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, 
     ) {
         // Header section
         item {
+            val backButtonFocus = remember { FocusRequester() }
+
+            LaunchedEffect(Unit) {
+                runCatching { backButtonFocus.requestFocus() }
+            }
+
+            // Back button with TV navigation
+            val backButtonFocusedState = remember { mutableStateOf(false) }
             IconButton(
                 onClick = onBackClick,
                 modifier = Modifier
                     .padding(bottom = 16.dp)
-                    .size(64.dp),
+                    .size(64.dp)
+                    .focusRequester(backButtonFocus)
+                    .onFocusChanged { backButtonFocusedState.value = it.isFocused }
+                    .border(
+                        width = if (backButtonFocusedState.value) 3.dp else 0.dp,
+                        color = if (backButtonFocusedState.value) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        shape = RoundedCornerShape(12.dp)
+                    ),
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,

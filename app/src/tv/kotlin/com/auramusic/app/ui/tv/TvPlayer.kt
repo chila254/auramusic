@@ -17,13 +17,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
+ import androidx.compose.foundation.layout.fillMaxSize
+ import androidx.compose.foundation.layout.fillMaxWidth
+ import androidx.compose.foundation.layout.height
+ import androidx.compose.foundation.layout.padding
+ import androidx.compose.foundation.layout.size
+ import androidx.compose.foundation.layout.width
+ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
@@ -40,12 +40,11 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material.icons.filled.Speed
-import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Lyrics
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -78,67 +77,156 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.media3.common.C
-import androidx.media3.common.MediaItem
-import coil3.compose.AsyncImage
-import com.auramusic.app.R
-import com.auramusic.app.db.entities.Song
-import com.auramusic.app.playback.PlayerConnection
-import com.auramusic.app.playback.queues.YouTubeQueue
-import com.auramusic.app.playback.queues.ListQueue
-import com.auramusic.innertube.models.WatchEndpoint
-import kotlin.time.Duration.Companion.milliseconds
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.auramusic.app.utils.makeTimeString
-import com.auramusic.app.LocalPlayerConnection
-import com.auramusic.app.ui.component.LocalMenuState
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalWindowInfo
-import com.auramusic.app.LocalListenTogetherManager
-import com.auramusic.app.ui.component.Lyrics
+ import androidx.compose.ui.unit.dp
+ import androidx.compose.ui.unit.sp
+  import androidx.media3.common.C
+  import androidx.media3.common.MediaItem
+  import androidx.media3.common.MediaMetadata
+  import androidx.media3.common.Timeline
+ import coil3.compose.AsyncImage
+ import com.auramusic.app.R
+ import com.auramusic.app.db.entities.Song
+ import com.auramusic.app.playback.PlayerConnection
+ import com.auramusic.app.playback.queues.YouTubeQueue
+ import com.auramusic.app.playback.queues.ListQueue
+ import com.auramusic.innertube.models.WatchEndpoint
+ import kotlin.time.Duration.Companion.milliseconds
+ import kotlinx.coroutines.delay
+ import kotlinx.coroutines.launch
+ import androidx.lifecycle.viewModelScope
+ import androidx.lifecycle.compose.collectAsStateWithLifecycle
+ import com.auramusic.app.utils.makeTimeString
+ import com.auramusic.app.LocalPlayerConnection
+ import com.auramusic.app.ui.component.LocalMenuState
+ import androidx.compose.ui.platform.LocalDensity
+ import androidx.compose.ui.platform.LocalContext
+ import androidx.compose.ui.platform.LocalWindowInfo
+ import com.auramusic.app.LocalListenTogetherManager
+ import com.auramusic.app.ui.component.Lyrics
 
-@Composable
-private fun TvPlayerControlButton(
-    onClick: () -> Unit,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    contentDescription: String,
-    size: androidx.compose.ui.unit.Dp = 72.dp,
-    tint: Color = Color.White,
-    focusRequester: FocusRequester? = null,
-) {
-    val isFocusedState = remember { mutableStateOf(false) }
+ @Composable
+ private fun TvPlayerControlButton(
+     onClick: () -> Unit,
+     icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+     painter: androidx.compose.ui.graphics.painter.Painter? = null,
+     contentDescription: String,
+     size: androidx.compose.ui.unit.Dp = 72.dp,
+     tint: Color = Color.White,
+     focusRequester: FocusRequester? = null,
+ ) {
+     val isFocusedState = remember { mutableStateOf(false) }
 
-    IconButton(
-        onClick = onClick,
-        modifier = Modifier
-            .size(size)
-            .let { if (focusRequester != null) it.focusRequester(focusRequester) else it }
-            .onFocusChanged { isFocusedState.value = it.isFocused }
-            .border(
-                width = if (isFocusedState.value) 3.dp else 0.dp,
-                color = if (isFocusedState.value) MaterialTheme.colorScheme.primary else Color.Transparent,
-                shape = CircleShape
-            ),
-    ) {
-        Icon(
-            icon,
-            contentDescription = contentDescription,
-            tint = tint,
-            modifier = Modifier.size(size * 0.6f)
-        )
-    }
-}
+     IconButton(
+         onClick = onClick,
+         modifier = Modifier
+             .size(size)
+             .let { if (focusRequester != null) it.focusRequester(focusRequester) else it }
+             .onFocusChanged { isFocusedState.value = it.isFocused }
+             .border(
+                 width = if (isFocusedState.value) 3.dp else 0.dp,
+                 color = if (isFocusedState.value) MaterialTheme.colorScheme.primary else Color.Transparent,
+                 shape = CircleShape
+             ),
+     ) {
+         if (icon != null) {
+             Icon(
+                 icon,
+                 contentDescription = contentDescription,
+                 tint = tint,
+                 modifier = Modifier.size(size * 0.6f)
+             )
+         } else if (painter != null) {
+             Icon(
+                 painter = painter,
+                 contentDescription = contentDescription,
+                 tint = tint,
+                 modifier = Modifier.size(size * 0.6f)
+             )
+         }
+     }
+ }
+
+  @Composable
+  private fun TvQueueItem(
+      window: Timeline.Window,
+      isCurrentSong: Boolean,
+      onClick: () -> Unit,
+      modifier: Modifier = Modifier,
+  ) {
+      val isFocusedState = remember { mutableStateOf(false) }
+      val borderColor = if (isFocusedState.value || isCurrentSong) {
+          MaterialTheme.colorScheme.primary
+      } else {
+          Color.Transparent
+      }
+      val backgroundColor = if (isCurrentSong) {
+          MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+      } else {
+          MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
+      }
+
+      val mediaItem = window.mediaItem
+          val metadata = mediaItem.mediaMetadata
+
+      Row(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(16.dp),
+          modifier = modifier
+              .fillMaxWidth()
+              .clip(RoundedCornerShape(8.dp))
+              .border(2.dp, borderColor, RoundedCornerShape(8.dp))
+              .onFocusChanged { isFocusedState.value = it.isFocused }
+              .focusable()
+              .clickable(onClick = onClick)
+              .background(backgroundColor)
+              .padding(12.dp),
+      ) {
+          Box(
+              modifier = Modifier
+                  .size(56.dp)
+                  .clip(RoundedCornerShape(6.dp))
+                  .background(MaterialTheme.colorScheme.surfaceVariant),
+          ) {
+              AsyncImage(
+                  model = metadata?.artworkUri?.toString(),
+                  contentDescription = metadata?.title?.toString() ?: "Song",
+                  contentScale = ContentScale.Crop,
+                  modifier = Modifier.fillMaxSize(),
+              )
+          }
+          Column(modifier = Modifier.weight(1f)) {
+               Text(
+                   text = metadata?.title?.toString() ?: "Unknown title",
+                   style = MaterialTheme.typography.bodyLarge,
+                   fontWeight = if (isCurrentSong) FontWeight.Bold else FontWeight.SemiBold,
+                   color = if (isCurrentSong) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                   maxLines = 1,
+               )
+               Text(
+                   text = metadata?.artist?.toString() ?: "",
+                   style = MaterialTheme.typography.bodySmall,
+                   color = MaterialTheme.colorScheme.onSurfaceVariant,
+                   maxLines = 1,
+               )
+          }
+          // Duration
+          val durationMs = window.durationMs
+          if (durationMs > 0) {
+              Text(
+                  text = makeTimeString(durationMs),
+                  style = MaterialTheme.typography.bodySmall,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+              )
+          }
+      }
+  }
 
 /**
  * TV-compatible full-screen player with large controls optimized for remote control navigation.
  * Features large touch targets, clear visual hierarchy, and TV-friendly layout.
+ * Split layout: left side = player controls, right side = queue.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TvPlayerScreen(
     playerConnection: PlayerConnection?,
@@ -146,6 +234,8 @@ fun TvPlayerScreen(
 ) {
     val currentSong by (playerConnection?.currentSong?.collectAsState(null) ?: remember { mutableStateOf(null) })
     val isPlaying by (playerConnection?.isPlaying?.collectAsState(false) ?: remember { mutableStateOf(false) })
+    val queueWindows by (playerConnection?.queueWindows?.collectAsState() ?: remember { mutableStateOf(emptyList()) })
+    val currentWindowIndex = playerConnection?.player?.currentMediaItemIndex ?: 0
 
     var duration by remember { mutableStateOf(0L) }
     var currentPosition by remember { mutableStateOf(0L) }
@@ -155,7 +245,7 @@ fun TvPlayerScreen(
 
     // Focus requesters for TV navigation
     val playButtonFocus = remember { FocusRequester() }
-    val shuffleButtonFocus = remember { FocusRequester() }
+    val queueItemFocus = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
         // Request focus on play button initially
@@ -194,8 +284,8 @@ fun TvPlayerScreen(
         color = MaterialTheme.colorScheme.background,
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Background with album art blur
-            currentSong?.song?.thumbnailUrl?.let { thumbnailUrl ->
+            // Background with album art blur (full screen)
+            currentSong?.thumbnailUrl?.let { thumbnailUrl ->
                 AsyncImage(
                     model = thumbnailUrl,
                     contentDescription = null,
@@ -220,49 +310,31 @@ fun TvPlayerScreen(
                     .background(Color.Black.copy(alpha = 0.9f))
             )
 
-            // Back button
-            var backButtonFocused by remember { mutableStateOf(false) }
-            IconButton(
-                onClick = onBackClick,
-                modifier = Modifier
-                    .padding(24.dp)
-                    .size(64.dp)
-                    .align(Alignment.TopStart)
-                    .onFocusChanged { backButtonFocused = it.isFocused }
-                    .border(
-                        width = if (backButtonFocused) 3.dp else 0.dp,
-                        color = if (backButtonFocused) MaterialTheme.colorScheme.primary else Color.Transparent,
-                        shape = CircleShape
-                    ),
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-
+            // Main content: Two-column layout
             Row(
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.spacedBy(48.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                horizontalArrangement = Arrangement.spacedBy(32.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Left side: Album art and song info
+                // LEFT SIDE: Player controls (40% width)
                 Column(
                     modifier = Modifier.weight(0.4f),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
+                    Spacer(modifier = Modifier.height(48.dp)) // Space for back button
+
                     // Album art
                     Box(
                         modifier = Modifier
-                            .size(300.dp)
+                            .size(280.dp)
                             .clip(RoundedCornerShape(16.dp))
                             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.1f)),
                         contentAlignment = Alignment.Center,
                     ) {
-                        currentSong?.song?.let { song ->
+                        currentSong?.let { song ->
                             AsyncImage(
                                 model = song.thumbnailUrl,
                                 contentDescription = song.title,
@@ -277,15 +349,15 @@ fun TvPlayerScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Text(
-                            text = currentSong?.song?.title ?: "No song playing",
-                            style = MaterialTheme.typography.headlineMedium.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = Color.White,
-                            textAlign = TextAlign.Center,
-                            maxLines = 2,
-                        )
+                    Text(
+                        text = currentSong?.title ?: "No song playing",
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                    )
 
                         Text(
                             text = currentSong?.artists?.joinToString(", ") { it.name } ?: "",
@@ -329,11 +401,11 @@ fun TvPlayerScreen(
                         }
                     }
 
-                    // Playback controls below progress bar
+                    // Playback controls
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = 24.dp)
+                        modifier = Modifier.padding(top = 16.dp)
                     ) {
                         TvPlayerControlButton(
                             onClick = { playerConnection?.seekToPrevious() },
@@ -343,7 +415,7 @@ fun TvPlayerScreen(
 
                         TvPlayerControlButton(
                             onClick = {
-                                val newPos = maxOf(0L, currentPosition - 10000L) // 10 seconds back
+                                val newPos = maxOf(0L, currentPosition - 10000L)
                                 playerConnection?.player?.seekTo(newPos)
                             },
                             icon = Icons.Filled.FastRewind,
@@ -360,8 +432,8 @@ fun TvPlayerScreen(
 
                         TvPlayerControlButton(
                             onClick = {
-                                val duration = playerConnection?.player?.duration?.takeIf { it != C.TIME_UNSET } ?: Long.MAX_VALUE
-                                val newPos = minOf(duration, currentPosition + 10000L) // 10 seconds forward
+                                val durationVal = playerConnection?.player?.duration?.takeIf { it != C.TIME_UNSET } ?: Long.MAX_VALUE
+                                val newPos = minOf(durationVal, currentPosition + 10000L)
                                 playerConnection?.player?.seekTo(newPos)
                             },
                             icon = Icons.Filled.FastForward,
@@ -375,7 +447,7 @@ fun TvPlayerScreen(
                         )
                     }
 
-                    // Secondary controls below main controls
+                    // Secondary controls
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -412,35 +484,13 @@ fun TvPlayerScreen(
 
                         TvPlayerControlButton(
                             onClick = {
-                                playerConnection?.player?.let { player ->
-                                    val currentSpeed = player.playbackParameters.speed
-                                    val newSpeed = when (currentSpeed) {
-                                        1.0f -> 1.25f  // Normal -> 1.25x
-                                        1.25f -> 1.5f  // 1.25x -> 1.5x
-                                        1.5f -> 1.75f  // 1.5x -> 1.75x
-                                        1.75f -> 2.0f  // 1.75x -> 2x
-                                        2.0f -> 0.5f   // 2x -> 0.5x (slow)
-                                        0.5f -> 0.75f  // 0.5x -> 0.75x
-                                        else -> 1.0f   // Any other -> Normal
-                                    }
-                                    val params = androidx.media3.common.PlaybackParameters(newSpeed)
-                                    player.setPlaybackParameters(params)
-                                }
-                            },
-                            icon = Icons.Filled.Speed,
-                            contentDescription = "Playback speed",
-                            tint = Color.White.copy(alpha = 0.7f),
-                        )
-
-                        TvPlayerControlButton(
-                            onClick = {
                                 val currentMinutes = sleepTimerMinutes
                                 val newMinutes = when (currentMinutes) {
-                                    null -> 15     // Start with 15 minutes
-                                    15 -> 30       // 15 -> 30 minutes
-                                    30 -> 60       // 30 -> 60 minutes
-                                    60 -> 120      // 60 -> 120 minutes
-                                    else -> null   // Any other -> Cancel timer
+                                    null -> 15
+                                    15 -> 30
+                                    30 -> 60
+                                    60 -> 120
+                                    else -> null
                                 }
 
                                 if (newMinutes != null) {
@@ -451,7 +501,7 @@ fun TvPlayerScreen(
                                     sleepTimerMinutes = null
                                 }
                             },
-                            icon = Icons.Filled.Bedtime,
+                            painter = painterResource(R.drawable.bedtime),
                             contentDescription = if (sleepTimerMinutes != null) "Cancel sleep timer (${sleepTimerMinutes} min)" else "Set sleep timer",
                             tint = if (sleepTimerMinutes != null) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.7f),
                         )
@@ -465,256 +515,134 @@ fun TvPlayerScreen(
                     }
                 }
 
-                // Right side: Lyrics (when enabled)
-                if (showLyrics) {
-                    Column(
-                        modifier = Modifier.weight(0.6f),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(32.dp),
-                    ) {
-                        // Lyrics display
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(300.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(Color.Black.copy(alpha = 0.8f))
-                                .padding(24.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            val positionProvider = { currentPosition }
-                            val karaokeModeEnabled = false // TV doesn't need karaoke mode
+                // RIGHT SIDE: Queue (60% width) - always visible
+                Column(
+                    modifier = Modifier
+                        .weight(0.6f)
+                        .fillMaxHeight(),
+                ) {
+                    Text(
+                        text = "Now Playing",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = Color.White,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
 
-                            // Use the mobile Lyrics component with proper text styling
-                            androidx.compose.material3.ProvideTextStyle(
-                                value = MaterialTheme.typography.bodyMedium.copy(
-                                    fontSize = 18.sp,
-                                    textAlign = TextAlign.Center,
-                                    color = Color.White
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        items(queueWindows.size) { index ->
+                            val window = queueWindows.getOrNull(index)
+                            val isCurrentSong = index == currentWindowIndex
+
+                            if (window != null) {
+                                TvQueueItem(
+                                    window = window,
+                                    isCurrentSong = isCurrentSong,
+                                    onClick = {
+                                        playerConnection?.player?.seekTo(index, 0)
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
                                 )
-                            ) {
-                                com.auramusic.app.ui.component.Lyrics(
-                                    sliderPositionProvider = positionProvider,
-                                    modifier = Modifier.padding(horizontal = 24.dp),
-                                    showLyrics = true,
-                                    karaokeModeEnabled = karaokeModeEnabled
-                                )
+                            }
+                        }
+
+                        if (queueWindows.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(32.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = "Queue is empty",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = Color.White.copy(alpha = 0.6f),
+                                        textAlign = TextAlign.Center,
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-    }
-}
 
-@Composable
-fun TvQueueItem(
-    mediaItem: androidx.media3.common.MediaItem,
-    isCurrentSong: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val isFocusedState = remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-    val bringIntoViewRequester = remember { BringIntoViewRequester() }
-    val scale by animateFloatAsState(
-        targetValue = if (isFocusedState.value) 1.06f else 1f,
-        label = "tvQueueItemScale",
-    )
-    val borderColor = if (isFocusedState.value) {
-        MaterialTheme.colorScheme.primary
-    } else if (isCurrentSong) {
-        MaterialTheme.colorScheme.secondary
-    } else {
-        Color.Transparent
-    }
-
-    Surface(
-        onClick = onClick,
-        modifier = modifier
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .bringIntoViewRequester(bringIntoViewRequester)
-            .onFocusChanged { focusState ->
-                isFocusedState.value = focusState.isFocused
-                if (focusState.isFocused) {
-                    scope.launch { bringIntoViewRequester.bringIntoView() }
-                }
-            }
-            .border(width = 3.dp, color = borderColor, shape = RoundedCornerShape(12.dp)),
-        shape = RoundedCornerShape(12.dp),
-        color = if (isCurrentSong) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
-        tonalElevation = 4.dp,
-    ) {
-        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            // Thumbnail
-            Box(
+            // Back button (top-left)
+            var backButtonFocused by remember { mutableStateOf(false) }
+            IconButton(
+                onClick = onBackClick,
                 modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center,
+                    .padding(24.dp)
+                    .size(64.dp)
+                    .align(Alignment.TopStart)
+                    .onFocusChanged { backButtonFocused = it.isFocused }
+                    .border(
+                        width = if (backButtonFocused) 3.dp else 0.dp,
+                        color = if (backButtonFocused) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        shape = CircleShape
+                    ),
             ) {
-                mediaItem.mediaMetadata.artworkUri?.let { uri ->
-                    AsyncImage(
-                        model = uri,
-                        contentDescription = mediaItem.mediaMetadata.title?.toString(),
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                } ?: Icon(
-                    painterResource(R.drawable.music_note),
-                    contentDescription = "Music note",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(24.dp)
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White,
+                    modifier = Modifier.size(32.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            // Lyrics Overlay (when enabled)
+            if (showLyrics) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(end = 24.dp, bottom = 24.dp, top = 24.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.Black.copy(alpha = 0.85f))
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    val positionProvider = { currentPosition }
+                    val karaokeModeEnabled = false
 
-            // Song info
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = mediaItem.mediaMetadata.title?.toString() ?: "Unknown",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                )
-                Text(
-                    text = mediaItem.mediaMetadata.artist?.toString() ?: "",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                )
-            }
-
-            // Duration
-            val durationMs = mediaItem.mediaMetadata.durationMs ?: 0L
-            if (durationMs > 0) {
-                Text(
-                    text = makeTimeString(durationMs),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                    androidx.compose.material3.ProvideTextStyle(
+                        value = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 20.sp,
+                            textAlign = TextAlign.Center,
+                            color = Color.White
+                        )
+                    ) {
+                        com.auramusic.app.ui.component.Lyrics(
+                            sliderPositionProvider = positionProvider,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp),
+                            showLyrics = true,
+                            karaokeModeEnabled = karaokeModeEnabled
+                        )
+                    }
+                }
             }
         }
     }
-}
 
-/**
- * TV queue screen showing current playlist with large, focusable items.
- */
-@Composable
-fun TvQueueScreen(
-    playerConnection: PlayerConnection?,
-    onBackClick: () -> Unit,
-) {
-    val queueWindows by (playerConnection?.queueWindows?.collectAsState() ?: remember { mutableStateOf(emptyList()) })
-    val currentWindowIndex = playerConnection?.player?.currentMediaItemIndex ?: 0
+     // Auto-show lyrics when song changes if user hasn't manually toggled
+     var hasUserToggledLyrics by remember { mutableStateOf(false) }
+     LaunchedEffect(currentSong?.id) {
+         if (!hasUserToggledLyrics) {
+             showLyrics = true
+         }
+     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 48.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        item {
-            // Back button, title, and clear queue button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(
-                    onClick = onBackClick,
-                    modifier = Modifier.size(64.dp),
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-
-                Text(
-                    text = "Now Playing",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-
-                // Clear queue button
-                IconButton(
-                    onClick = {
-                        playerConnection?.player?.let { player ->
-                            // Keep only the current song, remove all others
-                            if (player.mediaItemCount > 1) {
-                                val currentIndex = player.currentMediaItemIndex
-                                // Remove all items after current
-                                for (i in player.mediaItemCount - 1 downTo currentIndex + 1) {
-                                    player.removeMediaItem(i)
-                                }
-                                // Remove all items before current
-                                for (i in currentIndex - 1 downTo 0) {
-                                    player.removeMediaItem(i)
-                                }
-                            }
-                        }
-                    },
-                    modifier = Modifier.size(64.dp),
-                    enabled = queueWindows.size > 1,
-                ) {
-                    Icon(
-                        painterResource(R.drawable.clear_all),
-                        contentDescription = "Clear queue",
-                        tint = if (queueWindows.size > 1) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-            }
-        }
-
-        items(queueWindows.size) { index ->
-            val window = queueWindows.getOrNull(index)
-            val isCurrentSong = index == currentWindowIndex
-
-            if (window != null) {
-                TvQueueItem(
-                    mediaItem = window.mediaItem,
-                    isCurrentSong = isCurrentSong,
-                    onClick = {
-                        playerConnection?.player?.seekTo(index, 0)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
-
-        if (queueWindows.isEmpty()) {
-            item {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 64.dp),
-                ) {
-                    Text(
-                        text = "No songs in queue",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = "Add some music to get started",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    )
-                }
-            }
+    // Reset flag when user manually toggles
+    LaunchedEffect(showLyrics) {
+        // If lyrics were shown by auto and user hides, mark as manually toggled
+        if (!showLyrics && currentSong != null) {
+            hasUserToggledLyrics = true
         }
     }
 }
