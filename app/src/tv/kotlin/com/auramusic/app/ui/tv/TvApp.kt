@@ -49,6 +49,13 @@ import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Lyrics
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.DarkMode
 import com.auramusic.app.LocalPlayerConnection
 import com.auramusic.app.db.entities.Song
 import com.auramusic.app.utils.makeTimeString
@@ -274,146 +281,171 @@ enum class TvSection(val label: String) {
                  .onPreviewKeyEvent(onPreviewKeyEvent),
              color = MaterialTheme.colorScheme.background,
          ) {
-             Column(modifier = Modifier.fillMaxSize()) {
-                   // Show top bar with mini player only when NOT in full player
-                   val currentDestination = navigator.current
-                   if (currentDestination !is TvDestination.Player) {
-                       // Focus requesters for navigation between top bar and content
-                       val topBarFocusRequester = remember { FocusRequester() }
-                       val homeFocusRequester = remember { FocusRequester() }
-                       val detailFocusRequester = remember { FocusRequester() }
+             val currentDestination = navigator.current
 
-                       // Top bar with navigation and mini player
-                       TvTopBar(
-                           sectionState = sectionState,
-                           isPlaying = isPlayingState.value,
-                           currentSong = currentSong,
-                           playerConnection = playerConnection,
-                           onMiniPlayerClick = { navigator.navigate(TvDestination.Player) },
-                           onNavigateDown = {
-                               // Move focus to content when down is pressed from top nav
-                               when (sectionState.value) {
-                                   TvSection.HOME -> runCatching { homeFocusRequester.requestFocus() }
-                                   else -> runCatching { detailFocusRequester.requestFocus() }
-                               }
-                           },
-                           onNavigateUp = {
-                               // Move focus to top bar when up is pressed from content
-                               runCatching { topBarFocusRequester.requestFocus() }
-                           },
-                           topBarFocusRequester = topBarFocusRequester,
-                       )
+             // Full-screen player takes over the entire UI (no top bar)
+             if (currentDestination is TvDestination.Player) {
+                 TvPlayerScreen(
+                     playerConnection = playerConnection,
+                     onBackClick = { navigator.popBack() }
+                 )
+             } else {
+                 Column(modifier = Modifier.fillMaxSize()) {
+                     // Focus requesters for navigation between top bar and content
+                     val topBarFocusRequester = remember { FocusRequester() }
+                     val homeFocusRequester = remember { FocusRequester() }
+                     val detailFocusRequester = remember { FocusRequester() }
+                     val overlayFocusRequester = remember { FocusRequester() }
 
-                       // Set up focus for content screens - focus content when section changes
-                       LaunchedEffect(sectionState.value) {
-                           kotlinx.coroutines.delay(100)
-                           when (sectionState.value) {
-                               TvSection.HOME -> runCatching { homeFocusRequester.requestFocus() }
-                               else -> runCatching { detailFocusRequester.requestFocus() }
-                           }
-                       }
+                     // Top bar with navigation and mini player
+                     TvTopBar(
+                         sectionState = sectionState,
+                         isPlaying = isPlayingState.value,
+                         currentSong = currentSong,
+                         playerConnection = playerConnection,
+                         onMiniPlayerClick = { navigator.navigate(TvDestination.Player) },
+                         onNavigateDown = {
+                             // Move focus to content when down is pressed from top nav
+                             when {
+                                 currentDestination != TvDestination.Home -> runCatching { overlayFocusRequester.requestFocus() }
+                                 sectionState.value == TvSection.HOME -> runCatching { homeFocusRequester.requestFocus() }
+                                 else -> runCatching { detailFocusRequester.requestFocus() }
+                             }
+                         },
+                         onNavigateUp = {
+                             // Move focus to top bar when up is pressed from content
+                             runCatching { topBarFocusRequester.requestFocus() }
+                         },
+                         topBarFocusRequester = topBarFocusRequester,
+                     )
 
-                       Box(modifier = Modifier.fillMaxSize()) {
-                           when (sectionState.value) {
-                               TvSection.HOME -> TvHomeScreen(
-                                   playerConnection = playerConnection,
-                                   focusRequester = homeFocusRequester,
-                                   onNavigateUp = { runCatching { topBarFocusRequester.requestFocus() } }
-                               )
-                               TvSection.LIBRARY -> TvLibraryScreen(
-                                   playerConnection = playerConnection,
-                                   focusRequester = detailFocusRequester,
-                                   onNavigateUp = { runCatching { topBarFocusRequester.requestFocus() } }
-                               )
-                               TvSection.SEARCH -> TvSearchScreen(
-                                   playerConnection = playerConnection,
-                                   focusRequester = detailFocusRequester,
-                                   onNavigateUp = { runCatching { topBarFocusRequester.requestFocus() } }
-                               )
-                               TvSection.SETTINGS -> TvSettingsScreen(
-                                   onBackClick = { sectionState.value = TvSection.HOME },
-                                   onAppearanceClick = { navigator.navigate(TvDestination.AppearanceSettings) },
-                                   onAccountClick = { navigator.navigate(TvDestination.AccountSettings) },
-                                   onPlaybackClick = { navigator.navigate(TvDestination.PlaybackSettings) },
-                                   onContentClick = { navigator.navigate(TvDestination.ContentSettings) },
-                                   onUpdaterClick = { navigator.navigate(TvDestination.UpdaterScreen) },
-                                   onAboutClick = { navigator.navigate(TvDestination.AboutScreen) },
-                                   focusRequester = detailFocusRequester,
-                                   onNavigateUp = { runCatching { topBarFocusRequester.requestFocus() } }
-                               )
-                           }
+                     // Set up focus for content screens - focus content when section changes
+                     LaunchedEffect(sectionState.value, currentDestination) {
+                         kotlinx.coroutines.delay(100)
+                         when {
+                             currentDestination != TvDestination.Home -> runCatching { overlayFocusRequester.requestFocus() }
+                             sectionState.value == TvSection.HOME -> runCatching { homeFocusRequester.requestFocus() }
+                             else -> runCatching { detailFocusRequester.requestFocus() }
+                         }
+                     }
 
-                      // Overlay player/queue/detail screens if needed
-                      if (currentDestination != TvDestination.Home) {
-                          // Full screen overlay for all destinations
-                          Surface(
-                              modifier = Modifier.fillMaxSize(),
-                              color = MaterialTheme.colorScheme.background,
-                          ) {
-                               when (currentDestination) {
-                                   is TvDestination.Player -> TvPlayerScreen(
-                                       playerConnection = playerConnection,
-                                       onBackClick = { navigator.popBack() }
-                                   )
-                                   is TvDestination.Album -> TvAlbumDetailScreen(
-                                       albumId = currentDestination.id,
-                                       playerConnection = playerConnection,
-                                       onBackClick = { navigator.popBack() },
-                                       focusRequester = detailFocusRequester
-                                   )
-                                   is TvDestination.Artist -> TvArtistDetailScreen(
-                                       artistId = currentDestination.id,
-                                       playerConnection = playerConnection,
-                                       onBackClick = { navigator.popBack() },
-                                       focusRequester = detailFocusRequester
-                                   )
-                                   is TvDestination.Playlist -> TvPlaylistDetailScreen(
-                                       playlistId = currentDestination.id,
-                                       playerConnection = playerConnection,
-                                       onBackClick = { navigator.popBack() },
-                                       focusRequester = detailFocusRequester
-                                   )
-                                   TvDestination.Settings -> TvSettingsScreen(
-                                       onBackClick = { navigator.popBack() },
-                                       onAppearanceClick = { navigator.navigate(TvDestination.AppearanceSettings) },
-                                       onAccountClick = { navigator.navigate(TvDestination.AccountSettings) },
-                                       onPlaybackClick = { navigator.navigate(TvDestination.PlaybackSettings) },
-                                       onContentClick = { navigator.navigate(TvDestination.ContentSettings) },
-                                       onUpdaterClick = { navigator.navigate(TvDestination.UpdaterScreen) },
-                                       onAboutClick = { navigator.navigate(TvDestination.AboutScreen) },
-                                   )
-                                   TvDestination.AppearanceSettings -> TvAppearanceSettingsScreen(
-                                       onBackClick = { navigator.popBack() }
-                                   )
-                                   TvDestination.AccountSettings -> TvAccountSettingsScreen(
-                                       onBackClick = { navigator.popBack() },
-                                       onLoginClick = { navigator.navigate(TvDestination.Login) },
-                                   )
-                                   TvDestination.PlaybackSettings -> TvPlaybackSettingsScreen(
-                                       onBackClick = { navigator.popBack() }
-                                   )
-                                   TvDestination.ContentSettings -> TvContentSettingsScreen(
-                                       onBackClick = { navigator.popBack() }
-                                   )
-                                   TvDestination.AboutScreen -> TvAboutScreen(
-                                       onBackClick = { navigator.popBack() }
-                                   )
-                                   TvDestination.UpdaterScreen -> TvUpdaterScreen(
-                                       onBackClick = { navigator.popBack() }
-                                   )
-                                   TvDestination.Login -> TvLoginScreen(
-                                       onBackClick = { navigator.popBack() }
-                                   )
-                                   else -> Unit
-                                   }
-                                   }
-                                   }
-                                   }
-                                   }
-                                   }
-                                   }
-                                   }
-                                   }
+                     Box(modifier = Modifier.fillMaxSize()) {
+                         when (sectionState.value) {
+                             TvSection.HOME -> TvHomeScreen(
+                                 playerConnection = playerConnection,
+                                 focusRequester = homeFocusRequester,
+                                 onNavigateUp = { runCatching { topBarFocusRequester.requestFocus() } }
+                             )
+                             TvSection.LIBRARY -> TvLibraryScreen(
+                                 playerConnection = playerConnection,
+                                 focusRequester = detailFocusRequester,
+                                 onNavigateUp = { runCatching { topBarFocusRequester.requestFocus() } }
+                             )
+                             TvSection.SEARCH -> TvSearchScreen(
+                                 playerConnection = playerConnection,
+                                 focusRequester = detailFocusRequester,
+                                 onNavigateUp = { runCatching { topBarFocusRequester.requestFocus() } }
+                             )
+                             TvSection.SETTINGS -> TvSettingsScreen(
+                                 onBackClick = { sectionState.value = TvSection.HOME },
+                                 onAppearanceClick = { navigator.navigate(TvDestination.AppearanceSettings) },
+                                 onAccountClick = { navigator.navigate(TvDestination.AccountSettings) },
+                                 onPlaybackClick = { navigator.navigate(TvDestination.PlaybackSettings) },
+                                 onContentClick = { navigator.navigate(TvDestination.ContentSettings) },
+                                 onUpdaterClick = { navigator.navigate(TvDestination.UpdaterScreen) },
+                                 onAboutClick = { navigator.navigate(TvDestination.AboutScreen) },
+                                 focusRequester = detailFocusRequester,
+                                 onNavigateUp = { runCatching { topBarFocusRequester.requestFocus() } }
+                             )
+                         }
+
+                         // Overlay detail/setting screens if needed
+                         if (currentDestination != TvDestination.Home) {
+                             val onUp: () -> Unit = { runCatching { topBarFocusRequester.requestFocus() } }
+                             // Full screen overlay for all destinations
+                             Surface(
+                                 modifier = Modifier.fillMaxSize(),
+                                 color = MaterialTheme.colorScheme.background,
+                             ) {
+                                 when (currentDestination) {
+                                     is TvDestination.Album -> TvAlbumDetailScreen(
+                                         albumId = currentDestination.id,
+                                         playerConnection = playerConnection,
+                                         onBackClick = { navigator.popBack() },
+                                         focusRequester = overlayFocusRequester,
+                                         onNavigateUp = onUp,
+                                     )
+                                     is TvDestination.Artist -> TvArtistDetailScreen(
+                                         artistId = currentDestination.id,
+                                         playerConnection = playerConnection,
+                                         onBackClick = { navigator.popBack() },
+                                         focusRequester = overlayFocusRequester,
+                                         onNavigateUp = onUp,
+                                     )
+                                     is TvDestination.Playlist -> TvPlaylistDetailScreen(
+                                         playlistId = currentDestination.id,
+                                         playerConnection = playerConnection,
+                                         onBackClick = { navigator.popBack() },
+                                         focusRequester = overlayFocusRequester,
+                                         onNavigateUp = onUp,
+                                     )
+                                     TvDestination.Settings -> TvSettingsScreen(
+                                         onBackClick = { navigator.popBack() },
+                                         onAppearanceClick = { navigator.navigate(TvDestination.AppearanceSettings) },
+                                         onAccountClick = { navigator.navigate(TvDestination.AccountSettings) },
+                                         onPlaybackClick = { navigator.navigate(TvDestination.PlaybackSettings) },
+                                         onContentClick = { navigator.navigate(TvDestination.ContentSettings) },
+                                         onUpdaterClick = { navigator.navigate(TvDestination.UpdaterScreen) },
+                                         onAboutClick = { navigator.navigate(TvDestination.AboutScreen) },
+                                         focusRequester = overlayFocusRequester,
+                                         onNavigateUp = onUp,
+                                     )
+                                     TvDestination.AppearanceSettings -> TvAppearanceSettingsScreen(
+                                         onBackClick = { navigator.popBack() },
+                                         focusRequester = overlayFocusRequester,
+                                         onNavigateUp = onUp,
+                                     )
+                                     TvDestination.AccountSettings -> TvAccountSettingsScreen(
+                                         onBackClick = { navigator.popBack() },
+                                         onLoginClick = { navigator.navigate(TvDestination.Login) },
+                                         focusRequester = overlayFocusRequester,
+                                         onNavigateUp = onUp,
+                                     )
+                                     TvDestination.PlaybackSettings -> TvPlaybackSettingsScreen(
+                                         onBackClick = { navigator.popBack() },
+                                         focusRequester = overlayFocusRequester,
+                                         onNavigateUp = onUp,
+                                     )
+                                     TvDestination.ContentSettings -> TvContentSettingsScreen(
+                                         onBackClick = { navigator.popBack() },
+                                         focusRequester = overlayFocusRequester,
+                                         onNavigateUp = onUp,
+                                     )
+                                     TvDestination.AboutScreen -> TvAboutScreen(
+                                         onBackClick = { navigator.popBack() },
+                                         focusRequester = overlayFocusRequester,
+                                         onNavigateUp = onUp,
+                                     )
+                                     TvDestination.UpdaterScreen -> TvUpdaterScreen(
+                                         onBackClick = { navigator.popBack() },
+                                         focusRequester = overlayFocusRequester,
+                                         onNavigateUp = onUp,
+                                     )
+                                     TvDestination.Login -> TvLoginScreen(
+                                         onBackClick = { navigator.popBack() },
+                                         focusRequester = overlayFocusRequester,
+                                         onNavigateUp = onUp,
+                                     )
+                                     else -> Unit
+                                 }
+                             }
+                         }
+                     }
+                 }
+             }
+         }
+     }
+ }
 
 
 
@@ -745,112 +777,125 @@ fun TvHomeScreen(
 
         // Hero Carousel - Trending content
         homePage?.sections?.flatMap { it.items }
-            ?.distinctBy { it.id }
-            ?.take(6)
-            ?.takeIf { it.isNotEmpty() }
-            ?.let { heroItems ->
-                item(key = "hero") {
-                    TvHeroCarousel(
-                        title = "Trending Now",
-                        items = heroItems,
-                        playerConnection = playerConnection,
-                        onYTItemClick = { item: YTItem ->
-                            when (item) {
-                                is SongItem -> {
-                                    playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
-                                }
-                                is AlbumItem -> {
-                                    val browseId = item.browseId
-                                    if (browseId != null) {
-                                        navigator.navigate(TvDestination.Album(browseId))
-                                    } else {
-                                        playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
-                                    }
-                                }
-                                is ArtistItem -> {
-                                    item.id?.let { artistId ->
-                                        navigator.navigate(TvDestination.Artist(artistId))
-                                    }
-                                }
-                                is PlaylistItem -> {
-                                    navigator.navigate(TvDestination.Playlist(item.id))
-                                }
-                                is EpisodeItem -> {
-                                    playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
-                                }
-                                is PodcastItem -> {
-                                    item.id?.let { podcastId ->
-                                        // Navigate to podcast detail (could reuse playlist destination)
-                                        navigator.navigate(TvDestination.Playlist(podcastId))
-                                    }
-                                }
-                                else -> {}
-                            }
-                        },
-                        modifier = Modifier.onFocusChanged { focusedItemIndex = 0 }
-                    )
-                }
-            }
+           ?.distinctBy { it.id }
+           ?.take(6)
+           ?.takeIf { it.isNotEmpty() }
+           ?.let { heroItems ->
+               item(key = "hero") {
+                   TvHeroCarousel(
+                       title = "Trending Now",
+                       items = heroItems,
+                       playerConnection = playerConnection,
+                       onYTItemClick = { item: YTItem ->
+                           when (item) {
+                               is SongItem -> {
+                                   playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
+                               }
+                               is AlbumItem -> {
+                                   val browseId = item.browseId
+                                   if (browseId != null) {
+                                       navigator.navigate(TvDestination.Album(browseId))
+                                   } else {
+                                       playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
+                                   }
+                               }
+                               is ArtistItem -> {
+                                   item.id?.let { artistId ->
+                                       navigator.navigate(TvDestination.Artist(artistId))
+                                   }
+                               }
+                               is PlaylistItem -> {
+                                   navigator.navigate(TvDestination.Playlist(item.id))
+                               }
+                               is EpisodeItem -> {
+                                   playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
+                               }
+                               is PodcastItem -> {
+                                   item.id?.let { podcastId ->
+                                       // Navigate to podcast detail (could reuse playlist destination)
+                                       navigator.navigate(TvDestination.Playlist(podcastId))
+                                   }
+                               }
+                               else -> {}
+                           }
+                       },
+                       modifier = Modifier.onFocusChanged { state ->
+                           if (state.hasFocus) focusedItemIndex = 0
+                       }
+                   )
+               }
+           }
 
         // Speed Dial Section
         pinnedSpeedDialItems.takeIf { it.isNotEmpty() }?.let { speedDialItems ->
-            item {
-                YouTubeSectionRow(
-                    title = "Speed Dial",
-                    items = speedDialItems.take(6).map { it.toYTItem() },
-                    playerConnection = playerConnection,
-                    onYTItemClick = { item: YTItem ->
-                        when (item) {
-                            is SongItem -> playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
-                            is AlbumItem -> {
-                                val browseId = item.browseId
-                                if (browseId != null) {
-                                    navigator.navigate(TvDestination.Album(browseId))
-                                } else {
-                                    playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
-                                }
-                            }
-                            is ArtistItem -> item.id?.let { navigator.navigate(TvDestination.Artist(it)) }
-                            is PlaylistItem -> navigator.navigate(TvDestination.Playlist(item.id))
-                            is EpisodeItem -> playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
-                            is PodcastItem -> item.id?.let { navigator.navigate(TvDestination.Playlist(it)) }
-                            else -> {}
-                        }
-                    }
-                )
-            }
+           item(key = "speed_dial") {
+               YouTubeSectionRow(
+                   title = "Speed Dial",
+                   items = speedDialItems.take(6).map { it.toYTItem() },
+                   playerConnection = playerConnection,
+                   onYTItemClick = { item: YTItem ->
+                       when (item) {
+                           is SongItem -> playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
+                           is AlbumItem -> {
+                               val browseId = item.browseId
+                               if (browseId != null) {
+                                   navigator.navigate(TvDestination.Album(browseId))
+                               } else {
+                                   playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId)))
+                               }
+                           }
+                           is ArtistItem -> item.id?.let { navigator.navigate(TvDestination.Artist(it)) }
+                           is PlaylistItem -> navigator.navigate(TvDestination.Playlist(item.id))
+                           is EpisodeItem -> playerConnection?.playQueue(YouTubeQueue(WatchEndpoint(videoId = item.id)))
+                           is PodcastItem -> item.id?.let { navigator.navigate(TvDestination.Playlist(it)) }
+                           else -> {}
+                       }
+                   },
+                   modifier = Modifier.onFocusChanged { state ->
+                       if (state.hasFocus) focusedItemIndex = 1
+                   }
+               )
+           }
         }
 
-            if (!quickPicks.isNullOrEmpty()) {
-                item {
-                    SongRow(
-                        title = "Quick picks",
-                        songs = quickPicks!!,
-                        onSongClick = { song: Song -> playerConnection?.playSong(song) },
-                    )
-                }
-            }
+           if (!quickPicks.isNullOrEmpty()) {
+               item(key = "quick_picks") {
+                   SongRow(
+                       title = "Quick picks",
+                       songs = quickPicks!!,
+                       onSongClick = { song: Song -> playerConnection?.playSong(song) },
+                       modifier = Modifier.onFocusChanged { state ->
+                           if (state.hasFocus) focusedItemIndex = 2
+                       }
+                   )
+               }
+           }
 
-            if (!forgottenFavorites.isNullOrEmpty()) {
-                item {
-                    SongRow(
-                        title = "Forgotten favorites",
-                        songs = forgottenFavorites!!,
-                        onSongClick = { song: Song -> playerConnection?.playSong(song) },
-                    )
-                }
-            }
+           if (!forgottenFavorites.isNullOrEmpty()) {
+               item(key = "forgotten_favorites") {
+                   SongRow(
+                       title = "Forgotten favorites",
+                       songs = forgottenFavorites!!,
+                       onSongClick = { song: Song -> playerConnection?.playSong(song) },
+                       modifier = Modifier.onFocusChanged { state ->
+                           if (state.hasFocus) focusedItemIndex = 3
+                       }
+                   )
+               }
+           }
 
-            if (!keepListening.isNullOrEmpty()) {
-                item(key = "keep_listening") {
-                    LocalItemRow(
-                        title = "Keep listening",
-                        localItems = keepListening!!,
-                        playerConnection = playerConnection,
-                        modifier = Modifier.onFocusChanged { focusedItemIndex = 4 }
-                    )
-                }
-            }
+           if (!keepListening.isNullOrEmpty()) {
+               item(key = "keep_listening") {
+                   LocalItemRow(
+                       title = "Keep listening",
+                       localItems = keepListening!!,
+                       playerConnection = playerConnection,
+                       modifier = Modifier.onFocusChanged { state ->
+                           if (state.hasFocus) focusedItemIndex = 4
+                       }
+                   )
+               }
+           }
 
             // Similar recommendations
             similarRecommendations?.takeIf { it.isNotEmpty() }?.let { recommendations ->
@@ -899,10 +944,10 @@ fun TvHomeScreen(
                                     else -> {}
                                 }
                             },
-                            modifier = Modifier.onFocusChanged {
+                            modifier = Modifier.onFocusChanged { state ->
                                 // Calculate dynamic index based on preceding items
                                 val baseIndex = 5 // hero(0) + speed_dial(1) + quick_picks(2) + forgotten(3) + keep_listening(4)
-                                focusedItemIndex = baseIndex + recIndex
+                                if (state.hasFocus) focusedItemIndex = baseIndex + recIndex
                             }
                         )
                     }
@@ -924,9 +969,9 @@ fun TvHomeScreen(
                             else -> {}
                         }
                     },
-                    modifier = Modifier.onFocusChanged {
+                    modifier = Modifier.onFocusChanged { state ->
                         val baseIndex = 5 + (similarRecommendations?.size ?: 0)
-                        focusedItemIndex = baseIndex
+                        if (state.hasFocus) focusedItemIndex = baseIndex
                     }
                 )
             }
@@ -959,9 +1004,9 @@ fun TvHomeScreen(
                                 else -> {}
                             }
                         },
-                        modifier = Modifier.onFocusChanged {
+                        modifier = Modifier.onFocusChanged { state ->
                             val baseIndex = 5 + (similarRecommendations?.size ?: 0) + 1 + sectionIndex
-                            focusedItemIndex = baseIndex
+                            if (state.hasFocus) focusedItemIndex = baseIndex
                         }
                     )
                 }
@@ -1349,7 +1394,7 @@ fun TvLibraryScreen(
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.onFocusChanged { focusedItemIndex = 0 }
+                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 0 }
             )
         }
 
@@ -1359,7 +1404,7 @@ fun TvLibraryScreen(
                     title = "Liked songs",
                     songs = songs,
                     onSongClick = { song: Song -> playerConnection?.playSong(song) },
-                    modifier = Modifier.onFocusChanged { focusedItemIndex = 1 }
+                    modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 1 }
                 )
             }
         }
@@ -1369,7 +1414,7 @@ fun TvLibraryScreen(
                     title = "Playlists", 
                     localItems = playlists, 
                     playerConnection = playerConnection,
-                    modifier = Modifier.onFocusChanged { focusedItemIndex = 2 }
+                    modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 2 }
                 ) 
             }
         }
@@ -1379,7 +1424,7 @@ fun TvLibraryScreen(
                     title = "Subscribed artists",
                     localItems = artists,
                     playerConnection = playerConnection,
-                    modifier = Modifier.onFocusChanged { focusedItemIndex = 3 }
+                    modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 3 }
                 )
             }
         }
@@ -1389,7 +1434,7 @@ fun TvLibraryScreen(
                     title = "Albums", 
                     localItems = albums, 
                     playerConnection = playerConnection,
-                    modifier = Modifier.onFocusChanged { focusedItemIndex = 4 }
+                    modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 4 }
                 ) 
             }
         }
@@ -1468,7 +1513,7 @@ fun TvSearchScreen(
                 singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .onFocusChanged { focusedItemIndex = 0 }
+                    .onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 0 }
             )
         }
 
@@ -1487,7 +1532,7 @@ fun TvSearchScreen(
                     TvRecentSearchItem(
                         query = recentQuery,
                         onClick = { tvSearchViewModel.updateQuery(recentQuery) },
-                        modifier = Modifier.onFocusChanged { focusedItemIndex = 1 }
+                        modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 1 }
                     )
                 }
             } else {
@@ -1539,7 +1584,7 @@ fun TvSearchScreen(
                             }
                         }
                     },
-                    modifier = Modifier.onFocusChanged { focusedItemIndex = 1 }
+                    modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 1 }
                 )
             }
 
@@ -1570,7 +1615,7 @@ fun TvSearchScreen(
                     TvSearchResultItem(
                         item = item,
                         onClick = { handleSearchItemClick(item, playerConnection, navigator) },
-                        modifier = Modifier.onFocusChanged { focusedItemIndex = 2 }
+                        modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 2 }
                     )
                 }
                 sectionIndex += 2 // header + items
@@ -1590,7 +1635,7 @@ fun TvSearchScreen(
                     TvSearchResultItem(
                         item = item,
                         onClick = { handleSearchItemClick(item, playerConnection, navigator) },
-                        modifier = Modifier.onFocusChanged { focusedItemIndex = sectionIndex + 1 }
+                        modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = sectionIndex + 1 }
                     )
                 }
                 sectionIndex += 2
@@ -1610,7 +1655,7 @@ fun TvSearchScreen(
                     TvSearchResultItem(
                         item = item,
                         onClick = { handleSearchItemClick(item, playerConnection, navigator) },
-                        modifier = Modifier.onFocusChanged { focusedItemIndex = 2 }
+                        modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 2 }
                     )
                 }
                 sectionIndex += 2
@@ -1630,7 +1675,7 @@ fun TvSearchScreen(
                     TvSearchResultItem(
                         item = item,
                         onClick = { handleSearchItemClick(item, playerConnection, navigator) },
-                        modifier = Modifier.onFocusChanged { focusedItemIndex = 2 }
+                        modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 2 }
                     )
                 }
                 sectionIndex += 2
@@ -1650,7 +1695,7 @@ fun TvSearchScreen(
                     TvYTSearchResultItem(
                         item = item,
                         onClick = { handleYTSearchItemClick(item, playerConnection, navigator) },
-                        modifier = Modifier.onFocusChanged { focusedItemIndex = 2 }
+                        modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 2 }
                     )
                 }
                 sectionIndex += 2
@@ -1670,7 +1715,7 @@ fun TvSearchScreen(
                     TvYTSearchResultItem(
                         item = item,
                         onClick = { handleYTSearchItemClick(item, playerConnection, navigator) },
-                        modifier = Modifier.onFocusChanged { focusedItemIndex = 2 }
+                        modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 2 }
                     )
                 }
                 sectionIndex += 2
@@ -1690,7 +1735,7 @@ fun TvSearchScreen(
                     TvYTSearchResultItem(
                         item = item,
                         onClick = { handleYTSearchItemClick(item, playerConnection, navigator) },
-                        modifier = Modifier.onFocusChanged { focusedItemIndex = 2 }
+                        modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 2 }
                     )
                 }
                 sectionIndex += 2
@@ -1710,7 +1755,7 @@ fun TvSearchScreen(
                     TvYTSearchResultItem(
                         item = item,
                         onClick = { handleYTSearchItemClick(item, playerConnection, navigator) },
-                        modifier = Modifier.onFocusChanged { focusedItemIndex = 2 }
+                        modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 2 }
                     )
                 }
                 sectionIndex += 2
@@ -2428,12 +2473,14 @@ fun TvSettingsCategoryItem(
     subtitle: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    accent: Color? = null,
 ) {
     val isFocusedState = remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
     val scale by animateFloatAsState(
-        targetValue = if (isFocusedState.value) 1.06f else 1f,
+        targetValue = if (isFocusedState.value) 1.02f else 1f,
         label = "tvSettingsItemScale",
     )
     val borderColor = if (isFocusedState.value) {
@@ -2441,11 +2488,13 @@ fun TvSettingsCategoryItem(
     } else {
         Color.Transparent
     }
+    val resolvedAccent = accent ?: MaterialTheme.colorScheme.primary
 
     Surface(
         onClick = onClick,
-        modifier = Modifier
-            .size(width = 220.dp, height = 280.dp)
+        modifier = modifier
+            .fillMaxWidth()
+            .height(96.dp)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -2457,39 +2506,71 @@ fun TvSettingsCategoryItem(
                     scope.launch { bringIntoViewRequester.bringIntoView() }
                 }
             }
-            .border(width = 3.dp, color = borderColor, shape = RoundedCornerShape(12.dp)),
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        tonalElevation = 4.dp,
+            .border(width = 3.dp, color = borderColor, shape = RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        color = if (isFocusedState.value)
+            MaterialTheme.colorScheme.surfaceVariant
+        else
+            MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+        tonalElevation = if (isFocusedState.value) 6.dp else 2.dp,
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+                .fillMaxSize()
+                .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
         ) {
+            if (icon != null) {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(resolvedAccent.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = resolvedAccent,
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
+            }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
                 )
                 Text(
                     text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
                 )
             }
             Icon(
                 Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = "Navigate to $title",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(24.dp),
             )
         }
     }
+}
+
+@Composable
+private fun TvSettingsSectionLabel(text: String) {
+    Text(
+        text = text.uppercase(),
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+    )
 }
 
 @Composable
@@ -2512,42 +2593,42 @@ fun TvSettingsScreen(
         "SAPISID" in com.auramusic.innertube.utils.parseCookieString(innerTubeCookie)
     }
 
-    // Track which content section is currently focused
-    var focusedItemIndex by remember { mutableStateOf(-1) }
+    // Track which content row is currently focused (index 0 == back button / first focusable)
+    var focusedItemIndex by remember { mutableStateOf(0) }
+    val firstItemFocus = focusRequester ?: remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        runCatching { firstItemFocus.requestFocus() }
+    }
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .focusRequester(focusRequester ?: remember { FocusRequester() })
             .onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
-                    // Only navigate to top bar if focus is on the first settings row (index 1 because header is index 0)
-                    if (focusedItemIndex == 1) {
+                    if (focusedItemIndex == 0) {
                         onNavigateUp?.invoke()
                         true
                     } else {
-                        false // Let LazyColumn handle normal focus movement
+                        false
                     }
                 } else {
                     false
                 }
             },
-        contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        contentPadding = PaddingValues(horizontal = 64.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item(key = "settings_header") {
-            TvSettingsHeader(title = "Settings", onBackClick = onBackClick)
-        }
-
-        item(key = "app_settings_header") {
-            Text(
-                text = "App Settings",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.onFocusChanged { focusedItemIndex = 1 }
+            TvSettingsHeader(
+                title = "Settings",
+                onBackClick = onBackClick,
+                focusRequester = firstItemFocus,
+                onFocused = { focusedItemIndex = 0 },
             )
         }
+
+        item(key = "account_label") { TvSettingsSectionLabel("Account") }
 
         item(key = "account_settings") {
             TvSettingsCategoryItem(
@@ -2557,43 +2638,52 @@ fun TvSettingsScreen(
                 else
                     "Sign in to sync liked songs, playlists and subscriptions",
                 onClick = onAccountClick,
-                modifier = Modifier.onFocusChanged { focusedItemIndex = 2 }
+                icon = Icons.Filled.Person,
+                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 1 },
             )
         }
+
+        item(key = "app_label") { TvSettingsSectionLabel("App") }
 
         item(key = "appearance_settings") {
             TvSettingsCategoryItem(
                 title = "Appearance",
                 subtitle = "Theme, colors, and display settings",
                 onClick = onAppearanceClick,
-                modifier = Modifier.onFocusChanged { focusedItemIndex = 3 }
+                icon = Icons.Filled.Palette,
+                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 2 },
             )
         }
 
         item(key = "playback_settings") {
             TvSettingsCategoryItem(
                 title = "Playback",
-                subtitle = "Audio quality, playback behavior",
+                subtitle = "Audio quality and playback behavior",
                 onClick = onPlaybackClick,
-                modifier = Modifier.onFocusChanged { focusedItemIndex = 4 }
+                icon = Icons.Filled.MusicNote,
+                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 3 },
             )
         }
 
         item(key = "content_settings") {
             TvSettingsCategoryItem(
                 title = "Content",
-                subtitle = "Sync settings, content filters",
+                subtitle = "Sync settings and content filters",
                 onClick = onContentClick,
-                modifier = Modifier.onFocusChanged { focusedItemIndex = 5 }
+                icon = Icons.Filled.Tune,
+                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 4 },
             )
         }
+
+        item(key = "info_label") { TvSettingsSectionLabel("Information") }
 
         item(key = "updater_settings") {
             TvSettingsCategoryItem(
                 title = "Check for Updates",
                 subtitle = "Check for new AuraMusic TV versions",
                 onClick = onUpdaterClick,
-                modifier = Modifier.onFocusChanged { focusedItemIndex = 6 }
+                icon = Icons.Filled.Refresh,
+                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 5 },
             )
         }
 
@@ -2602,29 +2692,46 @@ fun TvSettingsScreen(
                 title = "About",
                 subtitle = "App version, licenses, and information",
                 onClick = onAboutClick,
-                modifier = Modifier.onFocusChanged { focusedItemIndex = 7 }
+                icon = Icons.Filled.Info,
+                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 6 },
             )
         }
     }
 }
 
 @Composable
-fun TvAppearanceSettingsScreen(onBackClick: () -> Unit) {
+fun TvAppearanceSettingsScreen(
+    onBackClick: () -> Unit,
+    focusRequester: FocusRequester? = null,
+    onNavigateUp: (() -> Unit)? = null,
+) {
     val (darkMode, onDarkModeChange) = rememberEnumPreference(DarkModeKey, DarkMode.AUTO)
+    val backButtonFocus = focusRequester ?: remember { FocusRequester() }
+    var focusedItemIndex by remember { mutableStateOf(0) }
+
+    LaunchedEffect(Unit) {
+        runCatching { backButtonFocus.requestFocus() }
+    }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
+                    if (focusedItemIndex == 0) {
+                        onNavigateUp?.invoke()
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            },
+        contentPadding = PaddingValues(horizontal = 64.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            // Back button and title
-            val backButtonFocus = remember { FocusRequester() }
-
-            LaunchedEffect(Unit) {
-                runCatching { backButtonFocus.requestFocus() }
-            }
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -2636,7 +2743,10 @@ fun TvAppearanceSettingsScreen(onBackClick: () -> Unit) {
                     modifier = Modifier
                         .size(64.dp)
                         .focusRequester(backButtonFocus)
-                        .onFocusChanged { backFocused = it.isFocused }
+                        .onFocusChanged {
+                            backFocused = it.isFocused
+                            if (it.isFocused) focusedItemIndex = 0
+                        }
                         .border(
                             width = if (backFocused) 3.dp else 0.dp,
                             color = if (backFocused) MaterialTheme.colorScheme.primary else Color.Transparent,
@@ -2652,7 +2762,7 @@ fun TvAppearanceSettingsScreen(onBackClick: () -> Unit) {
                 }
 
                 Text(
-                    text = "Appearance Settings",
+                    text = "Appearance",
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -2664,10 +2774,11 @@ fun TvAppearanceSettingsScreen(onBackClick: () -> Unit) {
 
         item {
             Text(
-                text = "Theme",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground,
+                text = "THEME",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             )
         }
 
@@ -2687,7 +2798,9 @@ fun TvAppearanceSettingsScreen(onBackClick: () -> Unit) {
                         DarkMode.AUTO -> DarkMode.ON
                     }
                     onDarkModeChange(newMode)
-                }
+                },
+                icon = Icons.Filled.DarkMode,
+                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 1 },
             )
         }
 
@@ -2699,7 +2812,9 @@ fun TvAppearanceSettingsScreen(onBackClick: () -> Unit) {
                     subtitle = "Use wallpaper colors for theme",
                     onClick = {
                         // TODO: Implement dynamic theme toggle
-                    }
+                    },
+                    icon = Icons.Filled.Palette,
+                    modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 2 },
                 )
             }
         }

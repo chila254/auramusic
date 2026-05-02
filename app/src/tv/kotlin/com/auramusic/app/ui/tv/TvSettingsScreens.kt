@@ -32,6 +32,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.automirrored.filled.Login
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -96,6 +99,11 @@ import kotlinx.coroutines.launch
     val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
 
     var webView: WebView? = null
+    val backFocus = focusRequester ?: remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        runCatching { backFocus.requestFocus() }
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -149,6 +157,9 @@ import kotlinx.coroutines.launch
                                 }
                             }
                         }, "Android")
+                        // Make WebView focusable so the user can tab into it via D-pad
+                        isFocusable = true
+                        isFocusableInTouchMode = true
                         webView = this
                         loadUrl("https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fmusic.youtube.com")
                     }
@@ -160,7 +171,15 @@ import kotlinx.coroutines.launch
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
-                    .padding(horizontal = 24.dp, vertical = 12.dp),
+                    .padding(horizontal = 24.dp, vertical = 12.dp)
+                    .onPreviewKeyEvent { event ->
+                        if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
+                            onNavigateUp?.invoke()
+                            true
+                        } else {
+                            false
+                        }
+                    },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 var backFocused by remember { mutableStateOf(false) }
@@ -168,6 +187,7 @@ import kotlinx.coroutines.launch
                     onClick = onBackClick,
                     modifier = Modifier
                         .size(56.dp)
+                        .focusRequester(backFocus)
                         .onFocusChanged { backFocused = it.isFocused }
                         .border(
                             width = if (backFocused) 3.dp else 0.dp,
@@ -217,22 +237,35 @@ import kotlinx.coroutines.launch
     val accountName by homeViewModel.accountName.collectAsState()
     val accountImageUrl by homeViewModel.accountImageUrl.collectAsState()
 
+    var focusedItemIndex by remember { mutableStateOf(0) }
+    val firstFocus = focusRequester ?: remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
-                    onNavigateUp?.invoke()
-                    true
+                    if (focusedItemIndex == 0) {
+                        onNavigateUp?.invoke()
+                        true
+                    } else {
+                        false
+                    }
                 } else {
                     false
                 }
             },
-        contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
+        contentPadding = PaddingValues(horizontal = 64.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         item {
-            TvSettingsHeader(title = "Account", onBackClick = onBackClick)
+            TvSettingsHeader(
+                title = "Account",
+                onBackClick = onBackClick,
+                focusRequester = firstFocus,
+                onFocused = { focusedItemIndex = 0 },
+            )
         }
 
         item {
@@ -311,7 +344,26 @@ import kotlinx.coroutines.launch
                         onLoginClick()
                     }
                 },
+                icon = if (isLoggedIn)
+                    androidx.compose.material.icons.Icons.AutoMirrored.Filled.Logout
+                else
+                    androidx.compose.material.icons.Icons.AutoMirrored.Filled.Login,
+                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 1 },
             )
+        }
+
+        if (isLoggedIn) {
+            item {
+                TvSettingsCategoryItem(
+                    title = "Refresh library",
+                    subtitle = "Re-sync liked songs, playlists, and subscribed artists",
+                    onClick = {
+                        // Re-fetching is automatic on Library screen visit
+                    },
+                    icon = androidx.compose.material.icons.Icons.Filled.Refresh,
+                    modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 2 },
+                )
+            }
         }
     }
 }
@@ -320,13 +372,21 @@ import kotlinx.coroutines.launch
 
  @Composable
  fun TvAboutScreen(onBackClick: () -> Unit, focusRequester: FocusRequester? = null, onNavigateUp: (() -> Unit)? = null) {
+     val firstFocus = focusRequester ?: remember { FocusRequester() }
+     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+     var focusedItemIndex by remember { mutableStateOf(0) }
+
      LazyColumn(
          modifier = Modifier
              .fillMaxSize()
              .onPreviewKeyEvent { event ->
                  if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
-                     onNavigateUp?.invoke()
-                     true
+                     if (focusedItemIndex == 0) {
+                         onNavigateUp?.invoke()
+                         true
+                     } else {
+                         false
+                     }
                  } else {
                      false
                  }
@@ -335,7 +395,12 @@ import kotlinx.coroutines.launch
          verticalArrangement = Arrangement.spacedBy(24.dp),
      ) {
         item {
-            TvSettingsHeader(title = "About", onBackClick = onBackClick)
+            TvSettingsHeader(
+                title = "About",
+                onBackClick = onBackClick,
+                focusRequester = firstFocus,
+                onFocused = { focusedItemIndex = 0 },
+            )
         }
 
         item {
@@ -395,13 +460,35 @@ import kotlinx.coroutines.launch
 
 @Composable
  fun TvUpdaterScreen(onBackClick: () -> Unit, focusRequester: FocusRequester? = null, onNavigateUp: (() -> Unit)? = null) {
+    val firstFocus = focusRequester ?: remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    var focusedItemIndex by remember { mutableStateOf(0) }
+
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
+                    if (focusedItemIndex == 0) {
+                        onNavigateUp?.invoke()
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            },
         contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         item {
-            TvSettingsHeader(title = "Updates", onBackClick = onBackClick)
+            TvSettingsHeader(
+                title = "Updates",
+                onBackClick = onBackClick,
+                focusRequester = firstFocus,
+                onFocused = { focusedItemIndex = 0 },
+            )
         }
         item {
             Surface(
@@ -446,6 +533,8 @@ import kotlinx.coroutines.launch
         body = "Audio quality, gapless playback and other playback settings " +
             "follow the values configured on the mobile app for now.",
         onBackClick = onBackClick,
+        focusRequester = focusRequester,
+        onNavigateUp = onNavigateUp,
     )
 }
 
@@ -455,17 +544,49 @@ import kotlinx.coroutines.launch
         title = "Content",
         body = "Content preferences (hide explicit, hide videos, sync rules) follow the values configured on the mobile app for now.",
         onBackClick = onBackClick,
+        focusRequester = focusRequester,
+        onNavigateUp = onNavigateUp,
     )
 }
 
 @Composable
-private fun TvPlaceholderSettings(title: String, body: String, onBackClick: () -> Unit) {
+private fun TvPlaceholderSettings(
+    title: String,
+    body: String,
+    onBackClick: () -> Unit,
+    focusRequester: FocusRequester? = null,
+    onNavigateUp: (() -> Unit)? = null,
+) {
+    val firstFocus = focusRequester ?: remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    var focusedItemIndex by remember { mutableStateOf(0) }
+
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
+                    if (focusedItemIndex == 0) {
+                        onNavigateUp?.invoke()
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            },
         contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        item { TvSettingsHeader(title = title, onBackClick = onBackClick) }
+        item {
+            TvSettingsHeader(
+                title = title,
+                onBackClick = onBackClick,
+                focusRequester = firstFocus,
+                onFocused = { focusedItemIndex = 0 },
+            )
+        }
         item {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -486,9 +607,16 @@ private fun TvPlaceholderSettings(title: String, body: String, onBackClick: () -
 /* -------------------------- Shared header -------------------------- */
 
 @Composable
-fun TvSettingsHeader(title: String, onBackClick: () -> Unit) {
-    val backFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { backFocus.requestFocus() } }
+fun TvSettingsHeader(
+    title: String,
+    onBackClick: () -> Unit,
+    focusRequester: FocusRequester? = null,
+    onFocused: (() -> Unit)? = null,
+) {
+    val backFocus = focusRequester ?: remember { FocusRequester() }
+    if (focusRequester == null) {
+        LaunchedEffect(Unit) { runCatching { backFocus.requestFocus() } }
+    }
     var focused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (focused) 1.06f else 1f,
@@ -504,7 +632,10 @@ fun TvSettingsHeader(title: String, onBackClick: () -> Unit) {
             modifier = Modifier
                 .size(64.dp)
                 .focusRequester(backFocus)
-                .onFocusChanged { focused = it.isFocused }
+                .onFocusChanged { state ->
+                    focused = state.isFocused
+                    if (state.isFocused) onFocused?.invoke()
+                }
                 .graphicsLayer { scaleX = scale; scaleY = scale }
                 .border(
                     width = if (focused) 3.dp else 0.dp,

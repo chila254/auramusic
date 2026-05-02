@@ -167,6 +167,7 @@ fun TvAlbumDetailScreen(albumId: String, playerConnection: PlayerConnection?, on
 fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, onBackClick: () -> Unit, focusRequester: FocusRequester? = null, onNavigateUp: (() -> Unit)? = null) {
     val artistsViewModel: LibraryArtistsViewModel = hiltViewModel()
     val database = LocalDatabase.current
+    val navigator = LocalTvNavigator.current
 
     val artists by artistsViewModel.allArtists.collectAsStateWithLifecycle()
     val localArtist = artists.find { it.artist.id == artistId }
@@ -176,19 +177,17 @@ fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, 
     }.collectAsState(emptyList<Song>())
 
     // YouTube data
-    val ytSongs = remember { mutableStateOf<List<SongItem>?>(null) }
     val ytArtistPage = remember { mutableStateOf<ArtistPage?>(null) }
+    val ytSongs = ytArtistPage.value?.sections
+        ?.flatMap { it.items }
+        ?.filterIsInstance<SongItem>()
+        ?.distinctBy { it.id }
+        .orEmpty()
 
     LaunchedEffect(artistId) {
-        if (localArtist == null && localSongs.isEmpty()) {
-            // Try to fetch from YouTube
-            YouTube.artist(artistId).onSuccess { artistPage ->
-                ytArtistPage.value = artistPage
-                ytSongs.value = artistPage.sections
-                    .flatMap { it.items }
-                    .filterIsInstance<SongItem>()
-                    .distinctBy { it.id }
-            }
+        // Always try YouTube to get full artist page (Albums, Videos, etc.)
+        YouTube.artist(artistId).onSuccess { artistPage ->
+            ytArtistPage.value = artistPage
         }
     }
 
@@ -197,6 +196,11 @@ fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, 
 
     // Structure content similar to mobile app
     var focusedItemIndex by remember { mutableStateOf(0) }
+    val backButtonFocus = focusRequester ?: remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        runCatching { backButtonFocus.requestFocus() }
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -219,12 +223,6 @@ fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, 
     ) {
         // Header section
         item {
-            val backButtonFocus = remember { FocusRequester() }
-
-            LaunchedEffect(Unit) {
-                runCatching { backButtonFocus.requestFocus() }
-            }
-
             // Back button with TV navigation
             val backButtonFocusedState = remember { mutableStateOf(false) }
             IconButton(
@@ -331,7 +329,7 @@ fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, 
                             val allSongs = if (localSongs.isNotEmpty()) {
                                 localSongs.map { DisplaySong.LocalSong(it) }
                             } else {
-                                ytSongs.value?.map { DisplaySong.YouTubeSong(it) } ?: emptyList()
+                                ytSongs.map { DisplaySong.YouTubeSong(it) }
                             }
                             playerConnection.playAll(allSongs, displayTitle)
                         }
@@ -339,7 +337,7 @@ fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, 
                             val allSongs = if (localSongs.isNotEmpty()) {
                                 localSongs.map { DisplaySong.LocalSong(it) }
                             } else {
-                                ytSongs.value?.map { DisplaySong.YouTubeSong(it) } ?: emptyList()
+                                ytSongs.map { DisplaySong.YouTubeSong(it) }
                             }
                             playerConnection.playAll(allSongs.shuffled(), displayTitle)
                         }
@@ -362,106 +360,84 @@ fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, 
                 SongRowItem(
                     displaySong = DisplaySong.LocalSong(song),
                     onClick = { playerConnection?.playSong(song) },
-                    modifier = Modifier.onFocusChanged { focusedItemIndex = 1 + index }
+                    modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 1 + index }
                 )
             }
         }
 
-        // YouTube sections (Top songs, Albums, Videos, etc.)
-        ytArtistPage.value?.let { page ->
-            // For TV, we'll show basic sections since we can't fetch full artist page
-            // Show a sample structure that would match mobile
-            if (ytSongs.value?.isNotEmpty() == true) {
-                item {
-                    Text(
-                        text = "Top Songs",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onBackground,
+        // Click handler shared across all YouTube items in artist sections
+        val onYTClick: (com.auramusic.innertube.models.YTItem) -> Unit = { item ->
+            when (item) {
+                is SongItem -> {
+                    playerConnection?.playQueue(
+                        com.auramusic.app.playback.queues.YouTubeQueue(
+                            com.auramusic.innertube.models.WatchEndpoint(videoId = item.id)
+                        )
                     )
                 }
-                itemsIndexed(ytSongs.value!!, key = { _, songItem -> songItem.id }) { index, songItem ->
-                    SongRowItem(
-                        displaySong = DisplaySong.YouTubeSong(songItem),
-                        onClick = {
-                            playerConnection?.playQueue(com.auramusic.app.playback.queues.YouTubeQueue(
-                                com.auramusic.innertube.models.WatchEndpoint(videoId = songItem.id)
-                            ))
-                        },
-                        modifier = Modifier.onFocusChanged { 
-                            focusedItemIndex = 1 + localSongs.size + index
+                is AlbumItem -> {
+                    val browseId = item.browseId
+                    if (browseId != null) {
+                        navigator.navigate(TvDestination.Album(browseId))
+                    } else {
+                        playerConnection?.playQueue(
+                            com.auramusic.app.playback.queues.YouTubeQueue(
+                                com.auramusic.innertube.models.WatchEndpoint(playlistId = item.playlistId)
+                            )
+                        )
+                    }
+                }
+                is ArtistItem -> item.id?.let { navigator.navigate(TvDestination.Artist(it)) }
+                is PlaylistItem -> navigator.navigate(TvDestination.Playlist(item.id))
+                is EpisodeItem -> playerConnection?.playQueue(
+                    com.auramusic.app.playback.queues.YouTubeQueue(
+                        com.auramusic.innertube.models.WatchEndpoint(videoId = item.id)
+                    )
+                )
+                is PodcastItem -> item.id?.let { navigator.navigate(TvDestination.Playlist(it)) }
+                else -> {}
+            }
+        }
+
+        // Top Songs as a horizontal row (like the home screen)
+        if (ytSongs.isNotEmpty()) {
+            item(key = "top_songs") {
+                YouTubeSectionRow(
+                    title = "Top Songs",
+                    items = ytSongs.take(20),
+                    playerConnection = playerConnection,
+                    onYTItemClick = onYTClick,
+                    modifier = Modifier.onFocusChanged { state ->
+                        if (state.hasFocus) focusedItemIndex = 1 + localSongs.size
+                    }
+                )
+            }
+        }
+
+        // YouTube sections (Albums, Videos, Featured On, Playlists By Artist) as horizontal rows
+        ytArtistPage.value?.let { page ->
+            // Filter out the songs-only sections we already rendered above
+            val nonSongSections = page.sections.filter { section ->
+                section.items.any { it !is SongItem }
+            }
+            nonSongSections.forEachIndexed { sectionIndex, section ->
+                item(key = "artist_section_$sectionIndex") {
+                    YouTubeSectionRow(
+                        title = section.title.ifBlank { "More" },
+                        items = section.items,
+                        playerConnection = playerConnection,
+                        onYTItemClick = onYTClick,
+                        modifier = Modifier.onFocusChanged { state ->
+                            if (state.hasFocus) {
+                                focusedItemIndex = 2 + localSongs.size + sectionIndex
+                            }
                         }
                     )
                 }
             }
-
-            // Placeholder sections for Albums, Videos, etc.
-            item {
-                Text(
-                    text = "Albums",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-            }
-            item {
-                Text(
-                    text = "No albums available",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            item {
-                Text(
-                    text = "Videos",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-            }
-            item {
-                Text(
-                    text = "No videos available",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            item {
-                Text(
-                    text = "Featured On",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-            }
-            item {
-                Text(
-                    text = "No featured content available",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            item {
-                Text(
-                    text = "Playlists by Artist",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-            }
-            item {
-                Text(
-                    text = "No playlists available",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
         }
 
-        if (localSongs.isEmpty() && ytSongs.value?.isEmpty() != false) {
+        if (localSongs.isEmpty() && ytSongs.isEmpty() && (ytArtistPage.value?.sections?.isEmpty() != false)) {
             item {
                 Text(
                     text = "No content available for this artist.",
@@ -576,9 +552,9 @@ private fun TvDetailLayout(
                     .padding(bottom = 16.dp)
                     .size(64.dp)
                     .focusRequester(backButtonFocus)
-                    .onFocusChanged { 
-                        backButtonFocusedState.value = it.isFocused
-                        if (it.isFocused) focusedItemIndex = 0
+                    .onFocusChanged { state ->
+                        backButtonFocusedState.value = state.isFocused
+                        if (state.isFocused) focusedItemIndex = 0
                     }
                     .border(
                         width = if (backButtonFocusedState.value) 3.dp else 0.dp,
@@ -657,7 +633,7 @@ private fun TvDetailLayout(
             SongRowItem(
                 displaySong = displaySong,
                 onClick = { playerConnection?.playDisplaySong(displaySong) },
-                modifier = Modifier.onFocusChanged { focusedItemIndex = 1 + index }
+                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 1 + index }
             )
         }
 
