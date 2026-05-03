@@ -388,7 +388,8 @@ fun TvPlayerScreen(
                                                 .fillMaxSize()
                                                 .padding(horizontal = 16.dp),
                                             showLyrics = true,
-                                            karaokeModeEnabled = karaokeModeEnabled
+                                            karaokeModeEnabled = karaokeModeEnabled,
+                                            disableInteractiveFeatures = true
                                         )
                                     }
                                 }

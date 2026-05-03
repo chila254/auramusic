@@ -188,7 +188,8 @@ fun Lyrics(
     sliderPositionProvider: () -> Long?,
     modifier: Modifier = Modifier,
     showLyrics: Boolean,
-    karaokeModeEnabled: Boolean = false
+    karaokeModeEnabled: Boolean = false,
+    disableInteractiveFeatures: Boolean = false
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val menuState = LocalMenuState.current
@@ -201,6 +202,10 @@ fun Lyrics(
     val lyricsTextPosition by rememberEnumPreference(LyricsTextPositionKey, LyricsPosition.CENTER)
     val changeLyrics by rememberPreference(LyricsClickKey, true)
     val scrollLyrics by rememberPreference(LyricsScrollKey, true)
+
+    // Override preferences based on parameters
+    val effectiveChangeLyrics = if (!disableInteractiveFeatures) changeLyrics else false
+    val effectiveScrollLyrics = if (!disableInteractiveFeatures) scrollLyrics else false
     val romanizeJapaneseLyrics by rememberPreference(LyricsRomanizeJapaneseKey, true)
     val romanizeKoreanLyrics by rememberPreference(LyricsRomanizeKoreanKey, true)
     val romanizeRussianLyrics by rememberPreference(LyricsRomanizeRussianKey, true)
