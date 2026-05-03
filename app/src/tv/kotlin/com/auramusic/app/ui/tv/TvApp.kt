@@ -617,13 +617,13 @@ fun TvTopBar(
                  )
              }
 
-             Text(
-                 text = "AuraMusic",
-                 style = MaterialTheme.typography.titleLarge,
-                 fontWeight = FontWeight.Bold,
-                 color = MaterialTheme.colorScheme.onSurface,
-                 modifier = Modifier.padding(start = 12.dp)
-             )
+              Text(
+                  text = "AuraMusic Tv",
+                  style = MaterialTheme.typography.titleLarge,
+                  fontWeight = FontWeight.Bold,
+                  color = MaterialTheme.colorScheme.onSurface,
+                  modifier = Modifier.padding(start = 12.dp)
+              )
 
              Spacer(modifier = Modifier.weight(1f))
 
