@@ -415,12 +415,12 @@ import kotlinx.coroutines.launch
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text(
-                        text = "AuraMusic",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
+                     Text(
+                         text = "AuraMusic Tv",
+                         style = MaterialTheme.typography.headlineMedium,
+                         fontWeight = FontWeight.Bold,
+                         color = MaterialTheme.colorScheme.onSurface,
+                     )
                     Text(
                         text = "v${BuildConfig.VERSION_NAME}",
                         style = MaterialTheme.typography.titleMedium,
