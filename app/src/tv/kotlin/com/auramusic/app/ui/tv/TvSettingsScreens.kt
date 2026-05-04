@@ -32,6 +32,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.automirrored.filled.Login
@@ -40,6 +41,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -616,14 +618,91 @@ import kotlinx.coroutines.launch
 }
 
 @Composable
- fun TvContentSettingsScreen(onBackClick: () -> Unit, focusRequester: FocusRequester? = null, onNavigateUp: (() -> Unit)? = null) {
-    TvPlaceholderSettings(
-        title = "Content",
-        body = "Content preferences (hide explicit, hide videos, sync rules) follow the values configured on the mobile app for now.",
-        onBackClick = onBackClick,
-        focusRequester = focusRequester,
-        onNavigateUp = onNavigateUp,
+  fun TvContentSettingsScreen(onBackClick: () -> Unit, focusRequester: FocusRequester? = null, onNavigateUp: (() -> Unit)? = null) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    val (similarContentEnabled, onSimilarContentEnabledChange) = rememberPreference(
+        key = com.auramusic.app.constants.SimilarContent,
+        defaultValue = true
     )
+
+    val firstFocus = focusRequester ?: remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    var backButtonFocused by remember { mutableStateOf(false) }
+    var focusedItemIndex by remember { mutableStateOf(0) }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
+                    if (backButtonFocused) {
+                        onNavigateUp?.invoke()
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            },
+        contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        item {
+            TvSettingsHeader(
+                title = "Content",
+                onBackClick = onBackClick,
+                focusRequester = firstFocus,
+                onFocusChange = { backButtonFocused = it },
+            )
+        }
+
+        item {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 4.dp,
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(
+                        text = "Queue Behavior",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+
+                    Text(
+                        text = "Configure how the app behaves when playing songs from Quick Picks, Keep Listening, albums, playlists, and artist pages.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+
+        item {
+            TvSettingsCategoryItem(
+                title = "Load more songs when queue reaches end",
+                subtitle = "Automatically load similar songs when current queue finishes (works for all playback sources)",
+                onClick = { onSimilarContentEnabledChange(!similarContentEnabled) },
+                icon = Icons.Filled.QueueMusic,
+                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 1 },
+                trailingContent = {
+                    Switch(
+                        checked = similarContentEnabled,
+                        onCheckedChange = onSimilarContentEnabledChange,
+                        modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 1 }
+                    )
+                }
+            )
+        }
+    }
 }
 
 @Composable
