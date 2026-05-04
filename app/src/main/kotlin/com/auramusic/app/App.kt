@@ -203,8 +203,10 @@ class App : Application(), SingletonImageLoader.Factory {
     }
 
     override fun newImageLoader(context: PlatformContext): ImageLoader {
+        val isTv = packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK)
+        val defaultCacheSize = if (isTv) 64 else 512 // Smaller default for TV to prevent storage accumulation
         val cacheSize = runBlocking {
-            dataStore.data.map { it[MaxImageCacheSizeKey] ?: 512 }.first()
+            dataStore.data.map { it[MaxImageCacheSizeKey] ?: defaultCacheSize }.first()
         }
         return ImageLoader.Builder(this).apply {
             crossfade(true)
@@ -212,7 +214,7 @@ class App : Application(), SingletonImageLoader.Factory {
             // Memory cache for fast image loading (prevents network requests on recomposition)
             memoryCache {
                 MemoryCache.Builder()
-                    .maxSizePercent(context, 0.25)
+                    .maxSizePercent(context, if (isTv) 0.15 else 0.25) // Smaller memory cache for TV
                     .build()
             }
             if (cacheSize == 0) {

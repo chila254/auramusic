@@ -17,6 +17,7 @@ import androidx.media3.common.Player.STATE_ENDED
 import androidx.media3.common.Timeline
 import androidx.media3.exoplayer.ExoPlayer
 import com.auramusic.app.db.MusicDatabase
+import com.auramusic.app.db.entities.LyricsEntity
 import com.auramusic.app.extensions.currentMetadata
 import com.auramusic.app.extensions.getCurrentQueueIndex
 import com.auramusic.app.extensions.getQueueWindows
@@ -134,8 +135,24 @@ class PlayerConnection(
         mediaMetadata.flatMapLatest {
             database.song(it?.id)
         }
+    // TV-specific lyrics flow - mutable so it can be updated without database
+    private val tvLyricsFlow = MutableStateFlow<LyricsEntity?>(null)
+
+    // Method to update TV lyrics without database storage
+    fun updateTvLyrics(songId: String, lyrics: String, provider: String) {
+        tvLyricsFlow.value = LyricsEntity(songId, lyrics, provider)
+    }
+
     val currentLyrics = mediaMetadata.flatMapLatest { mediaMetadata ->
-        database.lyrics(mediaMetadata?.id)
+        // On TV, don't use database caching for lyrics to prevent storage accumulation
+        val isTv = context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK)
+        if (isTv) {
+            // Reset TV lyrics when song changes, will be populated by fetch
+            tvLyricsFlow.value = null
+            tvLyricsFlow
+        } else {
+            database.lyrics(mediaMetadata?.id) // Mobile: Use database caching
+        }
     }
     val currentFormat =
         mediaMetadata.flatMapLatest { mediaMetadata ->

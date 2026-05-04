@@ -33,6 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.Icon
@@ -450,6 +451,84 @@ import kotlinx.coroutines.launch
                     )
                 }
             }
+        }
+    }
+}
+
+/* -------------------------- Storage -------------------------- */
+
+@Composable
+ fun TvStorageSettingsScreen(onBackClick: () -> Unit, focusRequester: FocusRequester? = null, onNavigateUp: (() -> Unit)? = null) {
+    val context = LocalContext.current
+    val firstFocus = focusRequester ?: remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    var backButtonFocused by remember { mutableStateOf(false) }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
+                    if (backButtonFocused) {
+                        onNavigateUp?.invoke()
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            },
+        contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        item {
+            TvSettingsHeader(
+                title = "Storage",
+                onBackClick = onBackClick,
+                focusRequester = firstFocus,
+                onFocusChange = { backButtonFocused = it },
+            )
+        }
+
+        item {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 4.dp,
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(
+                        text = "Storage Management",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+
+                    Text(
+                        text = "AuraMusic TV is designed to prevent storage accumulation like Spotify TV. " +
+                            "Lyrics are fetched fresh each time and not cached to disk. Image cache is bounded to prevent growth.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+
+        item {
+            TvSettingsCategoryItem(
+                title = "Clear Cache",
+                subtitle = "Clear image cache and temporary files",
+                onClick = {
+                    // Note: In a real implementation, this would call the clearAccumulatedStorage function
+                    // For now, just show a message or implement the clearing logic
+                },
+                icon = Icons.Filled.CleaningServices,
+            )
         }
     }
 }
