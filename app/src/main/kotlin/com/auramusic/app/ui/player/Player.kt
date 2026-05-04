@@ -2090,43 +2090,49 @@ fun InlineLyricsView(
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(mediaMetadata?.id, currentLyrics) {
-        if (mediaMetadata != null && currentLyrics == null) {
-            delay(500)
-            // Re-check if lyrics were written by MusicService while we waited
-            if (currentLyrics != null) return@LaunchedEffect
-            coroutineScope.launch(Dispatchers.IO) {
-                try {
-                    val isTv = context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK)
-                    if (isTv) {
-                        // TV: Fetch lyrics and update TV-specific flow without database storage
-                        val entryPoint = EntryPointAccessors.fromApplication(
-                            context.applicationContext,
-                            com.auramusic.app.di.LyricsHelperEntryPoint::class.java
-                        )
-                        val lyricsHelper = entryPoint.lyricsHelper()
-                        val fetchedLyricsWithProvider = lyricsHelper.getLyrics(mediaMetadata)
-                        playerConnection.updateTvLyrics(mediaMetadata.id, fetchedLyricsWithProvider.lyrics, fetchedLyricsWithProvider.provider)
-                    } else {
-                        // Mobile: Use database caching as before
-                        // Double-check DB before fetching - MusicService may have already written lyrics
-                        val existing = database.lyrics(mediaMetadata.id).first()
-                        if (existing != null) return@launch
-                        val entryPoint = EntryPointAccessors.fromApplication(
-                            context.applicationContext,
-                            com.auramusic.app.di.LyricsHelperEntryPoint::class.java
-                        )
-                        val lyricsHelper = entryPoint.lyricsHelper()
-                        val fetchedLyricsWithProvider = lyricsHelper.getLyrics(mediaMetadata)
-                        // Only upsert if no lyrics were written while we were fetching
-                        val existingAfterFetch = database.lyrics(mediaMetadata.id).first()
-                        if (existingAfterFetch == null) {
-                            database.query {
-                                upsert(LyricsEntity(mediaMetadata.id, fetchedLyricsWithProvider.lyrics, fetchedLyricsWithProvider.provider))
+        if (mediaMetadata != null) {
+            val isTv = context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK)
+            if (isTv) {
+                // For TV: clear old lyrics when song changes, then fetch
+                playerConnection.updateTvLyrics(mediaMetadata.id, "", "")
+            }
+            if (currentLyrics == null || isTv) {
+                delay(500)
+                // Re-check if lyrics were written by MusicService while we waited
+                if (currentLyrics != null && !isTv) return@LaunchedEffect
+                coroutineScope.launch(Dispatchers.IO) {
+                    try {
+                        if (isTv) {
+                            // TV: Fetch lyrics and update TV-specific flow without database storage
+                            val entryPoint = EntryPointAccessors.fromApplication(
+                                context.applicationContext,
+                                com.auramusic.app.di.LyricsHelperEntryPoint::class.java
+                            )
+                            val lyricsHelper = entryPoint.lyricsHelper()
+                            val fetchedLyricsWithProvider = lyricsHelper.getLyrics(mediaMetadata)
+                            playerConnection.updateTvLyrics(mediaMetadata.id, fetchedLyricsWithProvider.lyrics, fetchedLyricsWithProvider.provider)
+                        } else {
+                            // Mobile: Use database caching as before
+                            // Double-check DB before fetching - MusicService may have already written lyrics
+                            val existing = database.lyrics(mediaMetadata.id).first()
+                            if (existing != null) return@launch
+                            val entryPoint = EntryPointAccessors.fromApplication(
+                                context.applicationContext,
+                                com.auramusic.app.di.LyricsHelperEntryPoint::class.java
+                            )
+                            val lyricsHelper = entryPoint.lyricsHelper()
+                            val fetchedLyricsWithProvider = lyricsHelper.getLyrics(mediaMetadata)
+                            // Only upsert if no lyrics were written while we were fetching
+                            val existingAfterFetch = database.lyrics(mediaMetadata.id).first()
+                            if (existingAfterFetch == null) {
+                                database.query {
+                                    upsert(LyricsEntity(mediaMetadata.id, fetchedLyricsWithProvider.lyrics, fetchedLyricsWithProvider.provider))
+                                }
                             }
                         }
+                    } catch (e: Exception) {
+                        // Handle error
                     }
-                } catch (e: Exception) {
-                    // Handle error
                 }
             }
         }

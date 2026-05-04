@@ -147,9 +147,7 @@ class PlayerConnection(
         // On TV, don't use database caching for lyrics to prevent storage accumulation
         val isTv = context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK)
         if (isTv) {
-            // Reset TV lyrics when song changes, will be populated by fetch
-            tvLyricsFlow.value = null
-            tvLyricsFlow
+            tvLyricsFlow // Use mutable flow, will be updated by fetch
         } else {
             database.lyrics(mediaMetadata?.id) // Mobile: Use database caching
         }
