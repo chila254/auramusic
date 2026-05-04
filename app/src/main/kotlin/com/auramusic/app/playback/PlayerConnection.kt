@@ -36,13 +36,13 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-@OptIn(ExperimentalCoroutinesApi::class)
-class PlayerConnection(
-    context: Context,
-    binder: MusicBinder,
-    val database: MusicDatabase,
-    scope: CoroutineScope,
-) : Player.Listener {
+ @OptIn(ExperimentalCoroutinesApi::class)
+ class PlayerConnection(
+     private val context: Context,
+     binder: MusicBinder,
+     val database: MusicDatabase,
+     scope: CoroutineScope,
+ ) : Player.Listener {
     private companion object {
         private const val TAG = "PlayerConnection"
         private const val PLAYER_INIT_TIMEOUT_MS = 5000L // 5 second timeout for player initialization
@@ -494,6 +494,11 @@ class PlayerConnection(
         currentMediaItemIndex.value = player.currentMediaItemIndex
         currentWindowIndex.value = player.getCurrentQueueIndex()
         updateCanSkipPreviousAndNext()
+        // Clear TV lyrics when song changes (TV: fresh fetch per song)
+        val isTv = context.applicationContext.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK)
+        if (isTv) {
+            tvLyricsFlow.value = null
+        }
     }
 
     override fun onTimelineChanged(
