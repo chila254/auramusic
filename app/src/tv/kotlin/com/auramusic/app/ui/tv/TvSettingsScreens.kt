@@ -33,6 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.QueueMusic
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.automirrored.filled.Login
@@ -49,6 +50,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -687,20 +689,57 @@ import kotlinx.coroutines.launch
         }
 
         item {
-            TvSettingsCategoryItem(
-                title = "Load more songs when queue reaches end",
-                subtitle = "Automatically load similar songs when current queue finishes (works for all playback sources)",
-                onClick = { onSimilarContentEnabledChange(!similarContentEnabled) },
-                icon = Icons.Filled.QueueMusic,
-                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 1 },
-                trailingContent = {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable { onSimilarContentEnabledChange(!similarContentEnabled) }
+                    .onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 1 },
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 4.dp,
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.QueueMusic,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Load more songs when queue reaches end",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = "Automatically load similar songs when current queue finishes (works for all playback sources)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
                     Switch(
                         checked = similarContentEnabled,
                         onCheckedChange = onSimilarContentEnabledChange,
                         modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 1 }
                     )
                 }
-            )
+            }
         }
     }
 }
