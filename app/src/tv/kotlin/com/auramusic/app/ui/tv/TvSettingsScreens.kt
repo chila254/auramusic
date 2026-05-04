@@ -237,7 +237,7 @@ import kotlinx.coroutines.launch
     val accountName by homeViewModel.accountName.collectAsState()
     val accountImageUrl by homeViewModel.accountImageUrl.collectAsState()
 
-    var focusedItemIndex by remember { mutableStateOf(0) }
+    var backButtonFocused by remember { mutableStateOf(false) }
     val firstFocus = focusRequester ?: remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
 
@@ -246,7 +246,7 @@ import kotlinx.coroutines.launch
             .fillMaxSize()
             .onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
-                    if (focusedItemIndex == 0) {
+                    if (backButtonFocused) {
                         onNavigateUp?.invoke()
                         true
                     } else {
@@ -264,7 +264,7 @@ import kotlinx.coroutines.launch
                 title = "Account",
                 onBackClick = onBackClick,
                 focusRequester = firstFocus,
-                onFocused = { focusedItemIndex = 0 },
+                onFocusChange = { backButtonFocused = it },
             )
         }
 
@@ -348,7 +348,6 @@ import kotlinx.coroutines.launch
                     androidx.compose.material.icons.Icons.AutoMirrored.Filled.Logout
                 else
                     androidx.compose.material.icons.Icons.AutoMirrored.Filled.Login,
-                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 1 },
             )
         }
 
@@ -361,7 +360,6 @@ import kotlinx.coroutines.launch
                         // Re-fetching is automatic on Library screen visit
                     },
                     icon = androidx.compose.material.icons.Icons.Filled.Refresh,
-                    modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 2 },
                 )
             }
         }
@@ -374,14 +372,14 @@ import kotlinx.coroutines.launch
  fun TvAboutScreen(onBackClick: () -> Unit, focusRequester: FocusRequester? = null, onNavigateUp: (() -> Unit)? = null) {
      val firstFocus = focusRequester ?: remember { FocusRequester() }
      LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
-     var focusedItemIndex by remember { mutableStateOf(0) }
+     var backButtonFocused by remember { mutableStateOf(false) }
 
      LazyColumn(
          modifier = Modifier
              .fillMaxSize()
              .onPreviewKeyEvent { event ->
                  if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
-                     if (focusedItemIndex == 0) {
+                     if (backButtonFocused) {
                          onNavigateUp?.invoke()
                          true
                      } else {
@@ -399,7 +397,7 @@ import kotlinx.coroutines.launch
                 title = "About",
                 onBackClick = onBackClick,
                 focusRequester = firstFocus,
-                onFocused = { focusedItemIndex = 0 },
+                onFocusChange = { backButtonFocused = it },
             )
         }
 
@@ -462,14 +460,14 @@ import kotlinx.coroutines.launch
  fun TvUpdaterScreen(onBackClick: () -> Unit, focusRequester: FocusRequester? = null, onNavigateUp: (() -> Unit)? = null) {
     val firstFocus = focusRequester ?: remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
-    var focusedItemIndex by remember { mutableStateOf(0) }
+    var backButtonFocused by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
-                    if (focusedItemIndex == 0) {
+                    if (backButtonFocused) {
                         onNavigateUp?.invoke()
                         true
                     } else {
@@ -487,7 +485,7 @@ import kotlinx.coroutines.launch
                 title = "Updates",
                 onBackClick = onBackClick,
                 focusRequester = firstFocus,
-                onFocused = { focusedItemIndex = 0 },
+                onFocusChange = { backButtonFocused = it },
             )
         }
         item {
@@ -559,14 +557,14 @@ private fun TvPlaceholderSettings(
 ) {
     val firstFocus = focusRequester ?: remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
-    var focusedItemIndex by remember { mutableStateOf(0) }
+    var backButtonFocused by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
-                    if (focusedItemIndex == 0) {
+                    if (backButtonFocused) {
                         onNavigateUp?.invoke()
                         true
                     } else {
@@ -584,7 +582,7 @@ private fun TvPlaceholderSettings(
                 title = title,
                 onBackClick = onBackClick,
                 focusRequester = firstFocus,
-                onFocused = { focusedItemIndex = 0 },
+                onFocusChange = { backButtonFocused = it },
             )
         }
         item {

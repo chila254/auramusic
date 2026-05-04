@@ -2598,6 +2598,22 @@ fun TvSettingsScreen(
     var focusedItemIndex by remember { mutableStateOf(0) }
     val firstItemFocus = focusRequester ?: remember { FocusRequester() }
 
+    // Re-claim focus on the back button whenever a sub-settings overlay
+    // closes (destination returns to Home). Without this, when the user
+    // backs out of Account / Appearance / Playback / Content / Updater /
+    // About the focus drifts up to the top nav bar instead of restoring
+    // to the settings list the user came from.
+    val navigator = LocalTvNavigator.current
+    val currentDestination = navigator.current
+    LaunchedEffect(currentDestination) {
+        if (currentDestination == TvDestination.Home) {
+            // Wait one frame so the previously-focused overlay has fully
+            // released focus before we claim it.
+            kotlinx.coroutines.delay(50)
+            runCatching { firstItemFocus.requestFocus() }
+        }
+    }
+
     LaunchedEffect(Unit) {
         runCatching { firstItemFocus.requestFocus() }
     }

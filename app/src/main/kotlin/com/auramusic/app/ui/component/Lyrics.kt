@@ -80,6 +80,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -203,9 +204,11 @@ fun Lyrics(
     val changeLyrics by rememberPreference(LyricsClickKey, true)
     val scrollLyrics by rememberPreference(LyricsScrollKey, true)
 
-    // Override preferences based on parameters
+    // When interactive features are disabled (e.g. on TV), suppress
+    // click-to-seek behaviour. Auto-scrolling stays enabled so the synced
+    // lyrics actually follow the song.
     val effectiveChangeLyrics = if (!disableInteractiveFeatures) changeLyrics else false
-    val effectiveScrollLyrics = if (!disableInteractiveFeatures) scrollLyrics else false
+    val effectiveScrollLyrics = scrollLyrics
     val romanizeJapaneseLyrics by rememberPreference(LyricsRomanizeJapaneseKey, true)
     val romanizeKoreanLyrics by rememberPreference(LyricsRomanizeKoreanKey, true)
     val romanizeRussianLyrics by rememberPreference(LyricsRomanizeRussianKey, true)
@@ -832,8 +835,19 @@ fun Lyrics(
                 .only(WindowInsetsSides.Top)
                 .add(WindowInsets(top = maxHeight / 3, bottom = maxHeight / 2))
                 .asPaddingValues(),
+            userScrollEnabled = !disableInteractiveFeatures,
             modifier = Modifier
                 .fadingEdge(vertical = 64.dp)
+                .then(
+                    if (disableInteractiveFeatures) {
+                        // On TV we don't want the lyrics container to swallow
+                        // D-pad focus – the lyrics are read-only and should
+                        // never become a focus target.
+                        Modifier.focusProperties { canFocus = false }
+                    } else {
+                        Modifier
+                    }
+                )
                 .nestedScroll(remember {
                     object : NestedScrollConnection {
                         override fun onPostScroll(
@@ -916,7 +930,7 @@ fun Lyrics(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(8.dp)) // Clip for background
                         .combinedClickable(
-                            enabled = true,
+                            enabled = !disableInteractiveFeatures,
                             onClick = {
                                 if (isSelectionModeActive) {
                                     // Toggle selection

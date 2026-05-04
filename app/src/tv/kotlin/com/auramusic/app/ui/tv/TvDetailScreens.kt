@@ -195,7 +195,7 @@ fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, 
     val displayThumbnail = localArtist?.artist?.thumbnailUrl ?: ytArtistPage.value?.artist?.thumbnail
 
     // Structure content similar to mobile app
-    var focusedItemIndex by remember { mutableStateOf(0) }
+    var backButtonFocused by remember { mutableStateOf(false) }
     val backButtonFocus = focusRequester ?: remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
@@ -207,8 +207,7 @@ fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, 
             .fillMaxSize()
             .onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
-                    // Only navigate to top bar if focus is on the header (index 0)
-                    if (focusedItemIndex == 0) {
+                    if (backButtonFocused) {
                         onNavigateUp?.invoke()
                         true
                     } else {
@@ -224,20 +223,18 @@ fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, 
         // Header section
         item {
             // Back button with TV navigation
-            val backButtonFocusedState = remember { mutableStateOf(false) }
             IconButton(
                 onClick = onBackClick,
                 modifier = Modifier
                     .padding(bottom = 16.dp)
                     .size(64.dp)
                     .focusRequester(backButtonFocus)
-                    .onFocusChanged { 
-                        backButtonFocusedState.value = it.isFocused
-                        if (it.isFocused) focusedItemIndex = 0
+                    .onFocusChanged {
+                        backButtonFocused = it.isFocused
                     }
                     .border(
-                        width = if (backButtonFocusedState.value) 3.dp else 0.dp,
-                        color = if (backButtonFocusedState.value) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        width = if (backButtonFocused) 3.dp else 0.dp,
+                        color = if (backButtonFocused) MaterialTheme.colorScheme.primary else Color.Transparent,
                         shape = RoundedCornerShape(12.dp)
                     ),
             ) {
@@ -360,7 +357,6 @@ fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, 
                 SongRowItem(
                     displaySong = DisplaySong.LocalSong(song),
                     onClick = { playerConnection?.playSong(song) },
-                    modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 1 + index }
                 )
             }
         }
@@ -407,9 +403,6 @@ fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, 
                     items = ytSongs.take(20),
                     playerConnection = playerConnection,
                     onYTItemClick = onYTClick,
-                    modifier = Modifier.onFocusChanged { state ->
-                        if (state.hasFocus) focusedItemIndex = 1 + localSongs.size
-                    }
                 )
             }
         }
@@ -427,11 +420,6 @@ fun TvArtistDetailScreen(artistId: String, playerConnection: PlayerConnection?, 
                         items = section.items,
                         playerConnection = playerConnection,
                         onYTItemClick = onYTClick,
-                        modifier = Modifier.onFocusChanged { state ->
-                            if (state.hasFocus) {
-                                focusedItemIndex = 2 + localSongs.size + sectionIndex
-                            }
-                        }
                     )
                 }
             }
@@ -516,21 +504,22 @@ private fun TvDetailLayout(
     onNavigateUp: (() -> Unit)? = null,
 ) {
     val backButtonFocus = focusRequester ?: remember { FocusRequester() }
+    // Tracks whether the back button currently holds focus. We only steal
+    // the up-key to escape to the top nav bar when this is true – otherwise
+    // we let Compose's normal focus traversal move focus between rows so
+    // the user doesn't jump straight to the top bar from mid-content.
+    var backButtonFocused by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         runCatching { backButtonFocus.requestFocus() }
     }
-
-    // Track which item is currently focused
-    var focusedItemIndex by remember { mutableStateOf(0) }
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
-                    // Only navigate to top bar if focus is on the header (index 0)
-                    if (focusedItemIndex == 0) {
+                    if (backButtonFocused) {
                         onNavigateUp?.invoke()
                         true
                     } else {
@@ -545,7 +534,6 @@ private fun TvDetailLayout(
     ) {
         item(key = "header") {
             // Back button
-            val backButtonFocusedState = remember { mutableStateOf(false) }
             IconButton(
                 onClick = onBackClick,
                 modifier = Modifier
@@ -553,12 +541,11 @@ private fun TvDetailLayout(
                     .size(64.dp)
                     .focusRequester(backButtonFocus)
                     .onFocusChanged { state ->
-                        backButtonFocusedState.value = state.isFocused
-                        if (state.isFocused) focusedItemIndex = 0
+                        backButtonFocused = state.isFocused
                     }
                     .border(
-                        width = if (backButtonFocusedState.value) 3.dp else 0.dp,
-                        color = if (backButtonFocusedState.value) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        width = if (backButtonFocused) 3.dp else 0.dp,
+                        color = if (backButtonFocused) MaterialTheme.colorScheme.primary else Color.Transparent,
                         shape = RoundedCornerShape(12.dp)
                     ),
             ) {
@@ -633,7 +620,6 @@ private fun TvDetailLayout(
             SongRowItem(
                 displaySong = displaySong,
                 onClick = { playerConnection?.playDisplaySong(displaySong) },
-                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 1 + index }
             )
         }
 
