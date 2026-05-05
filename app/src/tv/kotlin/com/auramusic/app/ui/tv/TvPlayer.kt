@@ -290,8 +290,32 @@ fun TvPlayerScreen(
         )
     }
 
-    // Lyrics are fetched and persisted by the existing infrastructure on the
-    // mobile path; nothing extra to do here for the TV variant.
+    // TV-specific: fetch lyrics fresh per song without database storage.
+    // The mobile path uses MusicService + database caching, but on TV we
+    // bypass the database (so storage doesn't accumulate) and push the
+    // result directly into PlayerConnection.tvLyricsFlow.
+    val context = LocalContext.current
+    LaunchedEffect(mediaMetadata?.id, showLyrics) {
+        if (!showLyrics || mediaMetadata == null || pc == null) return@LaunchedEffect
+        if (currentLyrics != null) return@LaunchedEffect
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val entryPoint = dagger.hilt.android.EntryPointAccessors.fromApplication(
+                    context.applicationContext,
+                    com.auramusic.app.di.LyricsHelperEntryPoint::class.java
+                )
+                val lyricsHelper = entryPoint.lyricsHelper()
+                val fetched = lyricsHelper.getLyrics(mediaMetadata)
+                pc.updateTvLyrics(mediaMetadata.id, fetched.lyrics, fetched.provider)
+            } catch (t: Throwable) {
+                pc.updateTvLyrics(
+                    mediaMetadata.id,
+                    com.auramusic.app.db.entities.LyricsEntity.LYRICS_NOT_FOUND,
+                    "",
+                )
+            }
+        }
+    }
 
     val progress = if (duration > 0) currentPosition.toFloat() / duration.toFloat() else 0f
 
