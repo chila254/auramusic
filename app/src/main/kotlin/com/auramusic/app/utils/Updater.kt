@@ -117,7 +117,7 @@ object Updater {
             val (arch, variant) = when {
                 name == "Auramusic.apk" || name == "AuraMusic.apk" -> "universal" to "foss"
                 name == "Auramusic-with-Google-Cast.apk" || name == "AuraMusic-with-Google-Cast.apk" -> "universal" to "gms"
-                name == "AuraMusic Tv.apk" || name == "Auramusic Tv.apk" -> "universal" to "tv"
+                name == "AuraMusic-Tv.apk" || name == "Auramusic-Tv.apk" -> "universal" to "tv"
                 name.startsWith("app-") && name.endsWith("-release.apk") -> {
                     val arch = name.removePrefix("app-").removeSuffix("-release.apk")
                     arch to "foss"

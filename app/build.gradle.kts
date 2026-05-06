@@ -193,6 +193,17 @@ android {
         }
     }
 
+    // Custom APK naming for TV builds
+    applicationVariants.all {
+        val variant = this
+        variant.outputs.all {
+            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            if (variant.name.contains("tv", ignoreCase = true) && variant.buildType.name == "release") {
+                outputFileName = "AuraMusic-Tv.apk"
+            }
+        }
+    }
+
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_21
