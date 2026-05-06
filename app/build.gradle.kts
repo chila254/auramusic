@@ -105,17 +105,17 @@ android {
 
     sourceSets {
         getByName("main") {
-            kotlin.srcDir("src/main/kotlin")
+            kotlin.directories.srcDir("src/main/kotlin")
         }
         getByName("foss") {
-            kotlin.srcDirs("src/foss/kotlin")
+            kotlin.directories.srcDirs("src/foss/kotlin")
         }
         getByName("gms") {
-            kotlin.srcDirs("src/gms/kotlin")
+            kotlin.directories.srcDirs("src/gms/kotlin")
         }
         getByName("tv") {
-            kotlin.srcDirs("src/tv/kotlin")
-            res.srcDirs("src/tv/res")
+            kotlin.directories.srcDirs("src/tv/kotlin")
+            res.directories.srcDirs("src/tv/res")
         }
     }
 
@@ -194,13 +194,28 @@ android {
     }
 
     // Custom APK naming for TV builds
-    applicationVariants.all {
-        val variant = this
-        variant.outputs.all {
-            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
-            if (variant.name.contains("tv", ignoreCase = true) && variant.buildType.name == "release") {
-                outputFileName = "AuraMusic-Tv.apk"
+    tasks.register("renameTvApk") {
+        doLast {
+            val apkDir = file("$buildDir/outputs/apk")
+            apkDir.walkTopDown().filter {
+                it.isFile && it.name.endsWith(".apk") &&
+                it.name.contains("tv", ignoreCase = true) &&
+                it.name.contains("release", ignoreCase = true)
+            }.forEach { apkFile ->
+                val newName = "AuraMusic-Tv.apk"
+                val newFile = apkFile.parentFile.resolve(newName)
+                apkFile.renameTo(newFile)
+                println("Renamed TV APK: ${apkFile.name} -> $newName")
             }
+        }
+    }
+
+    afterEvaluate {
+        tasks.named("assembleFossTvUniversalRelease").configure {
+            finalizedBy("renameTvApk")
+        }
+        tasks.named("assembleGmsTvUniversalRelease").configure {
+            finalizedBy("renameTvApk")
         }
     }
 
