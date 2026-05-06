@@ -27,9 +27,11 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
+ import androidx.compose.foundation.shape.CircleShape
+ import androidx.compose.foundation.shape.RoundedCornerShape
+ import androidx.compose.foundation.basicMarquee
+ import androidx.compose.ui.text.style.TextOverflow
+ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
@@ -194,21 +196,33 @@ import androidx.compose.ui.text.style.TextAlign
                   modifier = Modifier.fillMaxSize(),
               )
           }
-          Column(modifier = Modifier.weight(1f)) {
-               Text(
-                   text = metadata?.title?.toString() ?: "Unknown title",
-                   style = MaterialTheme.typography.bodyLarge,
-                   fontWeight = if (isCurrentSong) FontWeight.Bold else FontWeight.SemiBold,
-                   color = if (isCurrentSong) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                   maxLines = 1,
-               )
-               Text(
-                   text = metadata?.artist?.toString() ?: "",
-                   style = MaterialTheme.typography.bodySmall,
-                   color = MaterialTheme.colorScheme.onSurfaceVariant,
-                   maxLines = 1,
-               )
-          }
+           Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = metadata?.title?.toString() ?: "Unknown title",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = if (isCurrentSong) FontWeight.Bold else FontWeight.SemiBold,
+                    color = if (isCurrentSong) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.basicMarquee(
+                        iterations = 1,
+                        initialDelayMillis = 3000,
+                        velocity = 30.dp
+                    )
+                )
+                Text(
+                    text = metadata?.artist?.toString() ?: "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.basicMarquee(
+                        iterations = 1,
+                        initialDelayMillis = 3000,
+                        velocity = 30.dp
+                    )
+                )
+           }
           // Duration
           val durationMs = window.durationMs
           if (durationMs > 0) {
@@ -443,7 +457,13 @@ fun TvPlayerScreen(
                         ),
                         color = Color.White,
                         textAlign = TextAlign.Center,
-                        maxLines = 2,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.basicMarquee(
+                            iterations = 1,
+                            initialDelayMillis = 3000,
+                            velocity = 30.dp
+                        )
                     )
 
                         Text(
@@ -452,6 +472,12 @@ fun TvPlayerScreen(
                             color = Color.White.copy(alpha = 0.8f),
                             textAlign = TextAlign.Center,
                             maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.basicMarquee(
+                                iterations = 1,
+                                initialDelayMillis = 3000,
+                                velocity = 30.dp
+                            )
                         )
                     }
 

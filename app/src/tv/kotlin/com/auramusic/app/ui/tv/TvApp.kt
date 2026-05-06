@@ -59,6 +59,7 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Storage
 import com.auramusic.app.LocalPlayerConnection
 import com.auramusic.app.db.entities.Song
+import com.auramusic.app.models.toMediaMetadata
 import com.auramusic.app.utils.makeTimeString
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -870,27 +871,27 @@ fun TvHomeScreen(
 
            if (!quickPicks.isNullOrEmpty()) {
                item(key = "quick_picks") {
-                   SongRow(
-                       title = "Quick picks",
-                       songs = quickPicks!!,
-                       onSongClick = { song: Song -> playerConnection?.playSong(song) },
-                       modifier = Modifier.onFocusChanged { state ->
-                           if (state.hasFocus) focusedItemIndex = 2
-                       }
-                   )
+                    SongRow(
+                        title = "Quick picks",
+                        songs = quickPicks!!,
+                        onSongClick = { song: Song -> playerConnection?.playQueue(YouTubeQueue.radio(song.toMediaMetadata())) },
+                        modifier = Modifier.onFocusChanged { state ->
+                            if (state.hasFocus) focusedItemIndex = 2
+                        }
+                    )
                }
            }
 
            if (!forgottenFavorites.isNullOrEmpty()) {
                item(key = "forgotten_favorites") {
-                   SongRow(
-                       title = "Forgotten favorites",
-                       songs = forgottenFavorites!!,
-                       onSongClick = { song: Song -> playerConnection?.playSong(song) },
-                       modifier = Modifier.onFocusChanged { state ->
-                           if (state.hasFocus) focusedItemIndex = 3
-                       }
-                   )
+                    SongRow(
+                        title = "Forgotten favorites",
+                        songs = forgottenFavorites!!,
+                        onSongClick = { song: Song -> playerConnection?.playQueue(YouTubeQueue.radio(song.toMediaMetadata())) },
+                        modifier = Modifier.onFocusChanged { state ->
+                            if (state.hasFocus) focusedItemIndex = 3
+                        }
+                    )
                }
            }
 
@@ -2255,7 +2256,7 @@ fun LocalItemRow(title: String, localItems: List<LocalItem>, playerConnection: P
                         title = item.song.title,
                         subtitle = item.artists.joinToString(", ") { it.name },
                         thumbnailUrl = item.song.thumbnailUrl,
-                        onClick = { playerConnection?.playSong(item) },
+                        onClick = { playerConnection?.playQueue(YouTubeQueue.radio(item.toMediaMetadata())) },
                     )
                 }
             }
@@ -2607,12 +2608,16 @@ fun TvSettingsScreen(
     // Track which content row is currently focused (index 0 == back button / first focusable)
     var focusedItemIndex by remember { mutableStateOf(0) }
     val firstItemFocus = focusRequester ?: remember { FocusRequester() }
+    // FocusRequesters for all settings items: index 0=back button, 1=Account, 2=Appearance, 3=Playback, 4=Content, 5=Storage, 6=Check Updates, 7=About
+    val allFocusRequesters = remember {
+        listOf(firstItemFocus) + List(7) { FocusRequester() }
+    }
 
-    // Re-claim focus on the back button whenever a sub-settings overlay
+    // Re-claim focus on the previously focused item whenever a sub-settings overlay
     // closes (destination returns to Settings). Without this, when the user
     // backs out of Account / Appearance / Playback / Content / Updater /
     // About the focus drifts up to the top nav bar instead of restoring
-    // to the settings list the user came from.
+    // to the item they were on.
     val navigator = LocalTvNavigator.current
     val currentDestination = navigator.current
     LaunchedEffect(currentDestination) {
@@ -2620,7 +2625,8 @@ fun TvSettingsScreen(
             // Wait one frame so the previously-focused overlay has fully
             // released focus before we claim it.
             kotlinx.coroutines.delay(50)
-            runCatching { firstItemFocus.requestFocus() }
+            val index = focusedItemIndex.coerceIn(0, allFocusRequesters.size - 1)
+            runCatching { allFocusRequesters[index].requestFocus() }
         }
     }
 
@@ -2674,7 +2680,9 @@ fun TvSettingsScreen(
                     "Sign in to sync liked songs, playlists and subscriptions",
                 onClick = onAccountClick,
                 icon = Icons.Filled.Person,
-                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 1 },
+                modifier = Modifier
+                    .onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 1 }
+                    .focusRequester(allFocusRequesters[1]),
             )
         }
 
@@ -2686,7 +2694,9 @@ fun TvSettingsScreen(
                 subtitle = "Theme, colors, and display settings",
                 onClick = onAppearanceClick,
                 icon = Icons.Filled.Palette,
-                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 2 },
+                modifier = Modifier
+                    .onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 2 }
+                    .focusRequester(allFocusRequesters[2]),
             )
         }
 
@@ -2696,7 +2706,9 @@ fun TvSettingsScreen(
                 subtitle = "Audio quality and playback behavior",
                 onClick = onPlaybackClick,
                 icon = Icons.Filled.MusicNote,
-                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 3 },
+                modifier = Modifier
+                    .onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 3 }
+                    .focusRequester(allFocusRequesters[3]),
             )
         }
 
@@ -2706,7 +2718,9 @@ fun TvSettingsScreen(
                 subtitle = "Sync settings and content filters",
                 onClick = onContentClick,
                 icon = Icons.Filled.Tune,
-                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 4 },
+                modifier = Modifier
+                    .onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 4 }
+                    .focusRequester(allFocusRequesters[4]),
             )
         }
 
@@ -2716,7 +2730,9 @@ fun TvSettingsScreen(
                 subtitle = "Manage cache and clear accumulated data",
                 onClick = onStorageClick,
                 icon = Icons.Filled.Storage,
-                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 5 },
+                modifier = Modifier
+                    .onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 5 }
+                    .focusRequester(allFocusRequesters[5]),
             )
         }
 
@@ -2728,7 +2744,9 @@ fun TvSettingsScreen(
                 subtitle = "Check for new AuraMusic TV versions",
                 onClick = onUpdaterClick,
                 icon = Icons.Filled.Refresh,
-                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 6 },
+                modifier = Modifier
+                    .onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 6 }
+                    .focusRequester(allFocusRequesters[6]),
             )
         }
 
@@ -2738,7 +2756,9 @@ fun TvSettingsScreen(
                 subtitle = "App version, licenses, and information",
                 onClick = onAboutClick,
                 icon = Icons.Filled.Info,
-                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 7 },
+                modifier = Modifier
+                    .onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 7 }
+                    .focusRequester(allFocusRequesters[7]),
             )
         }
     }
