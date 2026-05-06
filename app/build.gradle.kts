@@ -105,17 +105,17 @@ android {
 
     sourceSets {
         getByName("main") {
-            kotlin.directories.srcDir("src/main/kotlin")
+            kotlin.srcDir("src/main/kotlin")
         }
         getByName("foss") {
-            kotlin.directories.srcDirs("src/foss/kotlin")
+            kotlin.srcDirs("src/foss/kotlin")
         }
         getByName("gms") {
-            kotlin.directories.srcDirs("src/gms/kotlin")
+            kotlin.srcDirs("src/gms/kotlin")
         }
         getByName("tv") {
-            kotlin.directories.srcDirs("src/tv/kotlin")
-            res.directories.srcDirs("src/tv/res")
+            kotlin.srcDirs("src/tv/kotlin")
+            res.srcDirs("src/tv/res")
         }
     }
 
@@ -196,7 +196,7 @@ android {
     // Custom APK naming for TV builds
     tasks.register("renameTvApk") {
         doLast {
-            val apkDir = file("$buildDir/outputs/apk")
+            val apkDir = layout.buildDirectory.dir("outputs/apk").get().asFile
             apkDir.walkTopDown().filter {
                 it.isFile && it.name.endsWith(".apk") &&
                 it.name.contains("tv", ignoreCase = true) &&
