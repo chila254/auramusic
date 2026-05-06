@@ -18,9 +18,11 @@ android {
     }
 }
 
-kotlin {
-    jvmToolchain(21)
-}
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_21)
+        }
+    }
 
 dependencies {
     implementation(libs.ktor.client.core)
