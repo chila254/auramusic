@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,6 +36,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -44,6 +46,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -545,6 +548,38 @@ import kotlinx.coroutines.launch
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
     var backButtonFocused by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    var isChecking by remember { mutableStateOf(false) }
+    var releaseInfo by remember { mutableStateOf<com.auramusic.app.utils.ReleaseInfo?>(null) }
+    var hasUpdate by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    fun runCheck(force: Boolean) {
+        if (isChecking) return
+        scope.launch {
+            isChecking = true
+            error = null
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                com.auramusic.app.utils.Updater
+                    .checkForUpdate(forceRefresh = force)
+                    .onSuccess { (info, available) ->
+                        releaseInfo = info
+                        hasUpdate = available
+                    }
+                    .onFailure {
+                        error = it.message ?: "Failed to check for updates"
+                    }
+            }
+            isChecking = false
+        }
+    }
+
+    // Always check on screen open so a freshly published TV release surfaces
+    // here without the user having to manually press refresh.
+    LaunchedEffect(Unit) { runCheck(force = false) }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -571,6 +606,8 @@ import kotlinx.coroutines.launch
                 onFocusChange = { backButtonFocused = it },
             )
         }
+
+        // Current version
         item {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -582,26 +619,164 @@ import kotlinx.coroutines.launch
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
-                        text = "Current version",
+                        text = "Installed version",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = "v${BuildConfig.VERSION_NAME}",
+                        text = "AuraMusic Tv v${BuildConfig.VERSION_NAME}",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        text = "AuraMusic TV checks for updates automatically. " +
-                            "Visit the GitHub releases page on a phone to manually download a newer build.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
         }
+
+        // Update status
+        item {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 4.dp,
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    when {
+                        isChecking -> {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp,
+                                )
+                                Spacer(Modifier.width(12.dp))
+                                Text(
+                                    text = "Checking for updates…",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                            }
+                        }
+                        error != null -> {
+                            Text(
+                                text = error!!,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                        releaseInfo == null -> {
+                            Text(
+                                text = "No release information available.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        hasUpdate -> {
+                            Text(
+                                text = "Update available",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            Text(
+                                text = "${releaseInfo?.versionName} • released ${
+                                    releaseInfo?.releaseDate?.take(10) ?: ""
+                                }",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            val notes = releaseInfo?.description?.takeIf { it.isNotBlank() }
+                            if (notes != null) {
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = notes,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 8,
+                                )
+                            }
+                        }
+                        else -> {
+                            Text(
+                                text = "You're on the latest version",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = "Latest released: ${releaseInfo?.versionName}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Action buttons
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                TvUpdaterButton(
+                    label = if (isChecking) "Checking…" else "Check again",
+                    onClick = { runCheck(force = true) },
+                    primary = false,
+                )
+                if (hasUpdate && releaseInfo != null) {
+                    TvUpdaterButton(
+                        label = "Download AuraMusic Tv",
+                        onClick = {
+                            val info = releaseInfo ?: return@TvUpdaterButton
+                            val url = com.auramusic.app.utils.Updater
+                                .getDownloadUrlForCurrentVariant(info, preferredVariant = "tv")
+                            if (url != null) {
+                                runCatching {
+                                    val intent = android.content.Intent(
+                                        android.content.Intent.ACTION_VIEW,
+                                        android.net.Uri.parse(url),
+                                    ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    context.startActivity(intent)
+                                }
+                            }
+                        },
+                        primary = true,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TvUpdaterButton(
+    label: String,
+    onClick: () -> Unit,
+    primary: Boolean,
+) {
+    var focused by remember { mutableStateOf(false) }
+    Surface(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .onFocusChanged { focused = it.isFocused }
+            .border(
+                width = if (focused) 3.dp else 0.dp,
+                color = if (focused) MaterialTheme.colorScheme.primary else Color.Transparent,
+                shape = RoundedCornerShape(12.dp),
+            )
+            .clickable(onClick = onClick),
+        color = if (primary) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 4.dp,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = if (primary) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 14.dp),
+        )
     }
 }
 
@@ -624,6 +799,15 @@ import kotlinx.coroutines.launch
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    // Auto-load-more matches the mobile "Auto load more songs" toggle: when
+    // the queue reaches the end the app will automatically extend it with
+    // related items.
+    val (autoLoadMore, onAutoLoadMoreChange) = rememberPreference(
+        key = com.auramusic.app.constants.AutoLoadMoreKey,
+        defaultValue = true,
+    )
+    // SimilarContent matches the mobile "Enable similar content" toggle and
+    // controls whether similar songs are surfaced in the queue.
     val (similarContentEnabled, onSimilarContentEnabledChange) = rememberPreference(
         key = com.auramusic.app.constants.SimilarContent,
         defaultValue = true
@@ -632,7 +816,6 @@ import kotlinx.coroutines.launch
     val firstFocus = focusRequester ?: remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
     var backButtonFocused by remember { mutableStateOf(false) }
-    var focusedItemIndex by remember { mutableStateOf(0) }
 
     LazyColumn(
         modifier = Modifier
@@ -688,58 +871,97 @@ import kotlinx.coroutines.launch
             }
         }
 
+        // Auto load more songs
         item {
-            Surface(
+            TvContentToggleRow(
+                title = "Auto load more songs",
+                subtitle = "Automatically add more songs when the end of the queue is reached, if possible",
+                checked = autoLoadMore,
+                onCheckedChange = onAutoLoadMoreChange,
+                icon = Icons.AutoMirrored.Filled.QueueMusic,
+            )
+        }
+
+        // Enable similar content
+        item {
+            TvContentToggleRow(
+                title = "Enable similar content",
+                subtitle = "Show similar songs in the queue",
+                checked = similarContentEnabled,
+                onCheckedChange = onSimilarContentEnabledChange,
+                icon = Icons.Filled.Tune,
+            )
+        }
+    }
+}
+
+/**
+ * Standard focusable, clickable toggle row used inside the TV Content
+ * settings screen. Wraps a Surface + Switch and routes both card clicks
+ * and direct switch toggles to [onCheckedChange].
+ */
+@Composable
+private fun TvContentToggleRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+) {
+    var rowFocused by remember { mutableStateOf(false) }
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .onFocusChanged { rowFocused = it.isFocused }
+            .border(
+                width = if (rowFocused) 3.dp else 0.dp,
+                color = if (rowFocused) MaterialTheme.colorScheme.primary else Color.Transparent,
+                shape = RoundedCornerShape(16.dp),
+            )
+            .clickable { onCheckedChange(!checked) },
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 4.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .clickable { onSimilarContentEnabledChange(!similarContentEnabled) }
-                    .onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 1 },
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 4.dp,
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center,
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.QueueMusic,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                    }
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Load more songs when queue reaches end",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = "Automatically load similar songs when current queue finishes (works for all playback sources)",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-
-                    Switch(
-                        checked = similarContentEnabled,
-                        onCheckedChange = onSimilarContentEnabledChange,
-                        modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 1 }
-                    )
-                }
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
             }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+            )
         }
     }
 }

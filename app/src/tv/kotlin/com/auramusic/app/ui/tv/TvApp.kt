@@ -81,6 +81,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -2755,10 +2756,14 @@ fun TvSettingsScreen(
      val dynamicThemeState: MutableState<Boolean> = if (dynamicThemeSupported) {
          rememberPreference(com.auramusic.app.constants.DynamicThemeKey, defaultValue = true)
      } else {
-         remember { mutableStateOf(true) }
+         remember { mutableStateOf(false) }
      }
+     val (selectedThemeColorInt, onSelectedThemeColorChange) = rememberPreference(
+         com.auramusic.app.constants.SelectedThemeColorKey,
+         defaultValue = com.auramusic.app.ui.theme.DefaultThemeColor.toArgb(),
+     )
      val backButtonFocus = focusRequester ?: remember { FocusRequester() }
-     var focusedItemIndex by remember { mutableStateOf(0) }
+     var backButtonFocused by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         runCatching { backButtonFocus.requestFocus() }
@@ -2769,7 +2774,7 @@ fun TvSettingsScreen(
             .fillMaxSize()
             .onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
-                    if (focusedItemIndex == 0) {
+                    if (backButtonFocused) {
                         onNavigateUp?.invoke()
                         true
                     } else {
@@ -2788,19 +2793,17 @@ fun TvSettingsScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                var backFocused by remember { mutableStateOf(false) }
                 IconButton(
                     onClick = onBackClick,
                     modifier = Modifier
                         .size(64.dp)
                         .focusRequester(backButtonFocus)
                         .onFocusChanged {
-                            backFocused = it.isFocused
-                            if (it.isFocused) focusedItemIndex = 0
+                            backButtonFocused = it.isFocused
                         }
                         .border(
-                            width = if (backFocused) 3.dp else 0.dp,
-                            color = if (backFocused) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            width = if (backButtonFocused) 3.dp else 0.dp,
+                            color = if (backButtonFocused) MaterialTheme.colorScheme.primary else Color.Transparent,
                             shape = RoundedCornerShape(12.dp)
                         ),
                 ) {
@@ -2851,7 +2854,6 @@ fun TvSettingsScreen(
                     onDarkModeChange(newMode)
                 },
                 icon = Icons.Filled.DarkMode,
-                modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 1 },
             )
         }
 
@@ -2860,11 +2862,93 @@ fun TvSettingsScreen(
             item {
                 TvSettingsCategoryItem(
                     title = "Dynamic Colors",
-                    subtitle = if (dynamicThemeState.value) "Using wallpaper colors" else "Using custom colors",
+                    subtitle = if (dynamicThemeState.value) {
+                        "Using system wallpaper colors"
+                    } else {
+                        "Using selected theme color below"
+                    },
                     onClick = { dynamicThemeState.value = !dynamicThemeState.value },
                     icon = Icons.Filled.Palette,
-                    modifier = Modifier.onFocusChanged { state -> if (state.hasFocus) focusedItemIndex = 2 },
                 )
+            }
+        }
+
+        // When dynamic colors are off (or unsupported) show a color picker
+        // so the toggle has a visible effect even on TV devices that don't
+        // expose system wallpaper colors.
+        if (!dynamicThemeSupported || !dynamicThemeState.value) {
+            item {
+                TvThemeColorPickerRow(
+                    selectedColorInt = selectedThemeColorInt,
+                    onColorSelected = { onSelectedThemeColorChange(it) },
+                )
+            }
+        }
+    }
+}
+
+private val TvThemeColorPresets: List<androidx.compose.ui.graphics.Color> = listOf(
+    com.auramusic.app.ui.theme.DefaultThemeColor, // brand red
+    androidx.compose.ui.graphics.Color(0xFF1DB954), // green
+    androidx.compose.ui.graphics.Color(0xFF1E88E5), // blue
+    androidx.compose.ui.graphics.Color(0xFF8E24AA), // purple
+    androidx.compose.ui.graphics.Color(0xFFFB8C00), // orange
+    androidx.compose.ui.graphics.Color(0xFF00ACC1), // teal
+    androidx.compose.ui.graphics.Color(0xFFEC407A), // pink
+)
+
+@Composable
+private fun TvThemeColorPickerRow(
+    selectedColorInt: Int,
+    onColorSelected: (Int) -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp)),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 4.dp,
+    ) {
+        Column(modifier = Modifier.padding(24.dp)) {
+            Text(
+                text = "Theme color",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = "Pick the seed color used to generate your TV theme.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                TvThemeColorPresets.forEach { color ->
+                    val argb = color.toArgb()
+                    val isSelected = argb == selectedColorInt
+                    var focused by remember { mutableStateOf(false) }
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(color)
+                            .onFocusChanged { focused = it.isFocused }
+                            .border(
+                                width = when {
+                                    focused -> 4.dp
+                                    isSelected -> 3.dp
+                                    else -> 0.dp
+                                },
+                                color = when {
+                                    focused -> MaterialTheme.colorScheme.primary
+                                    isSelected -> MaterialTheme.colorScheme.onSurface
+                                    else -> Color.Transparent
+                                },
+                                shape = CircleShape,
+                            )
+                            .clickable { onColorSelected(argb) },
+                    )
+                }
             }
         }
     }
