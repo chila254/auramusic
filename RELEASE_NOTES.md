@@ -1,3 +1,115 @@
+# AuraMusic v2.2.0 (Build 19) Release Notes
+
+> [!NOTE]
+> This release introduces full Android TV / Google TV support, bringing AuraMusic to the big screen with a true 10-foot UI experience.
+
+## What's New
+
+### 🎉 Android TV / Google TV Support
+A complete TV-optimized client with D-pad navigation, large controls, and focus management:
+
+**TV Home Screen**
+- Personalized Quick Picks (your most played songs)
+- Forgotten Favorites (songs you haven't listened to in a while)
+- Keep Listening (resume recent playback)
+- Similar Recommendations based on current song
+- YouTube Home sections (Trending, Moods, Charts, etc.)
+- Your YouTube Playlists
+- Hero carousel with featured content
+
+**TV Player**
+- Full-screen player with large centered controls
+- Play/Pause, Skip, Rewind/Fast-forward 10s buttons
+- Progress bar with current/time indicators
+- Queue sidebar showing upcoming songs
+- Sleep timer and lyrics toggle buttons
+- Video mode support for music videos
+- Marquee scrolling for long titles
+
+**TV Navigation & Focus**
+- Custom lightweight navigator with back stack
+- Bidirectional navigation: UP from content goes to top bar, DOWN from top bar goes to last focused content
+- Per-section focus requesters prevent drift
+- Back from sub-settings restores focus to previously selected item
+- Smooth focus animations and visual feedback
+
+**TV Settings**
+- Appearance: Theme selection, dynamic colors, theme color picker
+- Content: Auto-load queue toggle (extends queue automatically)
+- Storage: Cache management with clear cache button
+- Updater: Real update checking with GitHub API and download links
+- About: App version, build info, architecture
+
+**Radio Queue on TV**
+- Tapping any song in Quick Picks, Forgotten Favorites, or Keep Listening now loads a YouTube radio queue with related songs
+- Matches mobile behavior — no more single-song queues!
+
+### 🎤 Voice Command Improvements
+- Added confidence and audio energy filtering to reduce false wake word triggers
+- Lowered wake word detection thresholds for maximum sensitivity
+- Added AEC (Acoustic Echo Cancellation), NoiseSuppressor, and RMS energy filtering
+- Fixed wake word service to stop when starting manual voice session
+- Fixed minimum speech length requirements for command mode
+- Improved TTS greeting and audio ducking during voice commands
+- Fixed microphone loop by stopping wake word service before restart
+
+### 🎨 UI/UX Improvements
+- Added sleep timer and lyrics buttons to queue bar in new player design
+- Added shuffle button with 4-dot animation to old player design
+- Added kebab menu with animations to old player design
+- Added gradient to static icon foreground for visual consistency
+- Changed dynamic icon background from orange to grey for better visibility
+- Fixed default icon background to black when installing
+- Moved kebab menu from top area to bottom right
+- Added gradient colors to dynamic icon foreground
+
+### 🧩 Widget Redesigns
+- Increased compact square widget to 4x4 size
+- Modernized music player, compact square, and compact wide widgets
+- Added full-cover album art backgrounds
+- Added placeholder image to turntable widget album art
+- Fixed widget showing 'can't load widget' when service not running
+- Fixed widget_wide_play_container to widget_wide_play_pause
+
+### 🐛 Bug Fixes
+
+#### TV
+- Fixed TV settings back navigation: focus now restores to previously selected item instead of top nav bar
+- Fixed TV lyrics not displaying (improved song change handling)
+- Fixed TV lyrics storage — now fetched fresh per song without database persistence
+- Fixed TV content settings compilation and Add/Clear queue functionality
+- Fixed TV navigation focus issues across Home, Details, Player, and Settings screens
+- Fixed TV player white screen on launch
+- Fixed TV UP navigation in all screens
+- Fixed TV long song titles pushing down icons — added marquee scrolling
+- Fixed TV home screen title to "AuraMusic Tv"
+- Fixed TV lyrics to be display-only (no click-to-seek, no autoscroll)
+- Fixed TV streaming cache and persistent lyrics toggle
+- Fixed TV mini-player display and navigation issues
+- Fixed TV compilation errors throughout module
+
+#### Mobile
+- Fixed ForegroundServiceDidNotStartInTimeException on Android 14+/SDK 36
+- Fixed ANR caused by VOSK native cleanup blocking main thread
+- Fixed SecurityException when starting microphone FGS from background on Android 14+
+- Fixed VOSK detector memory leaks and false wake word triggers
+- Fixed mic contention between VOSK wake word and SpeechRecognizer
+- Fixed TTS volume muting after voice commands
+- Fixed VOSK model download corruption and validation
+- Fixed "Hey Aura" / "Hello Aura" not recognizing
+- Fixed wake word detection not triggering overlay
+- Fixed standalone 'aura' false positives in wake word grammar
+
+### ⚙️ Build
+- Bumped versionCode to **19**
+- Version: **2.2.0**
+
+---
+
+**Full Changelog**: https://github.com/TeamAuraMusic/AuraMusic/compare/v2.1.0...v2.2.0
+
+---
+
 # AuraMusic v2.1.0 (Build 18) Release Notes
 
 > [!WARNING]
