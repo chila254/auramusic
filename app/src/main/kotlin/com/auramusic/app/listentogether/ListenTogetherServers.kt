@@ -21,7 +21,7 @@ object ListenTogetherServers {
         [
           {
             "name": "Aura Music Server",
-            "url": "wss://auramusicserver.onrender.com/ws",
+            "url": "wss://api.auramusic.site/ws",
             "location": "Ohio (US East)",
             "operator": "chila254"
           }
