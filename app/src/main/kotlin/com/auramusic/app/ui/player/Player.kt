@@ -327,6 +327,11 @@ fun BottomSheetPlayer(
                     timber.log.Timber.d("VideoToggle: Auto-enabling video mode for video song")
                     playerConnection.enableVideoMode(true)
                 }
+                // Disable video mode when switching to regular (non-video) songs
+                else if (videoModeEnabled && mediaMetadata?.isVideoSong != true) {
+                    timber.log.Timber.d("VideoToggle: Disabling video mode for regular song")
+                    playerConnection.enableVideoMode(false)
+                }
             } catch (e: Exception) {
                 timber.log.Timber.e(e, "VideoToggle: Error checking video availability")
                 // Error is already handled in checkVideoAvailability
