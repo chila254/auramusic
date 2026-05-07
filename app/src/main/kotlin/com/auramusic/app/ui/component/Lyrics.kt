@@ -435,24 +435,45 @@ fun Lyrics(
             buildList {
                 for (i in lines.indices) {
                     val current = lines[i]
-                    add(current)
-                    val next = lines.getOrNull(i + 1) ?: continue
-                    val currentEnd = current.effectiveEndTime()
-                    val gap = next.time - currentEnd
+                    val next = lines.getOrNull(i + 1)
+                    
+                    // Calculate estimated end time for this line
+                    // For word-synced lyrics, use actual word end times
+                    // For standard LRC, estimate based on distance to next line
+                    val estimatedDurationMs = when {
+                        current.words?.isNotEmpty() == true -> 0L // Use actual from words
+                        next != null -> {
+                            val gap = next.time - current.time
+                            // If gap is large, this line ends shortly before the gap
+                            // Use smaller of: 3s default, or half the gap minus a small buffer
+                            val maxDuration = minOf(3000L, gap / 2)
+                            maxDuration.coerceAtLeast(1000L) // At least 1 second
+                        }
+                        else -> 3000L
+                    }
+                    
+                    val currentEnd = current.effectiveEndTime(estimatedDurationMs)
+                    
                     // Only show indicator after a real lyric line (skip the
                     // synthetic HEAD entry to avoid an indicator before song
                     // starts when the first line has a normal lead-in).
                     val isHead = current === LyricsEntry.HEAD_LYRICS_ENTRY
-                    if (gap >= instrumentalGapMs && !isHead) {
-                        add(
-                            LyricsEntry(
-                                time = currentEnd,
-                                text = "",
-                                isInstrumental = true,
-                                endTime = next.time
+                    
+                    if (next != null) {
+                        val gap = next.time - currentEnd
+                        if (gap >= instrumentalGapMs && !isHead) {
+                            add(
+                                LyricsEntry(
+                                    time = currentEnd,
+                                    text = "",
+                                    isInstrumental = true,
+                                    endTime = next.time
+                                )
                             )
-                        )
+                        }
                     }
+                    
+                    add(current)
                 }
             }
         }
@@ -1123,8 +1144,14 @@ fun Lyrics(
                         // When the "connected lines" option is on, an item also stays active while the
                         // playback position is still inside its word-timing range, so word-by-word
                         // animations are not cut short when the next line starts (e.g. with {bg}).
+                        val nextLine = displayLines.getOrNull(index + 1)
+                        val estimatedDurationMs = when {
+                            item.words?.isNotEmpty() == true -> 0L
+                            nextLine != null -> minOf(3000L, (nextLine.time - item.time) / 2).coerceAtLeast(1000L)
+                            else -> 3000L
+                        }
                         val coversByTime = connectedLines && isSynced &&
-                            effectivePlaybackPosition in item.time..item.effectiveEndTime()
+                            effectivePlaybackPosition in item.time..item.effectiveEndTime(estimatedDurationMs)
                         val isActiveLine = ((isActiveByIndex || isActiveByTime) && isSynced) || coversByTime
                         val lineColor = if (isActiveLine) {
                             if (item.isBackground) expressiveAccent.copy(alpha = 0.85f) else expressiveAccent

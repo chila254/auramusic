@@ -28,12 +28,16 @@ data class LyricsEntry(
 
     /**
      * Returns the effective end time for this entry. If [endTime] is set use it; otherwise
-     * fall back to the last word timestamp (in ms) or just the line start time.
+     * fall back to the last word timestamp (in ms) or estimate based on a default duration.
+     * For word-synced lyrics, this accurately reflects when the line finishes playing.
+     * For standard LRC lines, returns time + estimatedDurationMs (defaults to 3 seconds).
      */
-    fun effectiveEndTime(): Long {
+    fun effectiveEndTime(estimatedDurationMs: Long = 3000L): Long {
         if (endTime > 0L) return endTime
         val lastWordEndMs = words?.maxOfOrNull { (it.endTime * 1000).toLong() } ?: -1L
-        return if (lastWordEndMs > 0L) lastWordEndMs else time
+        if (lastWordEndMs > 0L) return lastWordEndMs
+        // For standard LRC without word timings, estimate based on next line distance or default
+        return time + estimatedDurationMs
     }
 
     companion object {
