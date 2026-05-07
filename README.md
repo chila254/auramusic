@@ -21,6 +21,18 @@
 [![GitHub license](https://img.shields.io/github/license/TeamAuraMusic/AuraMusic?style=for-the-badge)](https://github.com/TeamAuraMusic/AuraMusic/blob/main/LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/TeamAuraMusic/AuraMusic/total?style=for-the-badge)](https://github.com/TeamAuraMusic/AuraMusic/releases)
 
+<br/>
+
+[![Translation status](https://img.shields.io/weblate/progress/auramusic?style=for-the-badge&labelColor=0d1117)](https://hosted.weblate.org/engage/auramusic/)
+
+<h3>We use Weblate to translate AuraMusic. <a href="https://hosted.weblate.org/projects/auramusic/">Help us bring AuraMusic to more people!</a></h3>
+
+<a href="https://hosted.weblate.org/projects/auramusic/">
+  <img src="https://hosted.weblate.org/widget/auramusic/horizontal-auto.svg" alt="Translation status" />
+</a>
+
+<h3>Thank you for helping translate AuraMusic!</h3>
+
 <h1>Join our community</h1>
 
 <table align="center">
