@@ -57,7 +57,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.surfaceColorAtElevation
-import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
+
 import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -1517,13 +1517,20 @@ item(key = "speed_dial_shuffle") {
             }
         )
 
-        Indicator(
-            isRefreshing = isRefreshing,
-            state = pullRefreshState,
+        Box(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(LocalPlayerAwareWindowInsets.current.asPaddingValues()),
-        )
+            contentAlignment = Alignment.Center
+        ) {
+            AnimatedVisibility(
+                visible = isRefreshing || pullRefreshState.progress > 0f,
+                enter = androidx.compose.animation.fadeIn(),
+                exit = androidx.compose.animation.fadeOut()
+            ) {
+                ContainedLoadingIndicator()
+            }
+        }
     }
 }
 
