@@ -61,7 +61,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -99,6 +102,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.Typeface
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
@@ -122,7 +127,10 @@ import com.auramusic.app.constants.DarkModeKey
 import com.auramusic.app.constants.LyricsAnimationStyle
 import com.auramusic.app.constants.LyricsAnimationStyleKey
 import com.auramusic.app.constants.LyricsClickKey
+import com.auramusic.app.constants.LyricsConnectedLinesKey
+import com.auramusic.app.constants.LyricsCustomFontUriKey
 import com.auramusic.app.constants.LyricsGlowEffectKey
+import com.auramusic.app.constants.LyricsInstrumentalGapMsKey
 import com.auramusic.app.constants.LyricsLineSpacingKey
 import com.auramusic.app.constants.LyricsRomanizeBelarusianKey
 import com.auramusic.app.constants.LyricsRomanizeBulgarianKey
@@ -225,6 +233,10 @@ fun Lyrics(
     val baseLyricsTextSize by rememberPreference(LyricsTextSizeKey, 24f)
     val lyricsTextSize = if (karaokeModeEnabled) (baseLyricsTextSize * 1.5f).coerceAtMost(48f) else baseLyricsTextSize
     val lyricsLineSpacing by rememberPreference(LyricsLineSpacingKey, 1.3f)
+    val instrumentalGapMs by rememberPreference(LyricsInstrumentalGapMsKey, 5000)
+    val connectedLines by rememberPreference(LyricsConnectedLinesKey, true)
+    val customFontUri by rememberPreference(LyricsCustomFontUriKey, "")
+    val customFontFamily = rememberLyricsFontFamily(customFontUri)
     
     val openRouterApiKey by rememberPreference(OpenRouterApiKey, "")
     val openRouterBaseUrl by rememberPreference(OpenRouterBaseUrlKey, "https://openrouter.ai/api/v1/chat/completions")
@@ -413,6 +425,38 @@ fun Lyrics(
         remember(lyrics) {
             !lyrics.isNullOrEmpty() && lyrics.startsWith("[")
         }
+
+    // Insert pseudo "instrumental" entries between lines whose gap is large
+    // enough. Disabled when [instrumentalGapMs] <= 0 or for unsynced lyrics.
+    val displayLines = remember(lines, instrumentalGapMs, isSynced) {
+        if (!isSynced || instrumentalGapMs <= 0 || lines.size < 2) {
+            lines
+        } else {
+            buildList {
+                for (i in lines.indices) {
+                    val current = lines[i]
+                    add(current)
+                    val next = lines.getOrNull(i + 1) ?: continue
+                    val currentEnd = current.effectiveEndTime()
+                    val gap = next.time - currentEnd
+                    // Only show indicator after a real lyric line (skip the
+                    // synthetic HEAD entry to avoid an indicator before song
+                    // starts when the first line has a normal lead-in).
+                    val isHead = current === LyricsEntry.HEAD_LYRICS_ENTRY
+                    if (gap >= instrumentalGapMs && !isHead) {
+                        add(
+                            LyricsEntry(
+                                time = currentEnd,
+                                text = "",
+                                isInstrumental = true,
+                                endTime = next.time
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     // State for translation status
     val translationStatus by LyricsTranslationHelper.status.collectAsState()
@@ -641,7 +685,7 @@ fun Lyrics(
             val position = sliderPosition ?: playerConnection.player.currentPosition
             currentPlaybackPosition = position
             val lyricsOffset = currentSong?.song?.lyricsOffset ?: 0
-            currentLineIndex = findCurrentLineIndex(lines, position - lyricsOffset)
+            currentLineIndex = findCurrentLineIndex(displayLines, position - lyricsOffset)
         }
     }
 
@@ -829,6 +873,11 @@ fun Lyrics(
                 )
             }
         } else {
+            val baseLyricsStyle = LocalTextStyle.current
+            val effectiveLyricsStyle = if (customFontFamily != null) {
+                baseLyricsStyle.copy(fontFamily = customFontFamily)
+            } else baseLyricsStyle
+            ProvideTextStyle(value = effectiveLyricsStyle) {
             LazyColumn(
             state = lazyListState,
             contentPadding = WindowInsets.systemBars
@@ -922,8 +971,8 @@ fun Lyrics(
                 val effectivePlaybackPosition = currentPlaybackPosition - lyricsOffset
 
                 itemsIndexed(
-                    items = lines,
-                    key = { index, item -> "$index-${item.time}" } // Add stable key
+                    items = displayLines,
+                    key = { index, item -> "$index-${item.time}-${if (item.isInstrumental) "i" else "l"}" } // Add stable key
                 ) { index, item ->
                     val isSelected = selectedIndices.contains(index)
                     val itemModifier = Modifier
@@ -1001,8 +1050,8 @@ fun Lyrics(
                     
                     // Check if this line shares the same time as the currently active line
                     // This enables synchronized word-by-word animation for both main and background vocals
-                    val currentLineTime = if (displayedCurrentLineIndex >= 0 && displayedCurrentLineIndex < lines.size) {
-                        lines[displayedCurrentLineIndex].time
+                    val currentLineTime = if (displayedCurrentLineIndex >= 0 && displayedCurrentLineIndex < displayLines.size) {
+                        displayLines[displayedCurrentLineIndex].time
                     } else -1L
                     val isLineAtSameTime = item.time == currentLineTime
                     val isActiveByIndex = index == displayedCurrentLineIndex
@@ -1043,6 +1092,25 @@ fun Lyrics(
                     // Smaller scale for background vocals
                     val bgScale = if (item.isBackground) 0.85f else 1f
 
+                    if (item.isInstrumental) {
+                        val instrumentalEnd = item.endTime.coerceAtLeast(item.time + 1L)
+                        val instrumentalDuration = (instrumentalEnd - item.time).coerceAtLeast(1L)
+                        val rawProgress = ((effectivePlaybackPosition - item.time).toFloat() / instrumentalDuration).coerceIn(0f, 1f)
+                        val isInstrumentalActive = effectivePlaybackPosition in item.time..instrumentalEnd
+                        InstrumentalIndicator(
+                            modifier = itemModifier,
+                            color = expressiveAccent,
+                            progress = if (isInstrumentalActive) rawProgress else if (effectivePlaybackPosition > instrumentalEnd) 1f else 0f,
+                            active = isInstrumentalActive,
+                            alignment = when (lyricsTextPosition) {
+                                LyricsPosition.LEFT -> Alignment.Start
+                                LyricsPosition.CENTER -> Alignment.CenterHorizontally
+                                LyricsPosition.RIGHT -> Alignment.End
+                            }
+                        )
+                        return@itemsIndexed
+                    }
+
                     Column(
                         modifier = itemModifier.graphicsLayer {
                             this.alpha = if (item.isBackground) alpha * 0.8f else alpha
@@ -1051,8 +1119,13 @@ fun Lyrics(
                         },
                         horizontalAlignment = agentAlignment
                     ) {
-                        // Use time-based active check to sync both main and background lines with same timestamp
-                        val isActiveLine = (isActiveByIndex || isActiveByTime) && isSynced
+                        // Use time-based active check to sync both main and background lines with same timestamp.
+                        // When the "connected lines" option is on, an item also stays active while the
+                        // playback position is still inside its word-timing range, so word-by-word
+                        // animations are not cut short when the next line starts (e.g. with {bg}).
+                        val coversByTime = connectedLines && isSynced &&
+                            effectivePlaybackPosition in item.time..item.effectiveEndTime()
+                        val isActiveLine = ((isActiveByIndex || isActiveByTime) && isSynced) || coversByTime
                         val lineColor = if (isActiveLine) {
                             if (item.isBackground) expressiveAccent.copy(alpha = 0.85f) else expressiveAccent
                         } else {
@@ -1542,6 +1615,7 @@ fun Lyrics(
                 }
             }
         }
+        } // close ProvideTextStyle
         // Action buttons are now in the bottom bar
         // Removed the more button from bottom - it's now in the top header
     }
@@ -1596,7 +1670,7 @@ fun Lyrics(
                         if (selectedIndices.isNotEmpty()) {
                             val sortedIndices = selectedIndices.sorted()
                             val selectedLyricsText = sortedIndices
-                                .mapNotNull { lines.getOrNull(it)?.text }
+                                .mapNotNull { displayLines.getOrNull(it)?.takeIf { entry -> !entry.isInstrumental }?.text }
                                 .joinToString("\n")
 
                             if (selectedLyricsText.isNotBlank()) {
@@ -1954,6 +2028,94 @@ fun Lyrics(
             }
         }
         } // إغلاق else block
+    }
+}
+
+/**
+ * Compact "instrumental" indicator inserted between two lyric lines that are
+ * separated by a long silence. Shows three musical-note dots with an animated
+ * progress bar that fills as the silence elapses.
+ */
+@Composable
+private fun InstrumentalIndicator(
+    modifier: Modifier,
+    color: Color,
+    progress: Float,
+    active: Boolean,
+    alignment: Alignment.Horizontal
+) {
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress.coerceIn(0f, 1f),
+        animationSpec = tween(durationMillis = 200, easing = LinearEasing),
+        label = "instrumentalProgress"
+    )
+    val containerAlpha = if (active) 1f else 0.45f
+    Column(
+        modifier = modifier.alpha(containerAlpha),
+        horizontalAlignment = alignment
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(vertical = 2.dp)
+        ) {
+            // Three notes; for active indicator, the "current" one pulses.
+            for (i in 0 until 3) {
+                val dotAlpha = if (!active) 0.6f else {
+                    val phase = (animatedProgress * 3f) - i
+                    when {
+                        phase < 0f -> 0.4f
+                        phase > 1f -> 1f
+                        else -> 0.4f + 0.6f * phase
+                    }
+                }
+                Icon(
+                    painter = painterResource(R.drawable.music_note),
+                    contentDescription = null,
+                    tint = color.copy(alpha = dotAlpha),
+                    modifier = Modifier.size(if (active) 22.dp else 18.dp)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        LinearProgressIndicator(
+            progress = { animatedProgress },
+            color = color,
+            trackColor = color.copy(alpha = 0.25f),
+            modifier = Modifier
+                .width(if (active) 96.dp else 72.dp)
+                .height(3.dp)
+                .clip(RoundedCornerShape(2.dp))
+        )
+    }
+}
+
+/**
+ * Resolves a [FontFamily] from a user-provided font URI string. Falls back to the
+ * default font family if the URI is blank or the font cannot be loaded.
+ *
+ * The URI is expected to point to a TTF/OTF file accessible to the app (typically
+ * obtained through ACTION_OPEN_DOCUMENT with persistable URI permissions).
+ */
+@Composable
+fun rememberLyricsFontFamily(uriString: String): FontFamily? {
+    if (uriString.isBlank()) return null
+    val context = LocalContext.current
+    return remember(uriString) {
+        try {
+            val uri = android.net.Uri.parse(uriString)
+            val cacheFile = java.io.File(context.cacheDir, "lyrics_font_${uriString.hashCode()}.ttf")
+            if (!cacheFile.exists()) {
+                context.contentResolver.openInputStream(uri)?.use { input ->
+                    cacheFile.outputStream().use { output -> input.copyTo(output) }
+                } ?: return@remember null
+            }
+            val typeface = android.graphics.Typeface.createFromFile(cacheFile)
+            FontFamily(Typeface(typeface))
+        } catch (e: Exception) {
+            timber.log.Timber.e(e, "Failed to load custom lyrics font: $uriString")
+            null
+        }
     }
 }
 

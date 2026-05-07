@@ -434,6 +434,14 @@
     <string name="lyrics_auto_scroll">Lyrics auto scroll</string>
     <string name="auto_scroll">Auto scroll</string>
     <string name="lyrics_offset">Lyrics offset</string>
+    <string name="lyrics_instrumental_indicator">Instrumental indicator</string>
+    <string name="lyrics_instrumental_indicator_desc">Show music notes &amp; progress between lines (gap ≥ %1$ds)</string>
+    <string name="lyrics_connected_lines">Connected lines</string>
+    <string name="lyrics_connected_lines_desc">Let word‑sync animations finish even when the next line starts (e.g. background vocals)</string>
+    <string name="lyrics_custom_font">Lyrics font</string>
+    <string name="lyrics_custom_font_default">Use system default</string>
+    <string name="lyrics_custom_font_selected">Custom font selected · tap to change</string>
+    <string name="disabled">Disabled</string>
 
     <!-- Appearance settings -->
     <string name="settings_section_ui">Interface</string>

@@ -433,6 +433,20 @@ enum class LyricsAnimationStyle {
 val LyricsTextSizeKey = floatPreferencesKey("lyricsTextSize")
 val LyricsLineSpacingKey = floatPreferencesKey("lyricsLineSpacing")
 
+// Show a music-symbol indicator with a progress bar between lyric lines
+// when the silence/instrumental gap is at least this many milliseconds.
+// 0 disables the feature.
+val LyricsInstrumentalGapMsKey = intPreferencesKey("lyricsInstrumentalGapMs")
+
+// When true, neighbouring lyric lines whose word-timings still cover the
+// playback position remain "active" so word-by-word animations are not
+// cut off when a new line starts (e.g. background {bg} vocals).
+val LyricsConnectedLinesKey = booleanPreferencesKey("lyricsConnectedLines")
+
+// Optional user-selected font (URI of a .ttf/.otf file) used to render lyrics.
+// Empty string means "use the system default".
+val LyricsCustomFontUriKey = stringPreferencesKey("lyricsCustomFontUri")
+
 val PlayerVolumeKey = floatPreferencesKey("playerVolume")
 val RepeatModeKey = intPreferencesKey("repeatMode")
 

@@ -20,9 +20,21 @@ data class LyricsEntry(
     val romanizedTextFlow: MutableStateFlow<String?> = MutableStateFlow(null),
     val translatedTextFlow: MutableStateFlow<String?> = MutableStateFlow(null),
     val agent: String? = null,
-    val isBackground: Boolean = false
+    val isBackground: Boolean = false,
+    val isInstrumental: Boolean = false,
+    val endTime: Long = -1L
 ) : Comparable<LyricsEntry> {
     override fun compareTo(other: LyricsEntry): Int = (time - other.time).toInt()
+
+    /**
+     * Returns the effective end time for this entry. If [endTime] is set use it; otherwise
+     * fall back to the last word timestamp (in ms) or just the line start time.
+     */
+    fun effectiveEndTime(): Long {
+        if (endTime > 0L) return endTime
+        val lastWordEndMs = words?.maxOfOrNull { (it.endTime * 1000).toLong() } ?: -1L
+        return if (lastWordEndMs > 0L) lastWordEndMs else time
+    }
 
     companion object {
         val HEAD_LYRICS_ENTRY = LyricsEntry(0L, "")

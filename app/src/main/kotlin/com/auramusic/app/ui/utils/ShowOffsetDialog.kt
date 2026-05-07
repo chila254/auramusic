@@ -103,9 +103,9 @@ fun ShowOffsetDialog(songProvider: () -> SongEntity?) {
                     }
 
                     val limited = if (sanitized.startsWith('-')) {
-                        sanitized.take(6)
+                        sanitized.take(8)
                     } else {
-                        sanitized.take(5)
+                        sanitized.take(7)
                     }
 
                     textFieldValue = limited
@@ -121,7 +121,7 @@ fun ShowOffsetDialog(songProvider: () -> SongEntity?) {
 
                         else -> {
                             limited.toIntOrNull()?.let { parsedValue ->
-                                val clampedValue = parsedValue.coerceIn(-9999, 9999)
+                                val clampedValue = parsedValue.coerceIn(-600000, 600000)
                                 lyricsOffset = clampedValue
 
                                 if (parsedValue != clampedValue) {

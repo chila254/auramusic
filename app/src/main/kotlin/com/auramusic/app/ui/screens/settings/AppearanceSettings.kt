@@ -78,7 +78,10 @@ import com.auramusic.app.constants.LibraryFilter
 import com.auramusic.app.constants.LyricsAnimationStyle
 import com.auramusic.app.constants.LyricsAnimationStyleKey
 import com.auramusic.app.constants.LyricsClickKey
+import com.auramusic.app.constants.LyricsConnectedLinesKey
+import com.auramusic.app.constants.LyricsCustomFontUriKey
 import com.auramusic.app.constants.LyricsGlowEffectKey
+import com.auramusic.app.constants.LyricsInstrumentalGapMsKey
 import com.auramusic.app.constants.LiquidGlassEffectKey
 import com.auramusic.app.constants.LiquidGlassBlurRadiusKey
 import com.auramusic.app.constants.LiquidGlassCornerRadiusKey
@@ -223,6 +226,9 @@ fun AppearanceSettings(
     val (lyricsTextSize, onLyricsTextSizeChange) = rememberPreference(LyricsTextSizeKey, defaultValue = 24f)
     val (lyricsLineSpacing, onLyricsLineSpacingChange) = rememberPreference(LyricsLineSpacingKey, defaultValue = 1.3f)
     val (lyricsGlowEffect, onLyricsGlowEffectChange) = rememberPreference(LyricsGlowEffectKey, defaultValue = false)
+    val (instrumentalGapMs, onInstrumentalGapMsChange) = rememberPreference(LyricsInstrumentalGapMsKey, defaultValue = 5000)
+    val (connectedLines, onConnectedLinesChange) = rememberPreference(LyricsConnectedLinesKey, defaultValue = true)
+    val (customFontUri, onCustomFontUriChange) = rememberPreference(LyricsCustomFontUriKey, defaultValue = "")
 
     val (karaokeModeEnabled, onKaraokeModeEnabledChange) = rememberPreference(KaraokeModeKey, false)
     val (karaokeVocalSuppression, onKaraokeVocalSuppressionChange) = rememberPreference(KaraokeVocalSuppressionKey, 1.0f)
@@ -246,6 +252,25 @@ fun AppearanceSettings(
     val context = LocalContext.current
     var hasRecordPermission by remember {
         mutableStateOf(context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+    }
+    val fontPickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: SecurityException) { /* best effort – not all providers grant persistence */ }
+            try {
+                val cacheFile = java.io.File(context.cacheDir, "lyrics_font_${uri.toString().hashCode()}.ttf")
+                context.contentResolver.openInputStream(uri)?.use { input ->
+                    cacheFile.outputStream().use { output -> input.copyTo(output) }
+                }
+            } catch (_: Exception) { /* ignore – will retry on render */ }
+            onCustomFontUriChange(uri.toString())
+        }
     }
 
     val (swipeThumbnail, onSwipeThumbnailChange) = rememberPreference(
@@ -1428,6 +1453,93 @@ fun AppearanceSettings(
                     title = { Text(stringResource(R.string.lyrics_line_spacing)) },
                     description = { Text("${String.format("%.1f", lyricsLineSpacing)}x") },
                     onClick = { showLyricsLineSpacingDialog = true }
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.music_note),
+                    title = { Text(stringResource(R.string.lyrics_instrumental_indicator)) },
+                    description = {
+                        Text(
+                            if (instrumentalGapMs <= 0) {
+                                stringResource(R.string.disabled)
+                            } else {
+                                stringResource(R.string.lyrics_instrumental_indicator_desc, instrumentalGapMs / 1000)
+                            }
+                        )
+                    },
+                    trailingContent = {
+                        Switch(
+                            checked = instrumentalGapMs > 0,
+                            onCheckedChange = { enabled ->
+                                onInstrumentalGapMsChange(if (enabled) 5000 else 0)
+                            },
+                            thumbContent = {
+                                Icon(
+                                    painter = painterResource(
+                                        id = if (instrumentalGapMs > 0) R.drawable.check else R.drawable.close
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    },
+                    onClick = {
+                        // Cycle threshold: 3s -> 5s -> 8s -> 12s -> off
+                        val next = when (instrumentalGapMs) {
+                            0 -> 3000
+                            3000 -> 5000
+                            5000 -> 8000
+                            8000 -> 12000
+                            else -> 0
+                        }
+                        onInstrumentalGapMsChange(next)
+                    }
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.lyrics),
+                    title = { Text(stringResource(R.string.lyrics_connected_lines)) },
+                    description = { Text(stringResource(R.string.lyrics_connected_lines_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = connectedLines,
+                            onCheckedChange = onConnectedLinesChange,
+                            thumbContent = {
+                                Icon(
+                                    painter = painterResource(
+                                        id = if (connectedLines) R.drawable.check else R.drawable.close
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    },
+                    onClick = { onConnectedLinesChange(!connectedLines) }
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.lyrics),
+                    title = { Text(stringResource(R.string.lyrics_custom_font)) },
+                    description = {
+                        Text(
+                            if (customFontUri.isBlank()) stringResource(R.string.lyrics_custom_font_default)
+                            else stringResource(R.string.lyrics_custom_font_selected)
+                        )
+                    },
+                    trailingContent = {
+                        if (customFontUri.isNotBlank()) {
+                            androidx.compose.material3.IconButton(onClick = { onCustomFontUriChange("") }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.close),
+                                    contentDescription = stringResource(R.string.reset)
+                                )
+                            }
+                        }
+                    },
+                    onClick = {
+                        try {
+                            fontPickerLauncher.launch(arrayOf("font/ttf", "font/otf", "application/octet-stream", "application/x-font-ttf", "application/x-font-otf", "*/*"))
+                        } catch (_: Exception) { /* ignore */ }
+                    }
                 ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.lyrics),
