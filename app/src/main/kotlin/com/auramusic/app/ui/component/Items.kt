@@ -175,10 +175,6 @@ inline fun ListItem(
                 color = backgroundColor.copy(alpha = backgroundAlpha),
                 shape = RoundedCornerShape(12.dp)
             )
-            .combinedClickable(
-                onClick = {},
-                onLongClick = {}
-            )
     ) {
         Box(
             modifier = Modifier.padding(6.dp),
