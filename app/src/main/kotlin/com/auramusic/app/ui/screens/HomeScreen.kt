@@ -476,6 +476,24 @@ fun HomeScreen(
                 )
             }
 
+            // Refresh indicator between chips and content
+            item(key = "refresh_indicator") {
+                AnimatedVisibility(
+                    visible = isRefreshing,
+                    enter = androidx.compose.animation.fadeIn(),
+                    exit = androidx.compose.animation.fadeOut()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        ContainedLoadingIndicator()
+                    }
+                }
+            }
+
             if (selectedChip == null) {
                 // Listen Together quick access button
                 item(key = "listen_together_button") {
@@ -1521,20 +1539,7 @@ item(key = "speed_dial_shuffle") {
             }
         )
 
-        AnimatedVisibility(
-            visible = isRefreshing,
-            enter = androidx.compose.animation.fadeIn(),
-            exit = androidx.compose.animation.fadeOut()
-        ) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(LocalPlayerAwareWindowInsets.current.asPaddingValues()),
-                contentAlignment = Alignment.Center
-            ) {
-                ContainedLoadingIndicator()
-            }
-        }
+
     }
 }
 

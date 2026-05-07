@@ -150,6 +150,7 @@ import com.auramusic.app.constants.StopMusicOnTaskClearKey
 import com.auramusic.app.constants.UpdateNotificationsEnabledKey
 import com.auramusic.app.constants.UpdateVariantKey
 import com.auramusic.app.constants.UseNewMiniPlayerDesignKey
+import com.auramusic.app.constants.SelectedFontKey
 import com.auramusic.app.db.MusicDatabase
 import com.auramusic.app.db.entities.SearchHistory
 import com.auramusic.app.extensions.toEnum
@@ -526,6 +527,8 @@ class MainActivity : ComponentActivity() {
         val (selectedThemeColorInt) = rememberPreference(SelectedThemeColorKey, defaultValue = DefaultThemeColor.toArgb())
         val selectedThemeColor = Color(selectedThemeColorInt)
 
+        val selectedFont by rememberPreference(SelectedFontKey, defaultValue = "POPPINS")
+
         var themeColor by rememberSaveable(stateSaver = ColorSaver) {
             mutableStateOf(selectedThemeColor)
         }
@@ -573,6 +576,7 @@ class MainActivity : ComponentActivity() {
             darkTheme = useDarkTheme,
             pureBlack = pureBlack,
             themeColor = themeColor,
+            selectedFont = selectedFont,
         ) {
             BoxWithConstraints(
                 modifier = Modifier

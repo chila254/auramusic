@@ -33,6 +33,7 @@ fun AuraMusicTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     pureBlack: Boolean = false,
     themeColor: Color = DefaultThemeColor,
+    selectedFont: String = "POPPINS",
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
@@ -62,10 +63,50 @@ fun AuraMusicTheme(
         }
     }
 
+    // Create typography based on selected font
+    val typography = when (selectedFont) {
+        "POPPINS" -> AppTypography
+        "ROBOTO" -> AppTypography.copy(
+            displayLarge = AppTypography.displayLarge.copy(fontFamily = Roboto),
+            displayMedium = AppTypography.displayMedium.copy(fontFamily = Roboto),
+            displaySmall = AppTypography.displaySmall.copy(fontFamily = Roboto),
+            headlineLarge = AppTypography.headlineLarge.copy(fontFamily = Roboto),
+            headlineMedium = AppTypography.headlineMedium.copy(fontFamily = Roboto),
+            headlineSmall = AppTypography.headlineSmall.copy(fontFamily = Roboto),
+            titleLarge = AppTypography.titleLarge.copy(fontFamily = Roboto),
+            titleMedium = AppTypography.titleMedium.copy(fontFamily = Roboto),
+            titleSmall = AppTypography.titleSmall.copy(fontFamily = Roboto),
+            bodyLarge = AppTypography.bodyLarge.copy(fontFamily = Roboto),
+            bodyMedium = AppTypography.bodyMedium.copy(fontFamily = Roboto),
+            bodySmall = AppTypography.bodySmall.copy(fontFamily = Roboto),
+            labelLarge = AppTypography.labelLarge.copy(fontFamily = Roboto),
+            labelMedium = AppTypography.labelMedium.copy(fontFamily = Roboto),
+            labelSmall = AppTypography.labelSmall.copy(fontFamily = Roboto)
+        )
+        "INTER" -> AppTypography.copy(
+            displayLarge = AppTypography.displayLarge.copy(fontFamily = Inter),
+            displayMedium = AppTypography.displayMedium.copy(fontFamily = Inter),
+            displaySmall = AppTypography.displaySmall.copy(fontFamily = Inter),
+            headlineLarge = AppTypography.headlineLarge.copy(fontFamily = Inter),
+            headlineMedium = AppTypography.headlineMedium.copy(fontFamily = Inter),
+            headlineSmall = AppTypography.headlineSmall.copy(fontFamily = Inter),
+            titleLarge = AppTypography.titleLarge.copy(fontFamily = Inter),
+            titleMedium = AppTypography.titleMedium.copy(fontFamily = Inter),
+            titleSmall = AppTypography.titleSmall.copy(fontFamily = Inter),
+            bodyLarge = AppTypography.bodyLarge.copy(fontFamily = Inter),
+            bodyMedium = AppTypography.bodyMedium.copy(fontFamily = Inter),
+            bodySmall = AppTypography.bodySmall.copy(fontFamily = Inter),
+            labelLarge = AppTypography.labelLarge.copy(fontFamily = Inter),
+            labelMedium = AppTypography.labelMedium.copy(fontFamily = Inter),
+            labelSmall = AppTypography.labelSmall.copy(fontFamily = Inter)
+        )
+        else -> AppTypography // Default to Poppins
+    }
+
     // Use standard MaterialTheme instead of MaterialExpressiveTheme
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = AppTypography, // Use the defined AppTypography
+        typography = typography,
         content = content
     )
 }

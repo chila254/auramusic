@@ -105,6 +105,7 @@ import com.auramusic.app.constants.SliderStyle
 import com.auramusic.app.constants.SliderStyleKey
 import com.auramusic.app.constants.SlimNavBarKey
 import com.auramusic.app.constants.ListenTogetherAtTopKey
+import com.auramusic.app.constants.SelectedFontKey
 import com.auramusic.app.constants.SquigglySliderKey
 import com.auramusic.app.constants.SwipeSensitivityKey
 import com.auramusic.app.constants.SwipeThumbnailKey
@@ -153,6 +154,10 @@ fun AppearanceSettings(
     val (selectedThemeColorInt) = rememberPreference(
         SelectedThemeColorKey,
         defaultValue = DefaultThemeColor.toArgb()
+    )
+    val (selectedFont, onSelectedFontChange) = rememberEnumPreference(
+        SelectedFontKey,
+        defaultValue = AppFont.POPPINS
     )
     // Check if user has selected a custom color (not the default/dynamic color)
     val isUsingCustomColor = selectedThemeColorInt != DefaultThemeColor.toArgb()
@@ -617,6 +622,10 @@ fun AppearanceSettings(
         mutableStateOf(false)
     }
 
+    var showFontSelectionDialog by rememberSaveable {
+        mutableStateOf(false)
+    }
+
     if (showDefaultChipDialog) {
         EnumDialog(
             onDismiss = { showDefaultChipDialog = false },
@@ -634,6 +643,27 @@ fun AppearanceSettings(
                     LibraryFilter.ALBUMS -> stringResource(R.string.albums)
                     LibraryFilter.PLAYLISTS -> stringResource(R.string.playlists)
                     LibraryFilter.LIBRARY -> stringResource(R.string.filter_library)
+                }
+            }
+        )
+    }
+
+    if (showFontSelectionDialog) {
+        EnumDialog(
+            onDismiss = { showFontSelectionDialog = false },
+            onSelect = {
+                onSelectedFontChange(it)
+                showFontSelectionDialog = false
+            },
+            title = stringResource(R.string.font_selection),
+            current = selectedFont,
+            values = AppFont.values().toList(),
+            valueText = {
+                when (it) {
+                    AppFont.DEFAULT -> stringResource(R.string.default_font)
+                    AppFont.POPPINS -> "Poppins"
+                    AppFont.ROBOTO -> "Roboto"
+                    AppFont.INTER -> "Inter"
                 }
             }
         )
@@ -1878,6 +1908,30 @@ fun AppearanceSettings(
                 // )
             )
         )
+
+        Spacer(modifier = Modifier.height(27.dp))
+
+        Material3SettingsGroup(
+            title = stringResource(R.string.fonts),
+            items = listOf(
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.palette),
+                    title = { Text(stringResource(R.string.app_font)) },
+                    description = {
+                        Text(
+                            when (selectedFont) {
+                                AppFont.DEFAULT -> stringResource(R.string.default_font)
+                                AppFont.POPPINS -> "Poppins"
+                                AppFont.ROBOTO -> "Roboto"
+                                AppFont.INTER -> "Inter"
+                            }
+                        )
+                    },
+                    onClick = { showFontSelectionDialog = true }
+                )
+            )
+        )
+
         Spacer(modifier = Modifier.height(16.dp))
     }
 
@@ -1918,4 +1972,11 @@ enum class LyricsPosition {
 enum class PlayerTextAlignment {
     SIDED,
     CENTER,
+}
+
+enum class AppFont {
+    DEFAULT,
+    POPPINS,
+    ROBOTO,
+    INTER,
 }
