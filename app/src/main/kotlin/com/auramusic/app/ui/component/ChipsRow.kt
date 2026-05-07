@@ -54,6 +54,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.auramusic.app.R
 import com.auramusic.app.ui.screens.OptionStats
+import com.auramusic.app.ui.theme.StaggeredAnimatedVisibility
 
 @Composable
 fun <E> ChipsRow(
@@ -72,17 +73,23 @@ fun <E> ChipsRow(
     ) {
         Spacer(Modifier.width(12.dp))
 
-        chips.forEach { (value, label) ->
-            FilterChip(
-                label = { Text(label) },
-                selected = currentValue == value,
-                colors = FilterChipDefaults.filterChipColors(
-                    containerColor = containerColor,
-                ),
-                onClick = { onValueUpdate(value) },
-                shape = RoundedCornerShape(16.dp),
-                border = null
-            )
+        chips.forEachIndexed { index, (value, label) ->
+            StaggeredAnimatedVisibility(
+                visible = true,
+                index = index,
+                delayMillis = 50
+            ) {
+                FilterChip(
+                    label = { Text(label) },
+                    selected = currentValue == value,
+                    colors = FilterChipDefaults.filterChipColors(
+                        containerColor = containerColor,
+                    ),
+                    onClick = { onValueUpdate(value) },
+                    shape = RoundedCornerShape(16.dp),
+                    border = null
+                )
+            }
 
             Spacer(Modifier.width(8.dp))
         }

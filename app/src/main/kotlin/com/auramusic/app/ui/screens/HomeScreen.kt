@@ -10,6 +10,10 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.material3.pulltorefresh.PullToRefreshState
+import com.auramusic.app.ui.theme.AuraAnimatedVisibility
+import com.auramusic.app.ui.theme.AuraTransitions
+import com.auramusic.app.ui.theme.StaggeredAnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -1517,16 +1521,16 @@ item(key = "speed_dial_shuffle") {
             }
         )
 
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(LocalPlayerAwareWindowInsets.current.asPaddingValues()),
-            contentAlignment = Alignment.Center
+        AnimatedVisibility(
+            visible = isRefreshing,
+            enter = androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.fadeOut()
         ) {
-            AnimatedVisibility(
-                visible = isRefreshing || pullRefreshState.progress > 0f,
-                enter = androidx.compose.animation.fadeIn(),
-                exit = androidx.compose.animation.fadeOut()
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(LocalPlayerAwareWindowInsets.current.asPaddingValues()),
+                contentAlignment = Alignment.Center
             ) {
                 ContainedLoadingIndicator()
             }

@@ -108,6 +108,7 @@ import androidx.media3.common.Player
 import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.auramusic.app.LocalListenTogetherManager
 import com.auramusic.app.LocalPlayerConnection
 import com.auramusic.app.R
@@ -927,18 +928,69 @@ private fun ThumbnailImage(
             
 
         } else {
-            // Album art image
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(artworkUri)
-                    .memoryCachePolicy(CachePolicy.ENABLED)
-                    .diskCachePolicy(CachePolicy.ENABLED)
-                    .networkCachePolicy(CachePolicy.ENABLED)
-                    .build(),
-                contentDescription = null,
-                contentScale = if (cropArtwork) ContentScale.Crop else ContentScale.Fit,
-                modifier = Modifier.fillMaxSize()
-            )
+            // Enhanced album art image with gradient overlay and better visual effects
+            Box(modifier = Modifier.fillMaxSize()) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(artworkUri)
+                        .memoryCachePolicy(CachePolicy.ENABLED)
+                        .diskCachePolicy(CachePolicy.ENABLED)
+                        .networkCachePolicy(CachePolicy.ENABLED)
+                        .crossfade(300) // Smooth crossfade
+                        .build(),
+                    contentDescription = null,
+                    contentScale = if (cropArtwork) ContentScale.Crop else ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                // Subtle gradient overlay for depth and modern look
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.1f),
+                                    Color.Black.copy(alpha = 0.3f)
+                                ),
+                                startY = 0f
+                            )
+                        )
+                )
+
+                // Loading indicator with smooth animation
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = artworkUri.isNullOrBlank(),
+                    enter = fadeIn(tween(300)),
+                    exit = fadeOut(tween(300))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.music_note),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Loading artwork...",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

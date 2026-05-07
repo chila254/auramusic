@@ -10,11 +10,14 @@ package com.auramusic.app.ui.component
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.expandIn
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkOut
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -58,11 +61,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -135,7 +140,7 @@ fun currentGridThumbnailHeight(): Dp {
     return if (gridItemSize == GridItemSize.BIG) GridThumbnailHeight else SmallGridThumbnailHeight
 }
 
-// Basic list item - optimized with inline to reduce recomposition
+// Enhanced list item with smooth animations and better visuals
 @Composable
 inline fun ListItem(
     modifier: Modifier = Modifier,
@@ -147,53 +152,99 @@ inline fun ListItem(
     isActive: Boolean = false,
     isAvailable: Boolean = true,
 ) {
+    val backgroundColor = when {
+        isActive && isSelected == true -> MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+        isActive -> MaterialTheme.colorScheme.secondaryContainer
+        isSelected == true -> MaterialTheme.colorScheme.inversePrimary.copy(alpha = 0.4f)
+        else -> Color.Transparent
+    }
+
+    val backgroundAlpha by animateFloatAsState(
+        targetValue = if (backgroundColor != Color.Transparent) 1f else 0f,
+        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+        label = "backgroundAlpha"
+    )
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = if (isActive) {
-            modifier // playing highlight
-                .height(ListItemHeight)
-                .padding(horizontal = 8.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(
-                    color = // selected active
-                        if (isSelected == true) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
-                        else MaterialTheme.colorScheme.secondaryContainer
-                )
-        } else if (isSelected == true) {
-            modifier // inactive selected
-                .height(ListItemHeight)
-                .padding(horizontal = 8.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(color = MaterialTheme.colorScheme.inversePrimary.copy(alpha = 0.4f))
-        } else {
-            modifier // default
-                .height(ListItemHeight)
-                .padding(horizontal = 8.dp)
-        }
+        modifier = modifier
+            .height(ListItemHeight)
+            .padding(horizontal = 8.dp)
+            .clip(RoundedCornerShape(12.dp)) // Increased corner radius for modern look
+            .background(
+                color = backgroundColor.copy(alpha = backgroundAlpha),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .combinedClickable(
+                onClick = {},
+                onLongClick = {}
+            )
     ) {
         Box(
             modifier = Modifier.padding(6.dp),
             contentAlignment = Alignment.Center
         ) {
-            thumbnailContent()
-            if (!isAvailable) {
-                Box(
-                    modifier = Modifier
-                        .size(ListThumbnailSize)
-                        .align(Alignment.Center)
-                        .background(
-                            Color.Black.copy(alpha = 0.25f),
-                            RoundedCornerShape(ThumbnailCornerRadius)
-                        )
+            // Enhanced thumbnail with shadow and better visual feedback
+            Box(
+                modifier = Modifier
+                    .size(ListThumbnailSize)
+                    .graphicsLayer {
+                        shadowElevation = if (isActive) 8f else 4f
+                        shape = RoundedCornerShape(ThumbnailCornerRadius)
+                        clip = true
+                    }
+            ) {
+                thumbnailContent()
+
+                // Smooth overlay animation for unavailable content
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = !isAvailable,
+                    enter = fadeIn(tween(200)),
+                    exit = fadeOut(tween(200))
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.offline),
-                        contentDescription = null,
-                        tint = Color.White,
+                    Box(
                         modifier = Modifier
-                            .size(ListThumbnailSize / 2)
-                            .align(Alignment.Center)
-                            .graphicsLayer { alpha = 1f }
+                            .fillMaxSize()
+                            .background(
+                                Color.Black.copy(alpha = 0.4f),
+                                RoundedCornerShape(ThumbnailCornerRadius)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.offline),
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier
+                                .size(ListThumbnailSize / 2.5f) // Slightly larger icon
+                                .graphicsLayer {
+                                    alpha = 0.9f
+                                    scaleX = 1.1f
+                                    scaleY = 1.1f
+                                }
+                        )
+                    }
+                }
+
+                // Active indicator with smooth animation
+                if (isActive) {
+                    val density = LocalDensity.current
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                                    ),
+                                    center = androidx.compose.ui.geometry.Offset(
+                                        with(density) { ListThumbnailSize.toPx() } / 2,
+                                        with(density) { ListThumbnailSize.toPx() } / 2
+                                    ),
+                                    radius = with(density) { ListThumbnailSize.toPx() }
+                                )
+                            )
                     )
                 }
             }
@@ -201,18 +252,29 @@ inline fun ListItem(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(horizontal = 6.dp)
+                .padding(horizontal = 8.dp, vertical = 4.dp) // Better padding
         ) {
+            // Enhanced title with better typography
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium
+                ),
+                color = when {
+                    isActive -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.onSurface
+                },
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
 
+            // Enhanced subtitle with better spacing and styling
             if (subtitle != null) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.alpha(if (isActive) 0.8f else 0.7f)
+                ) {
                     subtitle()
                 }
             }
